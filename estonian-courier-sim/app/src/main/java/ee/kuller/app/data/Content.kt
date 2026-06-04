@@ -101,6 +101,15 @@ object Content {
                 WordEntry("p_head_isu", "Head isu!", "Приятного аппетита!", "Palun, head isu!"),
                 WordEntry("p_valmis", "Tellimus on valmis", "Заказ готов", "Teie tellimus on valmis."),
                 WordEntry("p_jargi", "Tulin tellimusele järele", "Я за заказом", "Tere, tulin tellimusele järele."),
+                // Вопросы, которые задаёт сам курьер
+                WordEntry("p_valmis_q", "Kas tellimus on valmis?", "Заказ готов?", "Tere, kas tellimus on valmis?"),
+                WordEntry("p_nimi_q", "Mis nimi on tellimusel?", "На какое имя заказ?", "Mis nimi on tellimusel?"),
+                WordEntry("p_oige_q", "Kas see on õige tellimus?", "Это верный заказ?", "Kas see on õige tellimus?"),
+                WordEntry("p_veel_q", "Kas siia tuleb veel midagi?", "Сюда ещё что-то будет?", "Kas siia tuleb veel midagi?"),
+                WordEntry("p_korter_q", "Mis on teie korterinumber?", "Какой у вас номер квартиры?", "Mis on teie korterinumber?"),
+                WordEntry("p_kus_q", "Kus ma teid leian?", "Где мне вас найти?", "Kus ma teid leian?"),
+                WordEntry("p_kood_q", "Mis on ukse kood?", "Какой код двери?", "Mis on ukse kood?"),
+                WordEntry("p_alla_voi_q", "Kas tulete alla või tulen üles?", "Спуститесь или мне подняться?", "Kas tulete alla või tulen üles?"),
             )
         ),
     )
@@ -110,19 +119,24 @@ object Content {
 
     // ----------------------------------------------------------------------
     // ЗАКАЗЫ (мини-уроки в виде доставок)
+    //
+    // Диалоги двусторонние: курьер не только отвечает, но и сам
+    // задаёт вопросы в ресторане и клиенту, а персонажи отвечают.
     // ----------------------------------------------------------------------
 
-    private fun greetStep() = DialogueStep(
+    /** Курьер сам заходит в ресторан и спрашивает, готов ли заказ. */
+    private fun askReadyStep(replyEt: String, replyRu: String) = DialogueStep(
         speaker = Speaker.RESTORAN,
-        npcEt = "Tere! Kas tulite tellimusele järele?",
-        npcRu = "Здравствуйте! Вы пришли за заказом?",
-        questionRu = "Поздоровайтесь и подтвердите, что вы за заказом:",
+        npcEt = "", npcRu = "",
+        questionRu = "Вы зашли в ресторан. Поздоровайтесь и спросите, готов ли заказ:",
+        courierAsks = true,
         choices = listOf(
-            Choice("Tere! Jah, tulin tellimusele järele.", "Здравствуйте! Да, я за заказом.", true),
+            Choice("Tere! Kas tellimus on valmis?", "Здравствуйте! Заказ готов?", true),
             Choice("Head aega, nägemist!", "До свидания, увидимся!", false),
             Choice("Ei, aitäh, ma ei taha.", "Нет, спасибо, я не хочу.", false),
         ),
-        teachWordIds = listOf("g_tere", "g_jah", "p_jargi")
+        npcReplyEt = replyEt, npcReplyRu = replyRu,
+        teachWordIds = listOf("g_tere", "p_valmis_q")
     )
 
     val orders: List<Order> = listOf(
@@ -132,7 +146,22 @@ object Content {
             itemsEt = "Üks pepperoni pitsa ja Coca-Cola",
             itemsRu = "Одна пицца пепперони и кока-кола",
             steps = listOf(
-                greetStep(),
+                askReadyStep("Jah, kohe valmis! Üks hetk.", "Да, сейчас будет готов! Минутку."),
+                DialogueStep(
+                    speaker = Speaker.RESTORAN,
+                    npcEt = "Palun, siin on kott.",
+                    npcRu = "Пожалуйста, вот пакет.",
+                    questionRu = "Уточните у сотрудника, на какое имя заказ:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Mis nimi on tellimusel?", "На какое имя заказ?", true),
+                        Choice("Kus on tualett?", "Где туалет?", false),
+                        Choice("Palju kell on?", "Который час?", false),
+                    ),
+                    npcReplyEt = "Tellimus on Maarjale: pitsa ja kola.",
+                    npcReplyRu = "Заказ для Маарьи: пицца и кола.",
+                    teachWordIds = listOf("p_nimi_q", "f_pitsa")
+                ),
                 DialogueStep(
                     speaker = Speaker.NARRATOR,
                     npcEt = "Navigaator: ristmikul pööra paremale, siis sõida otse.",
@@ -149,13 +178,29 @@ object Content {
                     speaker = Speaker.KLIENT,
                     npcEt = "Halloo! Kus mu toit on?",
                     npcRu = "Алло! Где моя еда?",
-                    questionRu = "Вы у двери. Сообщите клиенту, что вы на месте:",
+                    questionRu = "Вы у дома. Сообщите клиенту, что вы на месте:",
                     choices = listOf(
                         Choice("Tere, olen kohal. Teil on tellimus.", "Здравствуйте, я на месте. У вас заказ.", true),
                         Choice("Vabandust, ma eksisin ära.", "Извините, я заблудился.", false),
                         Choice("Ei, mul ei ole midagi.", "Нет, у меня ничего нет.", false),
                     ),
+                    npcReplyEt = "Super, tulen kohe alla!",
+                    npcReplyRu = "Супер, сейчас спущусь!",
                     teachWordIds = listOf("p_kohal", "p_tellimus")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Клиента пока не видно. Спросите, где вам его найти:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kus ma teid leian?", "Где мне вас найти?", true),
+                        Choice("Head isu!", "Приятного аппетита!", false),
+                        Choice("Üks pitsa, palun.", "Одну пиццу, пожалуйста.", false),
+                    ),
+                    npcReplyEt = "Olen maja ees, punase jopega. Aitäh, head isu!",
+                    npcReplyRu = "Я перед домом, в красной куртке. Спасибо, приятного аппетита!",
+                    teachWordIds = listOf("p_kus_q", "s_maja", "p_head_isu")
                 ),
             )
         ),
@@ -165,17 +210,34 @@ object Content {
             itemsEt = "Kaks sushi komplekti ja roheline tee",
             itemsRu = "Два суши-сета и зелёный чай",
             steps = listOf(
+                askReadyStep("Peaaegu! Kaks komplekti, eks?", "Почти! Два сета, верно?"),
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
-                    npcEt = "Tere! Teie tellimus on valmis. Kontrollige: kaks komplekti?",
-                    npcRu = "Здравствуйте! Ваш заказ готов. Проверьте: два сета?",
+                    npcEt = "Kaks komplekti ja roheline tee. Õige?",
+                    npcRu = "Два сета и зелёный чай. Верно?",
                     questionRu = "Сколько комплектов в заказе? Подтвердите по-эстонски:",
                     choices = listOf(
                         Choice("Jah, kaks komplekti. Aitäh!", "Да, два сета. Спасибо!", true),
                         Choice("Ei, kümme komplekti.", "Нет, десять сетов.", false),
                         Choice("Üks õlu, palun.", "Одно пиво, пожалуйста.", false),
                     ),
+                    npcReplyEt = "Tubli, kõik on kotis.",
+                    npcReplyRu = "Отлично, всё в пакете.",
                     teachWordIds = listOf("n_2", "g_aitah", "p_valmis")
+                ),
+                DialogueStep(
+                    speaker = Speaker.RESTORAN,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Перед уходом спросите, не нужно ли добавить что-то ещё к заказу:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kas siia tuleb veel midagi?", "Сюда ещё что-то будет?", true),
+                        Choice("Kas tohib magada?", "Можно поспать?", false),
+                        Choice("Kus on parkla?", "Где парковка?", false),
+                    ),
+                    npcReplyEt = "Ei, see on kõik. Head teed!",
+                    npcReplyRu = "Нет, это всё. Счастливого пути!",
+                    teachWordIds = listOf("p_veel_q", "g_ei")
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
@@ -191,15 +253,17 @@ object Content {
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
-                    npcEt = "Suur tänu! Kas saate toidu ukse taha jätta?",
-                    npcRu = "Большое спасибо! Можете оставить еду под дверью?",
-                    questionRu = "Согласитесь и пожелайте приятного аппетита:",
+                    npcEt = "", npcRu = "",
+                    questionRu = "Лифт не работает. Спросите, спустится ли клиент или вам подняться:",
+                    courierAsks = true,
                     choices = listOf(
-                        Choice("Jah, jätan ukse taha. Head isu!", "Да, оставлю под дверью. Приятного аппетита!", true),
-                        Choice("Ei, ma võtan toidu tagasi.", "Нет, я заберу еду обратно.", false),
-                        Choice("Vabandust, kus on lift?", "Извините, где лифт?", false),
+                        Choice("Kas tulete alla või tulen üles?", "Спуститесь или мне подняться?", true),
+                        Choice("Kas pitsa on kuum?", "Пицца горячая?", false),
+                        Choice("Pööra vasakule.", "Поверни налево.", false),
                     ),
-                    teachWordIds = listOf("p_ukse_taha", "p_head_isu")
+                    npcReplyEt = "Oi, ma tulen ise alla. Üks minut! Aitäh, head isu!",
+                    npcReplyRu = "Ой, я сам спущусь. Одну минуту! Спасибо, приятного аппетита!",
+                    teachWordIds = listOf("p_alla_voi_q", "p_head_isu")
                 ),
             )
         ),
@@ -209,30 +273,50 @@ object Content {
             itemsEt = "Kolm kanaburgerit ja suured friikartulid",
             itemsRu = "Три куриных бургера и большая картошка фри",
             steps = listOf(
-                greetStep(),
+                askReadyStep("Tere! Jah, valmis. Kontrolli üle, palun.", "Здравствуйте! Да, готов. Проверьте, пожалуйста."),
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
-                    npcEt = "Kolm kanaburgerit ja friikartulid. Kõik õige?",
-                    npcRu = "Три куриных бургера и картошка фри. Всё верно?",
-                    questionRu = "Что внутри заказа? Выберите правильный перевод:",
+                    npcEt = "Kolm kanaburgerit ja friikartulid.",
+                    npcRu = "Три куриных бургера и картошка фри.",
+                    questionRu = "Проверьте сумку и спросите, верный ли это заказ:",
+                    courierAsks = true,
                     choices = listOf(
-                        Choice("Kana ja friikartulid", "Курица и картофель фри", true),
-                        Choice("Kala ja juust", "Рыба и сыр", false),
-                        Choice("Supp ja leib", "Суп и хлеб", false),
+                        Choice("Kas see on õige tellimus?", "Это верный заказ?", true),
+                        Choice("Kas ma võin koju minna?", "Можно я пойду домой?", false),
+                        Choice("Kus on bussipeatus?", "Где автобусная остановка?", false),
                     ),
-                    teachWordIds = listOf("f_burger", "f_kana", "f_friikad", "n_3")
+                    npcReplyEt = "Jah, kõik õige: kana ja friikartulid.",
+                    npcReplyRu = "Да, всё верно: курица и картофель фри.",
+                    teachWordIds = listOf("p_oige_q", "f_burger", "f_kana", "f_friikad")
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
-                    npcEt = "Tere! Millisel korrusel te olete? Ma ootan all.",
-                    npcRu = "Здравствуйте! На каком вы этаже? Я жду внизу.",
-                    questionRu = "Клиент ждёт внизу. Спросите, может ли он спуститься:",
+                    npcEt = "Tere! Ma ootan kodus.",
+                    npcRu = "Здравствуйте! Я жду дома.",
+                    questionRu = "Спросите у клиента, на каком он этаже:",
+                    courierAsks = true,
                     choices = listOf(
-                        Choice("Kas saate alla tulla? Olen maja ees.", "Можете спуститься? Я перед домом.", true),
-                        Choice("Pööra vasakule ristmikul.", "Поверни налево на перекрёстке.", false),
-                        Choice("Üks kohv piimaga, palun.", "Один кофе с молоком, пожалуйста.", false),
+                        Choice("Millisel korrusel te olete?", "На каком вы этаже?", true),
+                        Choice("Mis su lemmikvärv on?", "Какой твой любимый цвет?", false),
+                        Choice("Kas sajab vihma?", "Идёт дождь?", false),
                     ),
-                    teachWordIds = listOf("p_alla", "s_maja")
+                    npcReplyEt = "Neljandal korrusel.",
+                    npcReplyRu = "На четвёртом этаже.",
+                    teachWordIds = listOf("p_korrus", "n_4", "s_korrus")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Теперь уточните номер квартиры:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Mis on teie korterinumber?", "Какой у вас номер квартиры?", true),
+                        Choice("Kas teil on koer?", "У вас есть собака?", false),
+                        Choice("Sõida otse.", "Езжай прямо.", false),
+                    ),
+                    npcReplyEt = "Korter number üheksa. Aitäh, head isu!",
+                    npcReplyRu = "Квартира номер девять. Спасибо, приятного аппетита!",
+                    teachWordIds = listOf("p_korter_q", "n_9", "s_korter")
                 ),
             )
         ),
@@ -244,15 +328,33 @@ object Content {
             steps = listOf(
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
-                    npcEt = "Tere hommikust! Kaks kohvi piimaga, eks?",
-                    npcRu = "Доброе утро! Два кофе с молоком, верно?",
-                    questionRu = "Утро. Поздоровайтесь и подтвердите напитки:",
+                    npcEt = "Tere hommikust!",
+                    npcRu = "Доброе утро!",
+                    questionRu = "Утро. Поздоровайтесь по-утреннему и спросите про заказ:",
+                    courierAsks = true,
                     choices = listOf(
-                        Choice("Tere hommikust! Jah, kaks kohvi piimaga.", "Доброе утро! Да, два кофе с молоком.", true),
-                        Choice("Tere õhtust! Üks õlu.", "Добрый вечер! Одно пиво.", false),
-                        Choice("Head aega! Ei kohvi.", "До свидания! Без кофе.", false),
+                        Choice("Tere hommikust! Kas tellimus on valmis?", "Доброе утро! Заказ готов?", true),
+                        Choice("Tere õhtust! Head aega.", "Добрый вечер! До свидания.", false),
+                        Choice("Head ööd!", "Спокойной ночи!", false),
                     ),
-                    teachWordIds = listOf("g_hommik", "d_kohv", "d_piim", "n_2")
+                    npcReplyEt = "Jah! Kaks kohvi piimaga ja sai juustuga.",
+                    npcReplyRu = "Да! Два кофе с молоком и булка с сыром.",
+                    teachWordIds = listOf("g_hommik", "p_valmis_q", "d_kohv", "d_piim")
+                ),
+                DialogueStep(
+                    speaker = Speaker.RESTORAN,
+                    npcEt = "Siin on kaks topsi.",
+                    npcRu = "Вот два стакана.",
+                    questionRu = "Уточните, на какое имя заказ:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Mis nimi on tellimusel?", "На какое имя заказ?", true),
+                        Choice("Kas kohv on magus?", "Кофе сладкий?", false),
+                        Choice("Kas tohin istuda?", "Можно сесть?", false),
+                    ),
+                    npcReplyEt = "Pjotr. Ilusat päeva!",
+                    npcReplyRu = "Пётр. Хорошего дня!",
+                    teachWordIds = listOf("p_nimi_q", "n_2")
                 ),
                 DialogueStep(
                     speaker = Speaker.NARRATOR,
@@ -268,8 +370,23 @@ object Content {
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
-                    npcEt = "Aitäh! Ma võtan ise alt vastu.",
-                    npcRu = "Спасибо! Я сам встречу внизу.",
+                    npcEt = "Tere! Ma olen õues.",
+                    npcRu = "Здравствуйте! Я на улице.",
+                    questionRu = "Клиент где-то снаружи. Спросите, где его найти:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kus ma teid leian?", "Где мне вас найти?", true),
+                        Choice("Kas teile meeldib kohv?", "Вам нравится кофе?", false),
+                        Choice("Kas lift töötab?", "Лифт работает?", false),
+                    ),
+                    npcReplyEt = "Olen pargi juures, sinise mütsiga.",
+                    npcReplyRu = "Я у парка, в синей шапке.",
+                    teachWordIds = listOf("p_kus_q")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "Ah, näen sind! Aitäh.",
+                    npcRu = "А, вижу тебя! Спасибо.",
                     questionRu = "Отдайте заказ и попрощайтесь вежливо:",
                     choices = listOf(
                         Choice("Palun, siin on teie tellimus. Head isu, nägemist!", "Пожалуйста, вот ваш заказ. Приятного аппетита, до встречи!", true),
@@ -286,17 +403,20 @@ object Content {
             itemsEt = "Üks kana supp, must leib ja klaas vett",
             itemsRu = "Один куриный суп, чёрный хлеб и стакан воды",
             steps = listOf(
+                askReadyStep("Jah, valmis: supp, leib ja vesi.", "Да, готов: суп, хлеб и вода."),
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
-                    npcEt = "Tellimus on valmis: supp, leib ja vesi. Palun, võtke kaasa.",
-                    npcRu = "Заказ готов: суп, хлеб и вода. Пожалуйста, забирайте.",
+                    npcEt = "Supp on kuum, ole ettevaatlik.",
+                    npcRu = "Суп горячий, будь осторожен.",
                     questionRu = "Поблагодарите за готовый заказ:",
                     choices = listOf(
                         Choice("Aitäh! Ilusat päeva.", "Спасибо! Хорошего дня.", true),
-                        Choice("Ei, ma ei taha supi.", "Нет, я не хочу суп.", false),
+                        Choice("Ei, ma ei taha suppi.", "Нет, я не хочу суп.", false),
                         Choice("Vabandust, kus on uks?", "Извините, где дверь?", false),
                     ),
-                    teachWordIds = listOf("f_supp", "f_leib", "d_vesi", "p_valmis")
+                    npcReplyEt = "Sulle ka! Head teed.",
+                    npcReplyRu = "И тебе! Счастливого пути.",
+                    teachWordIds = listOf("f_supp", "f_leib", "d_vesi", "g_aitah")
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
@@ -312,8 +432,22 @@ object Content {
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
-                    npcEt = "Suur aitäh, et nii kiiresti! Head isu mulle, ahah.",
-                    npcRu = "Большое спасибо, что так быстро! Приятного аппетита мне, ха-ха.",
+                    npcEt = "", npcRu = "",
+                    questionRu = "На входной двери домофон. Спросите код двери:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Mis on ukse kood?", "Какой код двери?", true),
+                        Choice("Kas teil on kass?", "У вас есть кошка?", false),
+                        Choice("Kui vana te olete?", "Сколько вам лет?", false),
+                    ),
+                    npcReplyEt = "Kood on üks-kaks-kolm-neli.",
+                    npcReplyRu = "Код — один-два-три-четыре.",
+                    teachWordIds = listOf("p_kood_q", "n_1", "n_2", "n_3")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "Suur aitäh, et nii kiiresti!",
+                    npcRu = "Большое спасибо, что так быстро!",
                     questionRu = "Тепло попрощайтесь с клиентом:",
                     choices = listOf(
                         Choice("Palun! Head isu ja head aega!", "Пожалуйста! Приятного аппетита и до свидания!", true),
@@ -330,18 +464,21 @@ object Content {
             itemsEt = "Üks kala, kreeka salat ja õunamahl",
             itemsRu = "Одна рыба, греческий салат и яблочный сок",
             steps = listOf(
-                greetStep(),
+                askReadyStep("Üks hetk, panen kotti. Kala, salat ja mahl.", "Минутку, складываю в пакет. Рыба, салат и сок."),
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
-                    npcEt = "Kala, salat ja mahl. Kontrollige kotti, palun.",
-                    npcRu = "Рыба, салат и сок. Проверьте сумку, пожалуйста.",
-                    questionRu = "Что в заказе? Выберите верный перевод:",
+                    npcEt = "Palun, kõik on koos.",
+                    npcRu = "Пожалуйста, всё вместе.",
+                    questionRu = "Проверьте сумку и спросите, верный ли это заказ:",
+                    courierAsks = true,
                     choices = listOf(
-                        Choice("Kala, salat ja mahl", "Рыба, салат и сок", true),
-                        Choice("Kana, supp ja kohv", "Курица, суп и кофе", false),
-                        Choice("Pitsa, leib ja tee", "Пицца, хлеб и чай", false),
+                        Choice("Kas see on õige tellimus?", "Это верный заказ?", true),
+                        Choice("Kas te tantsite?", "Вы танцуете?", false),
+                        Choice("Mis film see on?", "Что это за фильм?", false),
                     ),
-                    teachWordIds = listOf("f_kala", "f_salat", "d_mahl")
+                    npcReplyEt = "Jah: kala, salat ja õunamahl.",
+                    npcReplyRu = "Да: рыба, салат и яблочный сок.",
+                    teachWordIds = listOf("p_oige_q", "f_kala", "f_salat", "d_mahl")
                 ),
                 DialogueStep(
                     speaker = Speaker.KLIENT,
@@ -353,7 +490,23 @@ object Content {
                         Choice("Ei, ma tulen sisse.", "Нет, я зайду внутрь.", false),
                         Choice("Pööra paremale.", "Поверни направо.", false),
                     ),
+                    npcReplyEt = "Suurepärane, aitäh!",
+                    npcReplyRu = "Прекрасно, спасибо!",
                     teachWordIds = listOf("p_ukse_taha", "n_2", "s_uks")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Двор закрыт. Спросите у клиента код двери:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Mis on ukse kood?", "Какой код двери?", true),
+                        Choice("Kas meri on soe?", "Море тёплое?", false),
+                        Choice("Head ööd!", "Спокойной ночи!", false),
+                    ),
+                    npcReplyEt = "Kood on viis-kuus-seitse-kaheksa. Aitäh!",
+                    npcReplyRu = "Код — пять-шесть-семь-восемь. Спасибо!",
+                    teachWordIds = listOf("p_kood_q", "n_5", "n_6", "n_7", "n_8")
                 ),
             )
         ),

@@ -26,14 +26,22 @@ data class Choice(
     val correct: Boolean
 )
 
-/** One interactive step of a delivery: an NPC says a line in Estonian,
- *  the learner must choose the right Estonian reply / meaning. */
+/** One interactive step of a delivery — двусторонний диалог.
+ *
+ *  Сценарий шага:
+ *   1. (опц.) персонаж говорит реплику [npcEt] (если пусто — реплику начинает курьер);
+ *   2. ученик-курьер выбирает правильный эстонский вариант из [choices]
+ *      (вопрос или ответ — зависит от [courierAsks]);
+ *   3. (опц.) персонаж отвечает [npcReplyEt] — так получается живой обмен фразами. */
 data class DialogueStep(
     val speaker: Speaker,
-    val npcEt: String,          // что говорит персонаж (по-эстонски)
-    val npcRu: String,          // перевод реплики
-    val questionRu: String,     // задание для ученика (по-русски)
+    val npcEt: String,                  // что говорит персонаж первым (может быть пусто)
+    val npcRu: String,                  // перевод реплики персонажа
+    val questionRu: String,             // задание для ученика (по-русски)
     val choices: List<Choice>,
+    val courierAsks: Boolean = false,   // true → курьер сам задаёт вопрос
+    val npcReplyEt: String = "",        // ответ персонажа после верного выбора
+    val npcReplyRu: String = "",        // перевод ответа персонажа
     val teachWordIds: List<String> = emptyList()
 )
 

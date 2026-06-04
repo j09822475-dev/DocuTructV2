@@ -94,17 +94,17 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
 
-        Spacer(Modifier.height(16.dp))
-        NpcBubble(
-            speakerLabel = when (step.speaker.name) {
-                "RESTORAN" -> "🏪 Ресторан"
-                "KLIENT" -> "🙋 Клиент"
-                else -> "🧭 Навигатор"
-            },
-            et = step.npcEt,
-            ru = step.npcRu,
-            speaker = speaker
-        )
+        val npcLabel = when (step.speaker.name) {
+            "RESTORAN" -> "🏪 Ресторан"
+            "KLIENT" -> "🙋 Клиент"
+            else -> "🧭 Навигатор"
+        }
+
+        // Реплика персонажа (если он начинает разговор)
+        if (step.npcEt.isNotBlank()) {
+            Spacer(Modifier.height(16.dp))
+            NpcBubble(speakerLabel = npcLabel, et = step.npcEt, ru = step.npcRu, speaker = speaker)
+        }
 
         Spacer(Modifier.height(16.dp))
         Text(
@@ -112,6 +112,13 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            if (step.courierAsks) "🛵 Вы спрашиваете по-эстонски:" else "🛵 Ваш ответ по-эстонски:",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.secondary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 2.dp)
         )
         Spacer(Modifier.height(8.dp))
 
@@ -139,6 +146,12 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
         } else {
             val wasCorrect = step.choices[session.selected ?: 0].correct
             FeedbackBanner(wasCorrect)
+            // Ответная реплика персонажа — продолжение диалога
+            if (wasCorrect && step.npcReplyEt.isNotBlank()) {
+                Spacer(Modifier.height(10.dp))
+                NpcBubble(speakerLabel = "$npcLabel отвечает", et = step.npcReplyEt,
+                    ru = step.npcReplyRu, speaker = speaker)
+            }
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { vm.next() },
