@@ -124,6 +124,9 @@ object Content {
                 WordEntry("p_helistan", "Ma helistan teile", "Я вам позвоню", "Ma helistan teile kohe."),
                 WordEntry("p_ootan", "Ma ootan paar minutit", "Я подожду пару минут", "Hästi, ma ootan paar minutit."),
                 WordEntry("p_foto", "Teen tellimusest foto", "Сделаю фото заказа", "Jätan ukse taha ja teen foto."),
+                // Опоздание, офис, отмена
+                WordEntry("p_hilinen", "Vabandust hilinemise pärast", "Извините за опоздание", "Vabandust hilinemise pärast, olin ummikus."),
+                WordEntry("p_kabinet_q", "Mis kabinetis te olete?", "В каком вы кабинете?", "Selge! Mis kabinetis te olete?"),
             )
         ),
         Category(
@@ -136,6 +139,22 @@ object Content {
                 WordEntry("m_hind", "Hind", "Цена", "Mis on hind?"),
                 WordEntry("m_maksab", "See maksab", "Это стоит", "See maksab kümme eurot."),
                 WordEntry("m_eurot", "Eurot", "Евро", "Kümme eurot."),
+            )
+        ),
+        Category(
+            id = "foodq", titleEt = "Toidu kohta", titleRu = "О еде", emoji = "🍽",
+            words = listOf(
+                WordEntry("fq_vurtsikas", "Kas see on vürtsikas?", "Это острое?", "Kas see karri on vürtsikas?"),
+                WordEntry("fq_kuum", "Kas see on kuum?", "Это горячее?", "Supp on veel kuum."),
+                WordEntry("fq_kulm", "Kas see on külm?", "Это холодное?", "Jäätis on külm."),
+                WordEntry("fq_taimne", "Kas see on taimne?", "Это вегетарианское?", "Kas pitsa on taimne?"),
+                WordEntry("fq_sibul", "Ilma sibulata, palun", "Без лука, пожалуйста", "Burger ilma sibulata, palun."),
+                WordEntry("fq_pahklid", "Kas selles on pähkleid?", "Здесь есть орехи?", "Mul on allergia. Kas selles on pähkleid?"),
+                WordEntry("fq_kaste", "Kas tuleb kaste?", "Соус будет?", "Kas friikartulitega tuleb kaste?"),
+                WordEntry("fq_portsjon", "Üks portsjon", "Одна порция", "Üks portsjon nuudleid."),
+                WordEntry("fq_kaasa", "Kaasa, palun", "С собой, пожалуйста", "Kohv kaasa, palun."),
+                WordEntry("fq_otsas", "Toode on otsas", "Блюдо закончилось", "Vabandust, pelmeenid on otsas."),
+                WordEntry("fq_asendada", "Kas saab asendada?", "Можно заменить?", "Kas saab jooki asendada?"),
             )
         ),
     )

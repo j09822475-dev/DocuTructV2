@@ -29,6 +29,9 @@ enum class Scenario {
     CASH,            // оплата наличными
     WRONG_ADDRESS,   // неверный адрес — уточнить
     NOT_HOME,        // клиента нет дома
+    LATE,            // курьер опоздал (пробка) — извиниться
+    OFFICE,          // доставка в офис — кабинет/этаж
+    CANCELLED,       // клиент отменяет заказ
 }
 
 /** One answer option the courier can pick. */

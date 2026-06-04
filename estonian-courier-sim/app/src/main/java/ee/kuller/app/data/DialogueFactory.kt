@@ -325,6 +325,45 @@ object DialogueFactory {
             )
             add(client("Jah, jätke ukse taha, palun.", "Да, оставьте под дверью, пожалуйста."))
         }
+
+        Scenario.LATE -> buildList {
+            add(enRoute())
+            add(client("Tere! Kus mu toit on? Ma ootan juba ammu.", "Здравствуйте! Где моя еда? Я уже давно жду."))
+            add(
+                ask(
+                    "Вы немного опоздали (была пробка). Извинитесь:", true,
+                    correct = "Vabandust hilinemise pärast, olin ummikus." to "Извините за опоздание, я был в пробке.",
+                    wrong = listOf(
+                        "Teie toit on otsas." to "Ваша еда закончилась.",
+                        "Ma ei tule kohale." to "Я не приеду.",
+                    ),
+                    teach = listOf("p_hilinen", "g_vabandust")
+                )
+            )
+            add(client("Pole hullu! Peaasi, et olete kohal.", "Ничего страшного! Главное, что вы здесь."))
+        }
+
+        Scenario.OFFICE -> buildList {
+            add(enRoute())
+            add(client("Tere! Tooge palun kontorisse, teine korrus.", "Здравствуйте! Принесите, пожалуйста, в офис, второй этаж."))
+            add(
+                ask(
+                    "Уточните номер кабинета:", true,
+                    correct = "Selge! Mis kabinetis te olete?" to "Понятно! В каком вы кабинете?",
+                    wrong = listOf(
+                        "Kas teil on kass?" to "У вас есть кошка?",
+                        "Pööra paremale." to "Поверни направо.",
+                    ),
+                    teach = listOf("p_kabinet_q", "s_korrus")
+                )
+            )
+            add(client("Kabinet kakskümmend üks, otse vastuvõtu juures.", "Кабинет двадцать один, прямо у ресепшена."))
+        }
+
+        Scenario.CANCELLED -> buildList {
+            add(enRoute())
+            add(client("Vabandust! Ma pean tellimuse tühistama.", "Извините! Мне нужно отменить заказ."))
+        }
     }
 
     // ======================================================================
@@ -359,6 +398,21 @@ object DialogueFactory {
                 )
             )
             add(client("Suur aitäh! Nägemist.", "Большое спасибо! До свидания."))
+        }
+
+        Scenario.CANCELLED -> buildList {
+            add(
+                ask(
+                    "Заказ отменён. Ответьте вежливо и попрощайтесь:", false,
+                    correct = "Selge, pole probleemi. Head aega!" to "Понятно, без проблем. До свидания!",
+                    wrong = listOf(
+                        "Ei, te peate maksma!" to "Нет, вы должны заплатить!",
+                        "Söön teie toidu ära." to "Съем вашу еду.",
+                    ),
+                    teach = listOf("g_head_aega", "g_vabandust")
+                )
+            )
+            add(client("Aitäh mõistmise eest! Vabandust veel kord.", "Спасибо за понимание! Ещё раз извините."))
         }
 
         else -> buildList {
