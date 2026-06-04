@@ -127,6 +127,10 @@ object Content {
                 // Опоздание, офис, отмена
                 WordEntry("p_hilinen", "Vabandust hilinemise pärast", "Извините за опоздание", "Vabandust hilinemise pärast, olin ummikus."),
                 WordEntry("p_kabinet_q", "Mis kabinetis te olete?", "В каком вы кабинете?", "Selge! Mis kabinetis te olete?"),
+                // Поддержка и проблемы
+                WordEntry("p_tugi_q", "Pöördun klienditoe poole", "Обращусь в поддержку", "Vabandust! Pöördun kohe klienditoe poole."),
+                WordEntry("p_umber_q", "Kas saate ümber pakkida?", "Можете переупаковать?", "Pakend lekib. Kas saate ümber pakkida?"),
+                WordEntry("p_katki", "Mu sõiduk on katki", "Мой транспорт сломан", "Mu sõiduk on katki, vajan abi."),
             )
         ),
         Category(

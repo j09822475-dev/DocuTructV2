@@ -3,6 +3,7 @@ package ee.kuller.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,36 +46,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ee.kuller.app.ChatMsg
 import ee.kuller.app.GameViewModel
+import ee.kuller.app.threadLabel
 import ee.kuller.app.ui.SpeakButton
 
 @Composable
 fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     val session = vm.session
+    if (session == null) { onExit(); return }
+    if (session.finished && vm.lastResult != null) { ResultView(vm, onExit); return }
 
-    if (session == null) {
-        onExit(); return
-    }
-    if (session.finished && vm.lastResult != null) {
-        ResultView(vm, onExit)
-        return
-    }
-
+    val messages = session.messages(session.activeThread)
+    val showTyping = session.typing == session.activeThread
     val listState = rememberLazyListState()
-    // Прокручиваем в самый низ при: новом сообщении, индикаторе «печатает»,
-    // появлении вариантов ответа (awaiting) и кнопки завершения (atEnd) —
-    // иначе выросшая нижняя панель закрывает последние сообщения.
-    LaunchedEffect(session.transcript.size, session.typing, session.awaiting, session.atEnd) {
-        val typingExtra = if (session.typing != null) 1 else 0
-        val lastIndex = session.transcript.size + 1 + typingExtra
-        if (session.transcript.isNotEmpty() || session.typing != null) {
-            // два прохода: после раскрытия панели меняется высота области чата
-            listState.animateScrollToItem(lastIndex)
-            listState.animateScrollToItem(lastIndex)
+    LaunchedEffect(messages.size, showTyping, session.awaiting, session.atEnd, session.activeThread) {
+        val extra = if (showTyping) 1 else 0
+        if (messages.isNotEmpty() || showTyping) {
+            listState.animateScrollToItem(messages.size + 1 + extra)
+            listState.animateScrollToItem(messages.size + 1 + extra)
         }
     }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // ---- Шапка с прогрессом ----
+        // Шапка
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -83,7 +78,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(
                     "${session.order.restaurant} → ${session.order.customer}",
-                    fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold, fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
@@ -91,51 +86,68 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
             }
-            Text(
-                "${session.correctCount}/${session.totalAsks}",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
         }
         LinearProgressIndicator(
             progress = { session.progress },
-            modifier = Modifier.fillMaxWidth().height(6.dp)
+            modifier = Modifier.fillMaxWidth().height(5.dp)
         )
 
-        // ---- Лента чата ----
+        // Вкладки-чаты
+        if (session.tabs.size > 1) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                session.tabs.forEach { t ->
+                    val unread = t in session.unread
+                    FilterChip(
+                        selected = t == session.activeThread,
+                        onClick = { vm.setActiveThread(t) },
+                        label = { Text(threadLabel(t) + if (unread) "  🔴" else "") },
+                        colors = FilterChipDefaults.filterChipColors()
+                    )
+                }
+            }
+        }
+
+        // Лента активного чата
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(Modifier.height(8.dp)) }
-            itemsIndexed(session.transcript) { _, msg ->
+            itemsIndexed(messages) { _, msg ->
                 ChatBubble(msg = msg, onSpeak = { vm.speak(msg.et) })
             }
-            session.typing?.let { label ->
-                item { TypingBubble(label) }
-            }
+            if (showTyping) item { TypingBubble(threadLabel(session.activeThread)) }
             item { Spacer(Modifier.height(4.dp)) }
         }
 
-        // ---- Нижняя панель ----
+        // Нижняя панель
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
             Column(
-                Modifier.fillMaxWidth()
-                    .heightIn(max = 340.dp)   // не даём панели «съесть» ленту чата
-                    .padding(12.dp)
+                Modifier.fillMaxWidth().heightIn(max = 340.dp).padding(12.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 val ask = session.currentAsk
                 when {
-                    session.awaiting && ask != null -> {
+                    session.atEnd -> {
+                        Button(
+                            onClick = { vm.finishDelivery() },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) { Text("Завершить доставку 🏁", fontWeight = FontWeight.Bold) }
+                    }
+                    session.awaiting && ask != null && ask.thread == session.activeThread -> {
                         Text(
                             ask.promptRu,
                             fontWeight = FontWeight.Bold, fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            if (ask.courierAsks) "🛵 Выберите, что спросить:" else "🛵 Выберите ответ:",
+                            if (ask.courier) "🛵 Выберите, что сказать:" else "🛵 Выберите ответ:",
                             fontSize = 12.sp, fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
@@ -166,12 +178,18 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                             Text("  Отправить", fontWeight = FontWeight.Bold)
                         }
                     }
-                    session.atEnd -> {
+                    session.awaiting && ask != null -> {
+                        // Ответить нужно в другом чате
+                        Text(
+                            "Нужно ответить в чате «${threadLabel(ask.thread)}»",
+                            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                         Button(
-                            onClick = { vm.finishDelivery() },
+                            onClick = { vm.setActiveThread(ask.thread) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
-                        ) { Text("Завершить доставку 🏁", fontWeight = FontWeight.Bold) }
+                        ) { Text("Открыть «${threadLabel(ask.thread)}»", fontWeight = FontWeight.Bold) }
                     }
                     else -> {
                         Text(
@@ -254,12 +272,8 @@ private fun TypingBubble(label: String) {
 
 @Composable
 private fun AnswerOption(
-    et: String,
-    ru: String,
-    selected: Boolean,
-    wrong: Boolean,
-    onClick: () -> Unit,
-    onSpeak: () -> Unit,
+    et: String, ru: String, selected: Boolean, wrong: Boolean,
+    onClick: () -> Unit, onSpeak: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val border: Color = when {
@@ -283,10 +297,7 @@ private fun AnswerOption(
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    et, fontWeight = FontWeight.Bold, fontSize = 15.sp,
-                    color = if (wrong) scheme.error else scheme.onSurface
-                )
+                Text(et, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = if (wrong) scheme.error else scheme.onSurface)
                 Text(ru, fontSize = 12.sp, color = scheme.onSurface.copy(alpha = 0.65f))
             }
             SpeakButton(onClick = onSpeak)
@@ -298,11 +309,8 @@ private fun AnswerOption(
 private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
     val r = vm.lastResult ?: return
     Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(24.dp))
@@ -314,10 +322,8 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
         )
         Text(
             "${r.order.restaurant} → ${r.order.customer}",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
-
         Spacer(Modifier.height(20.dp))
         Card(
             Modifier.fillMaxWidth(),
@@ -325,17 +331,15 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ResultRow("Реплик в диалоге", "${r.steps}")
+                ResultRow("Верных ответов", "${r.steps}")
                 ResultRow("Ошибок", if (r.mistakes == 0) "нет 🎯" else "${r.mistakes}")
                 ResultRow("Оплата доставки", "%.2f €".format(r.order.payout))
                 ResultRow("Чаевые за качество", if (r.tip > 0) "+${r.tipStr}" else "—")
                 ResultRow("Опыт", "+${r.xp} XP")
-                Box(Modifier.fillMaxWidth().height(1.dp)
-                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)))
                 ResultRow("Итого заработано", r.earnedStr, highlight = true)
             }
         }
-
         Spacer(Modifier.height(24.dp))
         Button(
             onClick = { vm.closeResult(); onExit() },
@@ -351,8 +355,7 @@ private fun ResultRow(label: String, value: String, highlight: Boolean = false) 
         Text(label, fontSize = if (highlight) 16.sp else 14.sp,
             fontWeight = if (highlight) FontWeight.Bold else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface)
-        Text(value, fontSize = if (highlight) 18.sp else 14.sp,
-            fontWeight = FontWeight.Bold,
+        Text(value, fontSize = if (highlight) 18.sp else 14.sp, fontWeight = FontWeight.Bold,
             color = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
     }
 }
