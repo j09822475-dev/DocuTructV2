@@ -7,6 +7,9 @@ on:
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,9 +34,25 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/kuller.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: kuller-debug-apk
-          path: estonian-courier-sim/app/build/outputs/apk/debug/app-debug.apk
+          path: estonian-courier-sim/app/build/outputs/apk/debug/kuller.apk
           if-no-files-found: error
+
+      - name: Publish APK to a public Release
+        if: github.ref == 'refs/heads/claude/estonian-learning-simulator-eXkAJ'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kuller-latest
+          name: "Kuller — последняя сборка APK"
+          body: |
+            Скачайте **kuller.apk** ниже и установите на Android-телефон
+            (разрешите установку из неизвестных источников).
+            Собрано из коммита ${{ github.sha }}.
+          files: estonian-courier-sim/app/build/outputs/apk/debug/kuller.apk
+          make_latest: true
