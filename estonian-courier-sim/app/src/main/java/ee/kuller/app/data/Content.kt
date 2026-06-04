@@ -139,6 +139,21 @@ object Content {
         teachWordIds = listOf("g_tere", "p_valmis_q")
     )
 
+    /** Курьер передаёт заказ клиенту и желает приятного аппетита; клиент благодарит. */
+    private fun handoverStep() = DialogueStep(
+        speaker = Speaker.KLIENT,
+        npcEt = "", npcRu = "",
+        questionRu = "Вы встретились с клиентом. Передайте заказ и пожелайте приятного аппетита:",
+        choices = listOf(
+            Choice("Palun, siin on teie tellimus. Head isu!", "Пожалуйста, вот ваш заказ. Приятного аппетита!", true),
+            Choice("Vabandust, ma sõin selle ära.", "Извините, я это съел.", false),
+            Choice("Ei, see on minu tellimus.", "Нет, это мой заказ.", false),
+        ),
+        npcReplyEt = "Suur aitäh! Ilusat päeva, nägemist!",
+        npcReplyRu = "Большое спасибо! Хорошего дня, до свидания!",
+        teachWordIds = listOf("g_palun", "p_head_isu", "g_nagemist")
+    )
+
     val orders: List<Order> = listOf(
         Order(
             id = "o1", restaurant = "Pizza Grande", customer = "Maarja",
@@ -198,10 +213,11 @@ object Content {
                         Choice("Head isu!", "Приятного аппетита!", false),
                         Choice("Üks pitsa, palun.", "Одну пиццу, пожалуйста.", false),
                     ),
-                    npcReplyEt = "Olen maja ees, punase jopega. Aitäh, head isu!",
-                    npcReplyRu = "Я перед домом, в красной куртке. Спасибо, приятного аппетита!",
-                    teachWordIds = listOf("p_kus_q", "s_maja", "p_head_isu")
+                    npcReplyEt = "Olen maja ees, punase jopega. Näen sind juba!",
+                    npcReplyRu = "Я перед домом, в красной куртке. Уже тебя вижу!",
+                    teachWordIds = listOf("p_kus_q", "s_maja")
                 ),
+                handoverStep(),
             )
         ),
         Order(
@@ -261,10 +277,11 @@ object Content {
                         Choice("Kas pitsa on kuum?", "Пицца горячая?", false),
                         Choice("Pööra vasakule.", "Поверни налево.", false),
                     ),
-                    npcReplyEt = "Oi, ma tulen ise alla. Üks minut! Aitäh, head isu!",
-                    npcReplyRu = "Ой, я сам спущусь. Одну минуту! Спасибо, приятного аппетита!",
-                    teachWordIds = listOf("p_alla_voi_q", "p_head_isu")
+                    npcReplyEt = "Oi, ma tulen ise alla. Üks minut! Aitäh!",
+                    npcReplyRu = "Ой, я сам спущусь. Одну минуту! Спасибо!",
+                    teachWordIds = listOf("p_alla_voi_q", "g_aitah")
                 ),
+                handoverStep(),
             )
         ),
         Order(
@@ -314,10 +331,11 @@ object Content {
                         Choice("Kas teil on koer?", "У вас есть собака?", false),
                         Choice("Sõida otse.", "Езжай прямо.", false),
                     ),
-                    npcReplyEt = "Korter number üheksa. Aitäh, head isu!",
-                    npcReplyRu = "Квартира номер девять. Спасибо, приятного аппетита!",
+                    npcReplyEt = "Korter number üheksa. Olen kohe ukse taga.",
+                    npcReplyRu = "Квартира номер девять. Я буду прямо за дверью.",
                     teachWordIds = listOf("p_korter_q", "n_9", "s_korter")
                 ),
+                handoverStep(),
             )
         ),
         Order(
