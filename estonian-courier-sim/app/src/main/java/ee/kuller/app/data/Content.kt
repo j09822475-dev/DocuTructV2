@@ -137,8 +137,9 @@ object Content {
     fun word(id: String): WordEntry? = allWords.firstOrNull { it.id == id }
 
     // ----------------------------------------------------------------------
-    // ЗАКАЗЫ — диалоги в формате чата (последовательность реплик-ходов).
-    // Реплики показываются по одной и озвучиваются по очереди.
+    // ЗАКАЗЫ — чат со СТРОГИМ чередованием: реплика NPC ↔ ответ курьера.
+    // После каждого ответа появляется ровно ОДНА реплика собеседника.
+    // Служебные подсказки (навигатор и т.п.) вынесены в текст задания.
     // ----------------------------------------------------------------------
 
     private fun say(speaker: Speaker, et: String, ru: String): Turn = Turn.Say(speaker, et, ru)
@@ -151,11 +152,9 @@ object Content {
     ): Turn = Turn.Ask(promptRu, courierAsks, choices, teach)
 
     /**
-     * Получение заказа в ресторане в логичном порядке:
-     * 1) курьер спрашивает «готов ли заказ?»
-     * 2) ресторан называет заказ и просит подтвердить
-     * 3) курьер подтверждает
-     * 4) ресторан: «почти готово, минутку» → «готово, забирайте»
+     * Получение заказа в ресторане (логичный порядок):
+     * [Ask] курьер «готов?» → [Say] ресторан называет заказ → [Ask] курьер подтверждает
+     * → [Say] ресторан «почти готово, минутку… держите». Заканчивается репликой ресторана.
      */
     private fun pickup(
         orderEt: String, orderRu: String,
@@ -184,14 +183,22 @@ object Content {
             teach
         ),
         say(Speaker.RESTORAN,
-            "Tubli! Peaaegu valmis, oota üks minut.",
-            "Отлично! Почти готово, подожди минутку."),
-        say(Speaker.RESTORAN,
-            "Nüüd on valmis. Palun, head teed!",
-            "Теперь готово. Пожалуйста, счастливого пути!"),
+            "Tubli! Peaaegu valmis, oota üks minut… Nüüd valmis. Palun, head teed!",
+            "Отлично! Почти готово, подожди минутку… Готово. Пожалуйста, счастливого пути!"),
     )
 
-    /** Передача заказа клиенту лицом к лицу. */
+    /** Курьер пишет клиенту, что забрал заказ и уже едет (мостик после ресторана). */
+    private fun enRoute(): Turn = ask(
+        "Напишите клиенту, что забрали заказ и уже едете:", true,
+        listOf(
+            Choice("Tere! Võtsin tellimuse, olen kohe kohal.", "Здравствуйте! Забрал заказ, скоро буду.", true),
+            Choice("Ma ei leidnud restorani.", "Я не нашёл ресторан.", false),
+            Choice("Söön teie toidu ära.", "Съем вашу еду.", false),
+        ),
+        listOf("p_kohal", "g_tere")
+    )
+
+    /** Передача заказа клиенту лицом к лицу: [Ask] курьер отдаёт → [Say] клиент благодарит. */
     private fun handover(): List<Turn> = listOf(
         ask(
             "Вы встретились с клиентом. Передайте заказ и пожелайте приятного аппетита:", false,
@@ -208,7 +215,7 @@ object Content {
     )
 
     val orders: List<Order> = listOf(
-        // ---- 1. Пицца, оплата в приложении, встреча у дома ----
+        // ---- 1. Пицца, навигация, встреча у дома ----
         Order(
             id = "o1", restaurant = "Pizza Grande", customer = "Maarja",
             address = "Pärnu maantee 12, korter 5", distanceKm = 2.3, payout = 4.20,
@@ -220,14 +227,11 @@ object Content {
                     "Jah, üks pitsa ja kola. Aitäh!", "Да, одна пицца и кола. Спасибо!",
                     listOf("f_pitsa", "g_jah", "g_aitah")
                 ))
-                add(say(Speaker.NARRATOR,
-                    "Navigaator: ristmikul pööra paremale, siis sõida otse.",
-                    "Навигатор: на перекрёстке поверни направо, потом прямо."))
-                add(ask("Куда повернуть на перекрёстке?", false, listOf(
+                add(ask("🧭 Навигатор: на перекрёстке поверни направо. Куда повернуть?", false, listOf(
                     Choice("Paremale.", "Направо.", true),
                     Choice("Vasakule.", "Налево.", false),
                     Choice("Tagasi.", "Назад.", false),
-                ), listOf("s_paremale", "s_ristmik", "s_otse")))
+                ), listOf("s_paremale", "s_ristmik")))
                 add(say(Speaker.KLIENT, "Halloo! Kus mu toit on?", "Алло! Где моя еда?"))
                 add(ask("Ответьте клиенту, что вы на месте:", false, listOf(
                     Choice("Tere, olen kohal, maja ees.", "Здравствуйте, я на месте, перед домом.", true),
@@ -250,6 +254,7 @@ object Content {
                     "Jah, kaks komplekti ja tee. Aitäh!", "Да, два сета и чай. Спасибо!",
                     listOf("n_2", "d_tee", "g_jah")
                 ))
+                add(enRoute())
                 add(say(Speaker.KLIENT,
                     "Tere! Ma olen kolmandal korrusel. Lift on katki.",
                     "Здравствуйте! Я на третьем этаже. Лифт сломан."))
@@ -274,18 +279,14 @@ object Content {
                     "Jah, kolm burgerit ja friikartulid.", "Да, три бургера и картошка фри.",
                     listOf("f_burger", "f_kana", "f_friikad", "n_3")
                 ))
-                add(say(Speaker.KLIENT, "Tere! Ma ootan kodus.", "Здравствуйте! Я жду дома."))
-                add(ask("Спросите у клиента, на каком он этаже:", true, listOf(
-                    Choice("Millisel korrusel te olete?", "На каком вы этаже?", true),
+                add(enRoute())
+                add(say(Speaker.KLIENT, "Tere! Ma ootan kodus, neljandal korrusel.", "Здравствуйте! Я жду дома, на четвёртом этаже."))
+                add(ask("Уточните номер квартиры:", true, listOf(
+                    Choice("Mis on teie korterinumber?", "Какой у вас номер квартиры?", true),
                     Choice("Mis su lemmikvärv on?", "Какой твой любимый цвет?", false),
                     Choice("Kas sajab vihma?", "Идёт дождь?", false),
-                ), listOf("p_korrus", "s_korrus")))
-                add(say(Speaker.KLIENT, "Neljandal korrusel, korter üheksa.", "На четвёртом этаже, квартира девять."))
-                add(ask("Подтвердите, что поняли адрес:", false, listOf(
-                    Choice("Selge, neljas korrus, korter üheksa.", "Понятно, четвёртый этаж, квартира девять.", true),
-                    Choice("Vabandust, ma ei saa aru.", "Извините, я не понимаю.", false),
-                    Choice("Üks kohv, palun.", "Один кофе, пожалуйста.", false),
-                ), listOf("n_4", "n_9", "s_korter")))
+                ), listOf("p_korter_q", "s_korrus", "n_4")))
+                add(say(Speaker.KLIENT, "Korter number üheksa.", "Квартира номер девять."))
                 addAll(handover())
             }
         ),
@@ -309,10 +310,8 @@ object Content {
                     Choice("Ei, see on vale.", "Нет, это неверно.", false),
                     Choice("Üks õlu, palun.", "Одно пиво, пожалуйста.", false),
                 ), listOf("d_kohv", "d_piim", "f_sai", "f_juust", "n_2")))
-                add(say(Speaker.RESTORAN, "Suurepärane! Üks minut ja valmis.", "Прекрасно! Минута — и готово."))
-                add(say(Speaker.RESTORAN, "Palun, head teed!", "Пожалуйста, счастливого пути!"))
-                add(say(Speaker.NARRATOR, "Navigaator: sõida otse, maja on vasakul.", "Навигатор: езжай прямо, дом слева."))
-                add(ask("Где находится дом?", false, listOf(
+                add(say(Speaker.RESTORAN, "Suurepärane! Üks minut ja valmis. Palun, head teed!", "Прекрасно! Минута — и готово. Пожалуйста, счастливого пути!"))
+                add(ask("🧭 Навигатор: езжай прямо, дом слева. Где дом?", false, listOf(
                     Choice("Vasakul.", "Слева.", true),
                     Choice("Paremal.", "Справа.", false),
                     Choice("Tagasi.", "Сзади.", false),
@@ -339,6 +338,7 @@ object Content {
                     "Jah, supp, leib ja vesi.", "Да, суп, хлеб и вода.",
                     listOf("f_supp", "f_leib", "d_vesi")
                 ))
+                add(enRoute())
                 add(say(Speaker.KLIENT, "Tere! Olen seitsmendal korrusel.", "Здравствуйте! Я на седьмом этаже."))
                 add(ask("Уточните номер квартиры:", true, listOf(
                     Choice("Mis on teie korterinumber?", "Какой у вас номер квартиры?", true),
@@ -367,22 +367,15 @@ object Content {
                     "Jah, kala, salat ja mahl.", "Да, рыба, салат и сок.",
                     listOf("f_kala", "f_salat", "d_mahl")
                 ))
+                add(enRoute())
                 add(say(Speaker.KLIENT,
-                    "Tere! Jätke palun toit ukse taha, korter kaks.",
-                    "Здравствуйте! Оставьте, пожалуйста, еду под дверью, квартира два."))
-                add(ask("Подтвердите, что оставите под дверью:", false, listOf(
-                    Choice("Selge, jätan ukse taha.", "Понятно, оставлю под дверью.", true),
-                    Choice("Ei, ma tulen sisse.", "Нет, я зайду внутрь.", false),
-                    Choice("Pööra paremale.", "Поверни направо.", false),
-                ), listOf("p_ukse_taha", "n_2", "s_uks")))
-                add(say(Speaker.KLIENT,
-                    "Värav on lukus, kood on viis-kuus-seitse-kaheksa.",
-                    "Ворота заперты, код пять-шесть-семь-восемь."))
-                add(ask("Подтвердите код и что сделаете фото:", false, listOf(
+                    "Tere! Jätke palun toit ukse taha, korter kaks. Värava kood on viis-kuus-seitse-kaheksa.",
+                    "Здравствуйте! Оставьте, пожалуйста, еду под дверью, квартира два. Код ворот пять-шесть-семь-восемь."))
+                add(ask("Подтвердите: оставите под дверью и сделаете фото:", false, listOf(
                     Choice("Selge! Jätan ukse taha ja teen foto.", "Понятно! Оставлю под дверью и сделаю фото.", true),
                     Choice("Ei, ma võtan toidu endale.", "Нет, я заберу еду себе.", false),
-                    Choice("Mis kell on?", "Который час?", false),
-                ), listOf("p_foto", "n_5", "n_6", "n_7", "n_8")))
+                    Choice("Pööra paremale.", "Поверни направо.", false),
+                ), listOf("p_ukse_taha", "p_foto", "n_5", "n_6", "n_7", "n_8")))
                 add(say(Speaker.KLIENT, "Suur aitäh! Olete väga kiire.", "Большое спасибо! Вы очень быстрый."))
             }
         ),
@@ -398,10 +391,7 @@ object Content {
                     "Jah, üks suur pitsa.", "Да, одна большая пицца.",
                     listOf("f_pitsa", "n_1")
                 ))
-                add(say(Speaker.RESTORAN,
-                    "Pane tähele: klient maksab sularahas, kümme eurot.",
-                    "Обрати внимание: клиент платит наличными, десять евро."))
-                add(ask("Сколько клиент должен заплатить?", false, listOf(
+                add(ask("🏪 Ресторан: клиент платит наличными, 10 €. Сколько взять с клиента?", false, listOf(
                     Choice("Kümme eurot.", "Десять евро.", true),
                     Choice("Kaks eurot.", "Два евро.", false),
                     Choice("Sada eurot.", "Сто евро.", false),
@@ -433,10 +423,7 @@ object Content {
                     "Jah, kaks karrit ja nan.", "Да, два карри и нан.",
                     listOf("n_2", "f_leib")
                 ))
-                add(say(Speaker.NARRATOR,
-                    "Navigaator viib vale kohta — seda maja numbrit pole.",
-                    "Навигатор привёл не туда — такого номера дома нет."))
-                add(ask("Что случилось? Выберите верную фразу:", false, listOf(
+                add(ask("🧭 Навигатор привёл не туда — такого номера дома нет. Что случилось?", false, listOf(
                     Choice("Aadress on vale.", "Адрес неверный.", true),
                     Choice("Toit on valmis.", "Еда готова.", false),
                     Choice("Lift on katki.", "Лифт сломан.", false),
@@ -473,10 +460,7 @@ object Content {
                     "Jah, komplekt ja supp.", "Да, сет и суп.",
                     listOf("f_supp", "n_1")
                 ))
-                add(say(Speaker.NARRATOR,
-                    "Olete kohal, aga klient ei vasta telefonile.",
-                    "Вы на месте, но клиент не отвечает на телефон."))
-                add(ask("Клиент не отвечает. Что сделать?", false, listOf(
+                add(ask("Вы на месте, но клиент не отвечает на телефон. Что сделать?", false, listOf(
                     Choice("Ma helistan teile veel kord.", "Я позвоню вам ещё раз.", true),
                     Choice("Söön toidu ise ära.", "Съем еду сам.", false),
                     Choice("Sõidan kohe koju.", "Сразу поеду домой.", false),

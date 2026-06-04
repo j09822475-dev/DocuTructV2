@@ -41,6 +41,7 @@ data class OrderSession(
     val transcript: List<ChatMsg> = emptyList(),
     val awaiting: Boolean = false,        // ждём ответа курьера на текущий Ask
     val atEnd: Boolean = false,           // диалог завершён — показать «Завершить»
+    val typing: String? = null,           // подпись «… печатает» (пока готовится реплика NPC)
     val selected: Int? = null,
     val wrongSelected: Set<Int> = emptySet(),
     val correctCount: Int = 0,
@@ -88,21 +89,33 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         revealUntilAsk()
     }
 
-    /** Показывает реплики персонажей по одной (с озвучкой), пока не дойдём до хода курьера. */
+    /**
+     * Показывает реплики персонажей ПО ОДНОЙ (сначала индикатор «печатает…»,
+     * затем сама реплика с озвучкой), пока не дойдём до хода курьера.
+     */
     private fun revealUntilAsk() {
         revealJob?.cancel()
         revealJob = viewModelScope.launch {
             while (true) {
                 val s = session ?: return@launch
                 when (val turn = s.order.turns.getOrNull(s.turnIndex)) {
-                    null -> { session = s.copy(atEnd = true); return@launch }
+                    null -> { session = s.copy(atEnd = true, typing = null); return@launch }
+                    is Turn.Ask -> { session = s.copy(awaiting = true, typing = null); return@launch }
                     is Turn.Say -> {
+                        // 1) показываем «… печатает»
+                        session = s.copy(typing = npcLabel(turn.speaker))
+                        delay(1000)
+                        // 2) показываем саму реплику и озвучиваем
+                        val cur = session ?: return@launch
                         val msg = ChatMsg(false, turn.et, turn.ru, npcLabel(turn.speaker))
-                        session = s.copy(transcript = s.transcript + msg, turnIndex = s.turnIndex + 1)
+                        session = cur.copy(
+                            transcript = cur.transcript + msg,
+                            turnIndex = cur.turnIndex + 1,
+                            typing = null
+                        )
                         tts.speak(turn.et, flush = false)
-                        delay(1300)
+                        delay(350)
                     }
-                    is Turn.Ask -> { session = s.copy(awaiting = true); return@launch }
                 }
             }
         }
@@ -217,6 +230,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun ratingStr(): String = "%.2f".format(state.rating)
 
     override fun onCleared() {
+        super.onCleared()
         revealJob?.cancel()
         tts.shutdown()
     }

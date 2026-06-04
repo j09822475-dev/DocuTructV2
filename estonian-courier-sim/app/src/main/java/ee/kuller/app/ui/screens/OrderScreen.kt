@@ -57,9 +57,11 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     }
 
     val listState = rememberLazyListState()
-    LaunchedEffect(session.transcript.size) {
-        if (session.transcript.isNotEmpty()) {
-            listState.animateScrollToItem(session.transcript.size + 1)
+    LaunchedEffect(session.transcript.size, session.typing) {
+        val typingExtra = if (session.typing != null) 1 else 0
+        val lastIndex = session.transcript.size + 1 + typingExtra
+        if (session.transcript.isNotEmpty() || session.typing != null) {
+            listState.animateScrollToItem(lastIndex)
         }
     }
 
@@ -103,6 +105,9 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             item { Spacer(Modifier.height(8.dp)) }
             itemsIndexed(session.transcript) { _, msg ->
                 ChatBubble(msg = msg, onSpeak = { vm.speak(msg.et) })
+            }
+            session.typing?.let { label ->
+                item { TypingBubble(label) }
             }
             item { Spacer(Modifier.height(4.dp)) }
         }
@@ -211,6 +216,29 @@ private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
                     SpeakButton(onClick = onSpeak, tint = if (courier) scheme.onPrimary else scheme.primary)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TypingBubble(label: String) {
+    val scheme = MaterialTheme.colorScheme
+    Column(horizontalAlignment = Alignment.Start) {
+        Text(
+            label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            color = scheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp)
+        )
+        Surface(
+            color = scheme.surfaceVariant,
+            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp)
+        ) {
+            Text(
+                "печатает •••",
+                fontSize = 14.sp,
+                color = scheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+            )
         }
     }
 }
