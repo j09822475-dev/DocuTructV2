@@ -13,11 +13,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -25,19 +29,20 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ee.kuller.app.ChatMsg
 import ee.kuller.app.GameViewModel
 import ee.kuller.app.ui.SpeakButton
-import ee.kuller.app.util.Speaker
 import ee.kuller.app.util.rememberSpeaker
 
 @Composable
@@ -48,221 +53,213 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     if (session == null) {
         onExit(); return
     }
-
-    val result = vm.lastResult
-    if (session.finished && result != null) {
+    if (session.finished && vm.lastResult != null) {
         ResultView(vm, onExit)
         return
     }
 
+    val listState = rememberLazyListState()
+    // Автопрокрутка вниз и озвучка нового входящего сообщения
+    LaunchedEffect(session.transcript.size) {
+        val msgs = session.transcript
+        if (msgs.isNotEmpty()) {
+            // +1 учитывает ведущий Spacer в ленте; индекс зажимается до максимума
+            listState.animateScrollToItem(msgs.size + 1)
+            val last = msgs.last()
+            if (!last.fromCourier) speaker.speak(last.et)
+        }
+    }
+
     val step = session.step
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        // Шапка с прогрессом доставки
-        Row(verticalAlignment = Alignment.CenterVertically) {
+
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // ---- Шапка с прогрессом ----
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = { vm.cancelOrder(); onExit() }) {
-                Icon(Icons.Filled.Close, null, Modifier.size(18.dp))
-                Text(" Отмена")
+                Icon(Icons.Filled.Close, null, Modifier.size(18.dp)); Text(" Отмена")
             }
-            Spacer(Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "${session.order.restaurant} → ${session.order.customer}",
+                    fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    session.order.address, fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                )
+            }
             Text(
-                "Шаг ${session.stepIndex + 1}/${session.order.steps.size}",
+                "${session.stepIndex + 1}/${session.order.steps.size}",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
         }
         LinearProgressIndicator(
             progress = { session.progress },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+            modifier = Modifier.fillMaxWidth().height(6.dp)
         )
 
-        Spacer(Modifier.height(12.dp))
-        Text(
-            "📍 ${session.order.restaurant} → ${session.order.customer}",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            session.order.address,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-        )
-
-        val npcLabel = when (step.speaker.name) {
-            "RESTORAN" -> "🏪 Ресторан"
-            "KLIENT" -> "🙋 Клиент"
-            else -> "🧭 Навигатор"
-        }
-
-        // Реплика персонажа (если он начинает разговор)
-        if (step.npcEt.isNotBlank()) {
-            Spacer(Modifier.height(16.dp))
-            NpcBubble(speakerLabel = npcLabel, et = step.npcEt, ru = step.npcRu, speaker = speaker)
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Text(
-            step.questionRu,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            if (step.courierAsks) "🛵 Вы спрашиваете по-эстонски:" else "🛵 Ваш ответ по-эстонски:",
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.secondary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-
-        step.choices.forEachIndexed { i, choice ->
-            ChoiceRow(
-                et = choice.et,
-                ru = choice.ru,
-                index = i,
-                selected = session.selected == i,
-                locked = session.locked,
-                correct = choice.correct,
-                onClick = { vm.select(i) },
-                onSpeak = { speaker.speak(choice.et) }
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-        if (!session.locked) {
-            Button(
-                onClick = { vm.confirm() },
-                enabled = session.selected != null,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
-            ) { Text("Проверить", fontWeight = FontWeight.Bold) }
-        } else {
-            val wasCorrect = step.choices[session.selected ?: 0].correct
-            FeedbackBanner(wasCorrect)
-            // Ответная реплика персонажа — продолжение диалога
-            if (wasCorrect && step.npcReplyEt.isNotBlank()) {
-                Spacer(Modifier.height(10.dp))
-                NpcBubble(speakerLabel = "$npcLabel отвечает", et = step.npcReplyEt,
-                    ru = step.npcReplyRu, speaker = speaker)
+        // ---- Лента чата ----
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item { Spacer(Modifier.height(8.dp)) }
+            itemsIndexed(session.transcript) { _, msg ->
+                ChatBubble(msg = msg, onSpeak = { speaker.speak(msg.et) })
             }
-            Spacer(Modifier.height(10.dp))
-            Button(
-                onClick = { vm.next() },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp)
+            item { Spacer(Modifier.height(4.dp)) }
+        }
+
+        // ---- Нижняя панель: варианты ответа или кнопка «Дальше» ----
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(12.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    if (session.isLastStep) "Завершить доставку 🏁" else "Дальше →",
-                    fontWeight = FontWeight.Bold
-                )
+                if (!session.answered) {
+                    Text(
+                        step.questionRu,
+                        fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        if (step.courierAsks) "🛵 Выберите, что спросить:" else "🛵 Выберите ответ:",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                    )
+                    step.choices.forEachIndexed { i, choice ->
+                        AnswerOption(
+                            et = choice.et, ru = choice.ru,
+                            selected = session.selected == i,
+                            wrong = i in session.wrongSelected,
+                            onClick = { vm.select(i) },
+                            onSpeak = { speaker.speak(choice.et) }
+                        )
+                    }
+                    if (session.wrongSelected.isNotEmpty()) {
+                        Text(
+                            "❌ Vale — proovi uuesti. (Неверно — попробуйте ещё раз.)",
+                            fontSize = 12.sp, color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    Button(
+                        onClick = { vm.confirm() },
+                        enabled = session.selected != null,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
+                        Text("  Отправить", fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Button(
+                        onClick = { vm.next() },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(
+                            if (session.isLastStep) "Завершить доставку 🏁" else "Дальше →",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
-        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun NpcBubble(speakerLabel: String, et: String, ru: String, speaker: Speaker) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val courier = msg.fromCourier
+    val bubbleColor = if (courier) scheme.primary else scheme.surfaceVariant
+    val onBubble = if (courier) scheme.onPrimary else scheme.onSurface
+    val shape = RoundedCornerShape(
+        topStart = 18.dp, topEnd = 18.dp,
+        bottomStart = if (courier) 18.dp else 4.dp,
+        bottomEnd = if (courier) 4.dp else 18.dp
+    )
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = if (courier) Arrangement.End else Arrangement.Start
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(speakerLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
-            Spacer(Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    et,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 19.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.weight(1f)
-                )
-                SpeakButton(onClick = { speaker.speak(et) })
+        Column(
+            horizontalAlignment = if (courier) Alignment.End else Alignment.Start,
+            modifier = Modifier.widthIn(max = 290.dp)
+        ) {
+            Text(
+                msg.label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                color = scheme.onBackground.copy(alpha = 0.6f),
+                modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp)
+            )
+            Surface(color = bubbleColor, shape = shape) {
+                Row(
+                    Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.widthIn(max = 230.dp)) {
+                        Text(msg.et, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = onBubble)
+                        if (msg.ru.isNotBlank()) {
+                            Text(msg.ru, fontSize = 13.sp, color = onBubble.copy(alpha = 0.8f))
+                        }
+                    }
+                    SpeakButton(onClick = onSpeak, tint = if (courier) scheme.onPrimary else scheme.primary)
+                }
             }
-            Text(ru, fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f))
         }
     }
 }
 
 @Composable
-private fun ChoiceRow(
+private fun AnswerOption(
     et: String,
     ru: String,
-    index: Int,
     selected: Boolean,
-    locked: Boolean,
-    correct: Boolean,
+    wrong: Boolean,
     onClick: () -> Unit,
     onSpeak: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val border: Color = when {
-        locked && correct -> scheme.primary
-        locked && selected && !correct -> scheme.error
+        wrong -> scheme.error
         selected -> scheme.primary
         else -> scheme.onSurface.copy(alpha = 0.12f)
     }
     val bg: Color = when {
-        locked && correct -> scheme.primary.copy(alpha = 0.10f)
-        locked && selected && !correct -> scheme.error.copy(alpha = 0.10f)
-        selected -> scheme.primary.copy(alpha = 0.06f)
+        wrong -> scheme.error.copy(alpha = 0.08f)
+        selected -> scheme.primary.copy(alpha = 0.08f)
         else -> scheme.surface
     }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp)
-            .border(2.dp, border, RoundedCornerShape(16.dp))
-            .clickable(enabled = !locked, onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+            .padding(vertical = 4.dp)
+            .border(2.dp, border, RoundedCornerShape(14.dp))
+            .clickable(enabled = !wrong, onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = bg)
     ) {
-        Row(
-            Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(et, fontWeight = FontWeight.Bold, fontSize = 16.sp,
-                    color = scheme.onSurface)
-                Text(ru, fontSize = 13.sp, color = scheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    et, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                    color = if (wrong) scheme.error else scheme.onSurface
+                )
+                Text(ru, fontSize = 12.sp, color = scheme.onSurface.copy(alpha = 0.65f))
             }
-            if (locked && correct) {
-                Icon(Icons.Filled.Check, null, tint = scheme.primary)
-            } else if (locked && selected && !correct) {
-                Icon(Icons.Filled.Close, null, tint = scheme.error)
-            } else {
-                SpeakButton(onClick = onSpeak)
-            }
+            SpeakButton(onClick = onSpeak)
         }
-    }
-}
-
-@Composable
-private fun FeedbackBanner(correct: Boolean) {
-    val scheme = MaterialTheme.colorScheme
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background((if (correct) scheme.primary else scheme.error).copy(alpha = 0.12f))
-            .padding(14.dp)
-    ) {
-        Text(
-            if (correct) "✅ Õige! Верно! +20 XP"
-            else "❌ Vale. Неверно — правильный вариант подсвечен зелёным.",
-            color = if (correct) scheme.primary else scheme.error,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
@@ -281,8 +278,7 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
         Text(if (r.perfect) "🏆" else "🏁", fontSize = 64.sp)
         Text(
             if (r.perfect) "Доставка без ошибок!" else "Доставка выполнена",
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold, fontSize = 24.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
         Text(
@@ -298,7 +294,8 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                ResultRow("Правильных ответов", "${r.correct}/${r.total} (${r.percent}%)")
+                ResultRow("Реплик в диалоге", "${r.steps}")
+                ResultRow("Ошибок", if (r.mistakes == 0) "нет 🎯" else "${r.mistakes}")
                 ResultRow("Оплата доставки", "%.2f €".format(r.order.payout))
                 ResultRow("Чаевые за качество", if (r.tip > 0) "+${r.tipStr}" else "—")
                 ResultRow("Опыт", "+${r.xp} XP")

@@ -9,23 +9,40 @@ import ee.kuller.app.data.Content
 import ee.kuller.app.data.GameRepository
 import ee.kuller.app.data.GameState
 import ee.kuller.app.model.Order
+import ee.kuller.app.model.Speaker
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 
-/** Активная сессия доставки (один заказ в процессе). */
+/** Подпись отправителя сообщения в чате доставки. */
+fun npcLabel(speaker: Speaker): String = when (speaker) {
+    Speaker.RESTORAN -> "🏪 Ресторан"
+    Speaker.KLIENT -> "🙋 Клиент"
+    Speaker.NARRATOR -> "🧭 Навигатор"
+}
+
+/** Одно сообщение в чате доставки. */
+data class ChatMsg(
+    val fromCourier: Boolean,   // true → сообщение курьера (справа)
+    val et: String,
+    val ru: String,
+    val label: String
+)
+
+/** Активная сессия доставки (один заказ в процессе) в виде чата. */
 data class OrderSession(
     val order: Order,
     val stepIndex: Int = 0,
-    val selected: Int? = null,    // выбранный вариант
-    val locked: Boolean = false,  // ответ зафиксирован
+    val transcript: List<ChatMsg> = emptyList(),
+    val selected: Int? = null,            // выбранный, но ещё не отправленный вариант
+    val wrongSelected: Set<Int> = emptySet(), // ошибочно выбранные на этом шаге
+    val answered: Boolean = false,        // на шаг дан верный ответ
     val correctCount: Int = 0,
     val mistakes: Int = 0,
     val finished: Boolean = false
 ) {
     val step get() = order.steps[stepIndex]
     val isLastStep get() = stepIndex == order.steps.lastIndex
-    val progress get() = (stepIndex + if (locked) 1 else 0).toFloat() / order.steps.size
+    val progress get() = (stepIndex + if (answered) 1 else 0).toFloat() / order.steps.size
 }
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -47,47 +64,81 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleOnline() { online = !online }
 
     fun startOrder(order: Order) {
-        session = OrderSession(order)
+        // Перемешиваем варианты ответов, чтобы верный не был всегда первым.
+        val shuffled = order.copy(
+            steps = order.steps.map { it.copy(choices = it.choices.shuffled()) }
+        )
+        val first = shuffled.steps.first()
+        session = OrderSession(
+            order = shuffled,
+            transcript = openingMessages(first)
+        )
         lastResult = null
     }
 
+    private fun openingMessages(step: ee.kuller.app.model.DialogueStep): List<ChatMsg> =
+        if (step.npcEt.isNotBlank())
+            listOf(ChatMsg(false, step.npcEt, step.npcRu, npcLabel(step.speaker)))
+        else emptyList()
+
     fun cancelOrder() { session = null }
 
-    /** Выбор варианта (до фиксации). */
+    /** Выбор варианта (до отправки). */
     fun select(index: Int) {
         val s = session ?: return
-        if (s.locked) return
+        if (s.answered || index in s.wrongSelected) return
         session = s.copy(selected = index)
     }
 
-    /** Зафиксировать ответ и проверить. */
+    /** Отправить выбранный вариант как сообщение курьера. */
     fun confirm() {
         val s = session ?: return
-        val choiceIndex = s.selected ?: return
-        if (s.locked) return
-        val correct = s.step.choices[choiceIndex].correct
+        val i = s.selected ?: return
+        if (s.answered) return
+        val choice = s.step.choices[i]
 
-        // фиксируем выученные слова шага
-        val learned = state.learnedIds + s.step.teachWordIds
-        state = state.copy(
-            learnedIds = learned,
-            correct = state.correct + if (correct) 1 else 0,
-            wrong = state.wrong + if (correct) 0 else 1
-        )
-        session = s.copy(
-            locked = true,
-            correctCount = s.correctCount + if (correct) 1 else 0,
-            mistakes = s.mistakes + if (correct) 0 else 1
-        )
-        repo.save(state)
+        if (choice.correct) {
+            val msgs = s.transcript.toMutableList()
+            msgs += ChatMsg(true, choice.et, choice.ru, "🛵 Вы")
+            if (s.step.npcReplyEt.isNotBlank()) {
+                msgs += ChatMsg(false, s.step.npcReplyEt, s.step.npcReplyRu,
+                    npcLabel(s.step.speaker) + " отвечает")
+            }
+            state = state.copy(
+                learnedIds = state.learnedIds + s.step.teachWordIds,
+                correct = state.correct + 1
+            )
+            repo.save(state)
+            session = s.copy(
+                transcript = msgs,
+                answered = true,
+                correctCount = s.correctCount + 1,
+                selected = i
+            )
+        } else {
+            state = state.copy(wrong = state.wrong + 1)
+            repo.save(state)
+            session = s.copy(
+                wrongSelected = s.wrongSelected + i,
+                selected = null,
+                mistakes = s.mistakes + 1
+            )
+        }
     }
 
     /** Перейти к следующему шагу или завершить заказ. */
     fun next() {
         val s = session ?: return
-        if (!s.locked) return
-        if (s.isLastStep) finishOrder(s) else session = s.copy(
-            stepIndex = s.stepIndex + 1, selected = null, locked = false
+        if (!s.answered) return
+        if (s.isLastStep) { finishOrder(s); return }
+        val nextIndex = s.stepIndex + 1
+        val nextStep = s.order.steps[nextIndex]
+        session = s.copy(
+            stepIndex = nextIndex,
+            transcript = s.transcript + openingMessages(nextStep),
+            selected = null,
+            wrongSelected = emptySet(),
+            answered = false
         )
     }
 
@@ -113,8 +164,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
         lastResult = DeliveryResult(
             order = s.order,
-            correct = s.correctCount,
-            total = total,
+            steps = total,
+            mistakes = s.mistakes,
             earned = earned,
             tip = tip,
             xp = xpGain,
@@ -149,8 +200,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
 data class DeliveryResult(
     val order: Order,
-    val correct: Int,
-    val total: Int,
+    val steps: Int,
+    val mistakes: Int,
     val earned: Double,
     val tip: Double,
     val xp: Int,
@@ -158,5 +209,4 @@ data class DeliveryResult(
 ) {
     val earnedStr get() = "%.2f €".format(earned)
     val tipStr get() = "%.2f €".format(tip)
-    val percent get() = (correct.toFloat() / total * 100).roundToInt()
 }
