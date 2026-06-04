@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ee.kuller.app.data.Content
+import ee.kuller.app.data.DialogueFactory
 import ee.kuller.app.data.GameRepository
 import ee.kuller.app.data.GameState
 import ee.kuller.app.model.Order
@@ -37,6 +38,7 @@ data class ChatMsg(
 /** Активная сессия доставки (один заказ) в виде чата из реплик-ходов. */
 data class OrderSession(
     val order: Order,
+    val turns: List<Turn>,                // собраны генератором на лету
     val turnIndex: Int = 0,
     val transcript: List<ChatMsg> = emptyList(),
     val awaiting: Boolean = false,        // ждём ответа курьера на текущий Ask
@@ -48,8 +50,8 @@ data class OrderSession(
     val mistakes: Int = 0,
     val finished: Boolean = false
 ) {
-    val currentAsk: Turn.Ask? get() = order.turns.getOrNull(turnIndex) as? Turn.Ask
-    val totalAsks: Int get() = order.turns.count { it is Turn.Ask }
+    val currentAsk: Turn.Ask? get() = turns.getOrNull(turnIndex) as? Turn.Ask
+    val totalAsks: Int get() = turns.count { it is Turn.Ask }
     val progress: Float get() = if (totalAsks == 0) 0f else correctCount.toFloat() / totalAsks
 }
 
@@ -78,13 +80,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startOrder(order: Order) {
         revealJob?.cancel()
-        // Перемешиваем варианты, чтобы верный не был всегда первым.
-        val shuffled = order.copy(
-            turns = order.turns.map {
-                if (it is Turn.Ask) it.copy(choices = it.choices.shuffled()) else it
-            }
-        )
-        session = OrderSession(order = shuffled)
+        // Собираем диалог на лету и перемешиваем варианты (верный не всегда первый).
+        val turns = DialogueFactory.build(order).map {
+            if (it is Turn.Ask) it.copy(choices = it.choices.shuffled()) else it
+        }
+        session = OrderSession(order = order, turns = turns)
         lastResult = null
         revealUntilAsk()
     }
@@ -98,7 +98,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         revealJob = viewModelScope.launch {
             while (true) {
                 val s = session ?: return@launch
-                when (val turn = s.order.turns.getOrNull(s.turnIndex)) {
+                when (val turn = s.turns.getOrNull(s.turnIndex)) {
                     null -> { session = s.copy(atEnd = true, typing = null); return@launch }
                     is Turn.Ask -> { session = s.copy(awaiting = true, typing = null); return@launch }
                     is Turn.Say -> {

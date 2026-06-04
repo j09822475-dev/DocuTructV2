@@ -19,6 +19,18 @@ data class Category(
 
 enum class Speaker { RESTORAN, KLIENT, NARRATOR }
 
+/** Сценарий доставки — определяет, как строится средняя часть диалога. */
+enum class Scenario {
+    FACE_DOOR,       // клиент спускается / встречает у двери
+    LIFT_BROKEN,     // лифт сломан, спускается сам
+    GATE_CODE,       // заперт домофон, нужен код
+    DIRECTIONS,      // клиент объясняет, как к нему пройти/проехать
+    LEAVE_DOOR,      // оставить под дверью
+    CASH,            // оплата наличными
+    WRONG_ADDRESS,   // неверный адрес — уточнить
+    NOT_HOME,        // клиента нет дома
+}
+
 /** One answer option the courier can pick. */
 data class Choice(
     val et: String,
@@ -27,12 +39,10 @@ data class Choice(
 )
 
 /**
- * Реплика-ход диалога доставки. Диалог — это плоская последовательность ходов,
- * которые показываются в чате ПО ОДНОМУ:
- *  - [Say]  — реплику говорит персонаж (ресторан / клиент / навигатор);
- *             показывается и озвучивается автоматически;
- *  - [Ask]  — ход курьера: он выбирает правильный эстонский вариант,
- *             выбранная фраза становится сообщением курьера.
+ * Реплика-ход диалога доставки. Диалог показывается в чате ПО ОДНОЙ реплике:
+ *  - [Say] — реплику говорит персонаж (показывается и озвучивается автоматически,
+ *            с индикатором «печатает…» перед ней);
+ *  - [Ask] — ход курьера: он выбирает правильный эстонский вариант.
  */
 sealed interface Turn {
     data class Say(
@@ -42,22 +52,29 @@ sealed interface Turn {
     ) : Turn
 
     data class Ask(
-        val promptRu: String,        // задание для ученика
-        val courierAsks: Boolean,    // курьер сам задаёт вопрос (для подписи)
+        val promptRu: String,
+        val courierAsks: Boolean,
         val choices: List<Choice>,
         val teachWordIds: List<String> = emptyList()
     ) : Turn
 }
 
-/** A delivery order = a chat-style mini-lesson framed as a courier job. */
+/**
+ * Заказ хранит ФАКТЫ; сами реплики собираются генератором [ee.kuller.app.data.DialogueFactory]
+ * на лету из блоков-заготовок, поэтому диалог каждый раз немного разный,
+ * но структура (получение → дорога/поиск клиента → передача) сохраняется.
+ */
 data class Order(
     val id: String,
     val restaurant: String,
     val customer: String,
-    val address: String,       // эстонский адрес
+    val address: String,
     val distanceKm: Double,
-    val payout: Double,        // € за доставку
-    val itemsEt: String,       // что в заказе (по-эстонски)
-    val itemsRu: String,       // перевод
-    val turns: List<Turn>
+    val payout: Double,
+    val itemsEt: String,        // что в заказе (по-эстонски)
+    val itemsRu: String,        // перевод
+    val confirmEt: String,      // как курьер подтверждает заказ (по-эстонски)
+    val confirmRu: String,      // перевод подтверждения
+    val itemTeach: List<String>,// слова, которым учит состав заказа
+    val scenario: Scenario
 )
