@@ -19,7 +19,7 @@ class Speaker(context: Context) {
         if (status == TextToSpeech.SUCCESS) ready = true
     }
 
-    fun speak(text: String) {
+    fun speak(text: String, flush: Boolean = true) {
         if (!ready || text.isBlank()) return
         val estonian = Locale("et", "EE")
         val res = tts.setLanguage(estonian)
@@ -27,7 +27,8 @@ class Speaker(context: Context) {
             tts.setLanguage(Locale.getDefault())
         }
         tts.setSpeechRate(0.9f)
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, text.hashCode().toString())
+        val mode = if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+        tts.speak(text, mode, null, text.hashCode().toString())
     }
 
     fun shutdown() {

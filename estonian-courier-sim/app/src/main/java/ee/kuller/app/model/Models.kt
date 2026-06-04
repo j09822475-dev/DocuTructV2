@@ -19,33 +19,37 @@ data class Category(
 
 enum class Speaker { RESTORAN, KLIENT, NARRATOR }
 
-/** One answer option inside a dialogue step. */
+/** One answer option the courier can pick. */
 data class Choice(
     val et: String,
     val ru: String,
     val correct: Boolean
 )
 
-/** One interactive step of a delivery — двусторонний диалог.
- *
- *  Сценарий шага:
- *   1. (опц.) персонаж говорит реплику [npcEt] (если пусто — реплику начинает курьер);
- *   2. ученик-курьер выбирает правильный эстонский вариант из [choices]
- *      (вопрос или ответ — зависит от [courierAsks]);
- *   3. (опц.) персонаж отвечает [npcReplyEt] — так получается живой обмен фразами. */
-data class DialogueStep(
-    val speaker: Speaker,
-    val npcEt: String,                  // что говорит персонаж первым (может быть пусто)
-    val npcRu: String,                  // перевод реплики персонажа
-    val questionRu: String,             // задание для ученика (по-русски)
-    val choices: List<Choice>,
-    val courierAsks: Boolean = false,   // true → курьер сам задаёт вопрос
-    val npcReplyEt: String = "",        // ответ персонажа после верного выбора
-    val npcReplyRu: String = "",        // перевод ответа персонажа
-    val teachWordIds: List<String> = emptyList()
-)
+/**
+ * Реплика-ход диалога доставки. Диалог — это плоская последовательность ходов,
+ * которые показываются в чате ПО ОДНОМУ:
+ *  - [Say]  — реплику говорит персонаж (ресторан / клиент / навигатор);
+ *             показывается и озвучивается автоматически;
+ *  - [Ask]  — ход курьера: он выбирает правильный эстонский вариант,
+ *             выбранная фраза становится сообщением курьера.
+ */
+sealed interface Turn {
+    data class Say(
+        val speaker: Speaker,
+        val et: String,
+        val ru: String
+    ) : Turn
 
-/** A delivery order = a mini-lesson framed as a Bolt/Wolt courier job. */
+    data class Ask(
+        val promptRu: String,        // задание для ученика
+        val courierAsks: Boolean,    // курьер сам задаёт вопрос (для подписи)
+        val choices: List<Choice>,
+        val teachWordIds: List<String> = emptyList()
+    ) : Turn
+}
+
+/** A delivery order = a chat-style mini-lesson framed as a courier job. */
 data class Order(
     val id: String,
     val restaurant: String,
@@ -55,5 +59,5 @@ data class Order(
     val payout: Double,        // € за доставку
     val itemsEt: String,       // что в заказе (по-эстонски)
     val itemsRu: String,       // перевод
-    val steps: List<DialogueStep>
+    val turns: List<Turn>
 )

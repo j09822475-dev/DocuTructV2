@@ -43,12 +43,10 @@ import androidx.compose.ui.unit.sp
 import ee.kuller.app.ChatMsg
 import ee.kuller.app.GameViewModel
 import ee.kuller.app.ui.SpeakButton
-import ee.kuller.app.util.rememberSpeaker
 
 @Composable
 fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     val session = vm.session
-    val speaker = rememberSpeaker()
 
     if (session == null) {
         onExit(); return
@@ -59,18 +57,11 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     }
 
     val listState = rememberLazyListState()
-    // Автопрокрутка вниз и озвучка нового входящего сообщения
     LaunchedEffect(session.transcript.size) {
-        val msgs = session.transcript
-        if (msgs.isNotEmpty()) {
-            // +1 учитывает ведущий Spacer в ленте; индекс зажимается до максимума
-            listState.animateScrollToItem(msgs.size + 1)
-            val last = msgs.last()
-            if (!last.fromCourier) speaker.speak(last.et)
+        if (session.transcript.isNotEmpty()) {
+            listState.animateScrollToItem(session.transcript.size + 1)
         }
     }
-
-    val step = session.step
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // ---- Шапка с прогрессом ----
@@ -93,7 +84,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                 )
             }
             Text(
-                "${session.stepIndex + 1}/${session.order.steps.size}",
+                "${session.correctCount}/${session.totalAsks}",
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -111,66 +102,69 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
         ) {
             item { Spacer(Modifier.height(8.dp)) }
             itemsIndexed(session.transcript) { _, msg ->
-                ChatBubble(msg = msg, onSpeak = { speaker.speak(msg.et) })
+                ChatBubble(msg = msg, onSpeak = { vm.speak(msg.et) })
             }
             item { Spacer(Modifier.height(4.dp)) }
         }
 
-        // ---- Нижняя панель: варианты ответа или кнопка «Дальше» ----
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp
-        ) {
+        // ---- Нижняя панель ----
+        Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
             Column(
-                Modifier.fillMaxWidth().padding(12.dp)
-                    .verticalScroll(rememberScrollState())
+                Modifier.fillMaxWidth().padding(12.dp).verticalScroll(rememberScrollState())
             ) {
-                if (!session.answered) {
-                    Text(
-                        step.questionRu,
-                        fontWeight = FontWeight.Bold, fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        if (step.courierAsks) "🛵 Выберите, что спросить:" else "🛵 Выберите ответ:",
-                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
-                    )
-                    step.choices.forEachIndexed { i, choice ->
-                        AnswerOption(
-                            et = choice.et, ru = choice.ru,
-                            selected = session.selected == i,
-                            wrong = i in session.wrongSelected,
-                            onClick = { vm.select(i) },
-                            onSpeak = { speaker.speak(choice.et) }
-                        )
-                    }
-                    if (session.wrongSelected.isNotEmpty()) {
+                val ask = session.currentAsk
+                when {
+                    session.awaiting && ask != null -> {
                         Text(
-                            "❌ Vale — proovi uuesti. (Неверно — попробуйте ещё раз.)",
-                            fontSize = 12.sp, color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(top = 4.dp)
+                            ask.promptRu,
+                            fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                    Button(
-                        onClick = { vm.confirm() },
-                        enabled = session.selected != null,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
-                        Text("  Отправить", fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Button(
-                        onClick = { vm.next() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
                         Text(
-                            if (session.isLastStep) "Завершить доставку 🏁" else "Дальше →",
-                            fontWeight = FontWeight.Bold
+                            if (ask.courierAsks) "🛵 Выберите, что спросить:" else "🛵 Выберите ответ:",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
+                        )
+                        ask.choices.forEachIndexed { i, choice ->
+                            AnswerOption(
+                                et = choice.et, ru = choice.ru,
+                                selected = session.selected == i,
+                                wrong = i in session.wrongSelected,
+                                onClick = { vm.select(i) },
+                                onSpeak = { vm.speak(choice.et) }
+                            )
+                        }
+                        if (session.wrongSelected.isNotEmpty()) {
+                            Text(
+                                "❌ Vale — proovi uuesti. (Неверно — попробуйте ещё раз.)",
+                                fontSize = 12.sp, color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        Button(
+                            onClick = { vm.confirm() },
+                            enabled = session.selected != null,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
+                            Text("  Отправить", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    session.atEnd -> {
+                        Button(
+                            onClick = { vm.finishDelivery() },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) { Text("Завершить доставку 🏁", fontWeight = FontWeight.Bold) }
+                    }
+                    else -> {
+                        Text(
+                            "💬 …",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(vertical = 12.dp)
                         )
                     }
                 }
