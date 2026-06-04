@@ -1,8 +1,6 @@
 package ee.kuller.app.data
 
 import ee.kuller.app.model.Category
-import ee.kuller.app.model.Order
-import ee.kuller.app.model.Scenario
 import ee.kuller.app.model.WordEntry
 
 /**
@@ -43,6 +41,14 @@ object Content {
                 WordEntry("f_sai", "Sai", "Белый хлеб / булка", "Pehme sai."),
                 WordEntry("f_juust", "Juust", "Сыр", "Lisa juustu."),
                 WordEntry("f_friikad", "Friikartulid", "Картофель фри", "Suured friikartulid."),
+                WordEntry("f_sushi", "Sushi", "Суши", "Üks sushikomplekt."),
+                WordEntry("f_karri", "Karri", "Карри", "Vürtsikas karri."),
+                WordEntry("f_nuudlid", "Nuudlid", "Лапша", "Aasia nuudlid."),
+                WordEntry("f_pelmeenid", "Pelmeenid", "Пельмени", "Pelmeenid hapukoorega."),
+                WordEntry("f_kook", "Kook", "Торт / пирожное", "Šokolaadikook."),
+                WordEntry("f_jaatis", "Jäätis", "Мороженое", "Vaniljejäätis."),
+                WordEntry("f_pannkook", "Pannkook", "Блин", "Pannkook moosiga."),
+                WordEntry("f_wrap", "Wrap", "Вреп / ролл", "Kanawrap."),
             )
         ),
         Category(
@@ -56,6 +62,8 @@ object Content {
                 WordEntry("d_limonaad", "Limonaad", "Лимонад", "Külm limonaad."),
                 WordEntry("d_olu", "Õlu", "Пиво", "Üks õlu, palun."),
                 WordEntry("d_kakao", "Kakao", "Какао", "Soe kakao."),
+                WordEntry("d_smuuti", "Smuuti", "Смузи", "Marjasmuuti."),
+                WordEntry("d_morss", "Morss", "Морс", "Jõhvikamorss."),
             )
         ),
         Category(
@@ -134,74 +142,4 @@ object Content {
 
     val allWords: List<WordEntry> = categories.flatMap { it.words }
     fun word(id: String): WordEntry? = allWords.firstOrNull { it.id == id }
-
-    // ----------------------------------------------------------------------
-    // ЗАКАЗЫ — только ФАКТЫ. Реплики собирает DialogueFactory на лету,
-    // поэтому каждый заход в одно и то же заведение звучит немного иначе.
-    // ----------------------------------------------------------------------
-    val orders: List<Order> = listOf(
-        Order(
-            id = "o1", restaurant = "Pizza Grande", customer = "Maarja",
-            address = "Pärnu maantee 12, korter 5", distanceKm = 2.3, payout = 4.20,
-            itemsEt = "üks pepperoni pitsa ja kola", itemsRu = "одна пицца пепперони и кола",
-            confirmEt = "Jah, üks pitsa ja kola. Aitäh!", confirmRu = "Да, одна пицца и кола. Спасибо!",
-            itemTeach = listOf("f_pitsa", "g_jah", "g_aitah"), scenario = Scenario.FACE_DOOR
-        ),
-        Order(
-            id = "o2", restaurant = "Sushi Aasia", customer = "Andres",
-            address = "Narva maantee 5, 3. korrus", distanceKm = 3.1, payout = 5.10,
-            itemsEt = "kaks sushikomplekti ja roheline tee", itemsRu = "два суши-сета и зелёный чай",
-            confirmEt = "Jah, kaks komplekti ja tee. Aitäh!", confirmRu = "Да, два сета и чай. Спасибо!",
-            itemTeach = listOf("n_2", "d_tee", "g_jah"), scenario = Scenario.LIFT_BROKEN
-        ),
-        Order(
-            id = "o3", restaurant = "Burger Maja", customer = "Kati",
-            address = "Tartu maantee 40, korter 9", distanceKm = 1.8, payout = 3.90,
-            itemsEt = "kolm kanaburgerit ja friikartulid", itemsRu = "три куриных бургера и картошка фри",
-            confirmEt = "Jah, kolm burgerit ja friikartulid.", confirmRu = "Да, три бургера и картошка фри.",
-            itemTeach = listOf("f_burger", "f_kana", "f_friikad", "n_3"), scenario = Scenario.DIRECTIONS
-        ),
-        Order(
-            id = "o4", restaurant = "Kohvik Sõbralik", customer = "Pjotr",
-            address = "Liivalaia 8, korter 4", distanceKm = 2.7, payout = 4.60,
-            itemsEt = "kaks kohvi piimaga ja sai juustuga", itemsRu = "два кофе с молоком и булка с сыром",
-            confirmEt = "Jah, kaks kohvi ja sai. Aitäh!", confirmRu = "Да, два кофе и булка. Спасибо!",
-            itemTeach = listOf("d_kohv", "d_piim", "f_sai", "f_juust", "n_2"), scenario = Scenario.FACE_DOOR
-        ),
-        Order(
-            id = "o5", restaurant = "Supiköök", customer = "Olga",
-            address = "Sõpruse puiestee 21, 7. korrus", distanceKm = 4.0, payout = 5.80,
-            itemsEt = "kanasupp, must leib ja klaas vett", itemsRu = "куриный суп, чёрный хлеб и стакан воды",
-            confirmEt = "Jah, supp, leib ja vesi.", confirmRu = "Да, суп, хлеб и вода.",
-            itemTeach = listOf("f_supp", "f_leib", "d_vesi"), scenario = Scenario.GATE_CODE
-        ),
-        Order(
-            id = "o6", restaurant = "Kala & Salat", customer = "Mikk",
-            address = "Vana-Posti 7, korter 2", distanceKm = 1.5, payout = 3.50,
-            itemsEt = "kala, kreeka salat ja õunamahl", itemsRu = "рыба, греческий салат и яблочный сок",
-            confirmEt = "Jah, kala, salat ja mahl.", confirmRu = "Да, рыба, салат и сок.",
-            itemTeach = listOf("f_kala", "f_salat", "d_mahl"), scenario = Scenario.LEAVE_DOOR
-        ),
-        Order(
-            id = "o7", restaurant = "Pitsabaar Napoli", customer = "Tiina",
-            address = "Roosikrantsi 9, korter 3", distanceKm = 2.0, payout = 4.40,
-            itemsEt = "üks suur pitsa", itemsRu = "одна большая пицца",
-            confirmEt = "Jah, üks suur pitsa.", confirmRu = "Да, одна большая пицца.",
-            itemTeach = listOf("f_pitsa", "n_1"), scenario = Scenario.CASH
-        ),
-        Order(
-            id = "o8", restaurant = "Indica Curry", customer = "Rein",
-            address = "Tehnika 18 (aadress segane)", distanceKm = 3.4, payout = 5.40,
-            itemsEt = "kaks karrit ja nan-leib", itemsRu = "два карри и лепёшка нан",
-            confirmEt = "Jah, kaks karrit ja nan.", confirmRu = "Да, два карри и нан.",
-            itemTeach = listOf("n_2", "f_leib"), scenario = Scenario.WRONG_ADDRESS
-        ),
-        Order(
-            id = "o9", restaurant = "Sushi Tokyo", customer = "Jaan",
-            address = "Mustamäe tee 16, korter 21", distanceKm = 2.9, payout = 4.90,
-            itemsEt = "üks sushikomplekt ja miso supp", itemsRu = "один суши-сет и суп мисо",
-            confirmEt = "Jah, komplekt ja supp.", confirmRu = "Да, сет и суп.",
-            itemTeach = listOf("f_supp", "n_1"), scenario = Scenario.NOT_HOME
-        ),
-    )
 }

@@ -10,6 +10,7 @@ import ee.kuller.app.data.Content
 import ee.kuller.app.data.DialogueFactory
 import ee.kuller.app.data.GameRepository
 import ee.kuller.app.data.GameState
+import ee.kuller.app.data.OrderFactory
 import ee.kuller.app.model.Order
 import ee.kuller.app.model.Speaker
 import ee.kuller.app.model.Turn
@@ -69,11 +70,23 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var session by mutableStateOf<OrderSession?>(null)
         private set
 
+    /** Доступные заказы (генерируются на лету). */
+    var availableOrders by mutableStateOf<List<Order>>(emptyList())
+        private set
+
     /** Итог последней доставки — для экрана результата. */
     var lastResult by mutableStateOf<DeliveryResult?>(null)
         private set
 
-    fun toggleOnline() { online = !online }
+    fun toggleOnline() {
+        online = !online
+        if (online) refreshOrders()
+    }
+
+    /** Сгенерировать свежую пачку заказов. */
+    fun refreshOrders() {
+        availableOrders = OrderFactory.batch(5)
+    }
 
     /** Озвучить текст вручную (по кнопке 🔊). */
     fun speak(text: String) = tts.speak(text, flush = true)
@@ -208,6 +221,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun closeResult() {
         session = null
         lastResult = null
+        if (online) refreshOrders()   // новые заказы после доставки
     }
 
     fun resetProgress() {

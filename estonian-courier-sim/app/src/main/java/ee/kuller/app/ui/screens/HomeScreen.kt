@@ -13,11 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ee.kuller.app.GameViewModel
-import ee.kuller.app.data.Content
 import ee.kuller.app.model.Order
 import ee.kuller.app.ui.StatPill
 
@@ -65,15 +66,21 @@ fun HomeScreen(vm: GameViewModel, onAccept: (Order) -> Unit) {
 
         if (vm.online) {
             item {
-                Text(
-                    "Доступные заказы",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Доступные заказы",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedButton(onClick = { vm.refreshOrders() }, shape = RoundedCornerShape(12.dp)) {
+                        Icon(Icons.Filled.Refresh, null, Modifier.size(16.dp))
+                        Text(" Обновить")
+                    }
+                }
             }
-            items(Content.orders) { order ->
+            items(vm.availableOrders, key = { it.id }) { order ->
                 OrderCard(order, onAccept = { onAccept(order) })
             }
             item { Text("") }
