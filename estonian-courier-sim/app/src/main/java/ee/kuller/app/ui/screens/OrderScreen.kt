@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -57,10 +58,15 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     }
 
     val listState = rememberLazyListState()
-    LaunchedEffect(session.transcript.size, session.typing) {
+    // Прокручиваем в самый низ при: новом сообщении, индикаторе «печатает»,
+    // появлении вариантов ответа (awaiting) и кнопки завершения (atEnd) —
+    // иначе выросшая нижняя панель закрывает последние сообщения.
+    LaunchedEffect(session.transcript.size, session.typing, session.awaiting, session.atEnd) {
         val typingExtra = if (session.typing != null) 1 else 0
         val lastIndex = session.transcript.size + 1 + typingExtra
         if (session.transcript.isNotEmpty() || session.typing != null) {
+            // два прохода: после раскрытия панели меняется высота области чата
+            listState.animateScrollToItem(lastIndex)
             listState.animateScrollToItem(lastIndex)
         }
     }
@@ -115,7 +121,10 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
         // ---- Нижняя панель ----
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
             Column(
-                Modifier.fillMaxWidth().padding(12.dp).verticalScroll(rememberScrollState())
+                Modifier.fillMaxWidth()
+                    .heightIn(max = 340.dp)   // не даём панели «съесть» ленту чата
+                    .padding(12.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 val ask = session.currentAsk
                 when {
