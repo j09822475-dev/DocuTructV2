@@ -22,7 +22,7 @@ import ee.kuller.app.util.rememberSpeaker
 fun PhrasebookScreen() {
     val speaker = rememberSpeaker()
     // В разговорнике сначала самые нужные курьеру темы
-    val order = listOf("phrase", "greet", "dir", "num", "food", "drink")
+    val order = listOf("phrase", "greet", "money", "dir", "num", "food", "drink")
     val cats = order.mapNotNull { id -> Content.categories.firstOrNull { it.id == id } }
 
     LazyColumn(

@@ -110,6 +110,25 @@ object Content {
                 WordEntry("p_kus_q", "Kus ma teid leian?", "Где мне вас найти?", "Olen kohal. Kus ma teid leian?"),
                 WordEntry("p_kood_q", "Mis on ukse kood?", "Какой код двери?", "Värav on lukus. Mis on ukse kood?"),
                 WordEntry("p_alla_voi_q", "Kas tulete alla või tulen üles?", "Вы спуститесь или мне подняться?", "Lift on katki. Kas tulete alla või tulen üles?"),
+                // Оплата, проблемы с адресом, клиента нет дома
+                WordEntry("p_maksate_q", "Kas maksate sularahas või kaardiga?", "Платите наличными или картой?", "Tere! Kas maksate sularahas või kaardiga?"),
+                WordEntry("p_aadress_q", "Kas see aadress on õige?", "Этот адрес верный?", "Vabandust, kas see aadress on õige?"),
+                WordEntry("p_kus_maja_q", "Kus maja täpselt asub?", "Где именно находится дом?", "Kus maja täpselt asub?"),
+                WordEntry("p_helistan", "Ma helistan teile", "Я вам позвоню", "Ma helistan teile kohe."),
+                WordEntry("p_ootan", "Ma ootan paar minutit", "Я подожду пару минут", "Hästi, ma ootan paar minutit."),
+                WordEntry("p_foto", "Teen tellimusest foto", "Сделаю фото заказа", "Jätan ukse taha ja teen foto."),
+            )
+        ),
+        Category(
+            id = "money", titleEt = "Raha", titleRu = "Деньги", emoji = "💶",
+            words = listOf(
+                WordEntry("m_sularaha", "Sularaha", "Наличные", "Kas maksate sularahas?"),
+                WordEntry("m_kaart", "Kaart", "Карта", "Maksan kaardiga."),
+                WordEntry("m_kviitung", "Kviitung", "Чек", "Siin on teie kviitung."),
+                WordEntry("m_vahetusraha", "Vahetusraha", "Сдача", "Siin on vahetusraha."),
+                WordEntry("m_hind", "Hind", "Цена", "Mis on hind?"),
+                WordEntry("m_maksab", "See maksab", "Это стоит", "See maksab kümme eurot."),
+                WordEntry("m_eurot", "Eurot", "Евро", "Kümme eurot."),
             )
         ),
     )
@@ -226,7 +245,7 @@ object Content {
             itemsEt = "Kaks sushi komplekti ja roheline tee",
             itemsRu = "Два суши-сета и зелёный чай",
             steps = listOf(
-                askReadyStep("Peaaegu! Kaks komplekti, eks?", "Почти! Два сета, верно?"),
+                askReadyStep("Tere! Üks hetk, kohe saab.", "Здравствуйте! Минутку, сейчас будет."),
                 DialogueStep(
                     speaker = Speaker.RESTORAN,
                     npcEt = "Kaks komplekti ja roheline tee. Õige?",
@@ -525,6 +544,162 @@ object Content {
                     npcReplyEt = "Kood on viis-kuus-seitse-kaheksa. Aitäh!",
                     npcReplyRu = "Код — пять-шесть-семь-восемь. Спасибо!",
                     teachWordIds = listOf("p_kood_q", "n_5", "n_6", "n_7", "n_8")
+                ),
+            )
+        ),
+        // ---- Тема: ОПЛАТА НАЛИЧНЫМИ ----
+        Order(
+            id = "o7", restaurant = "Pitsabaar Napoli", customer = "Tiina",
+            address = "Roosikrantsi 9, korter 3", distanceKm = 2.0, payout = 4.40,
+            itemsEt = "Üks suur pitsa (sularahamakse)",
+            itemsRu = "Одна большая пицца (оплата наличными)",
+            steps = listOf(
+                askReadyStep("Jah, valmis! See on sularahamakse.", "Да, готов! Это оплата наличными."),
+                DialogueStep(
+                    speaker = Speaker.RESTORAN,
+                    npcEt = "Klient maksab kohale. Summa on kümme eurot.",
+                    npcRu = "Клиент платит на месте. Сумма — десять евро.",
+                    questionRu = "Сколько клиент должен заплатить?",
+                    choices = listOf(
+                        Choice("Kümme eurot", "Десять евро", true),
+                        Choice("Kaks eurot", "Два евро", false),
+                        Choice("Sada eurot", "Сто евро", false),
+                    ),
+                    npcReplyEt = "Täpselt nii. Head teed!",
+                    npcReplyRu = "Именно так. Счастливого пути!",
+                    teachWordIds = listOf("m_maksab", "m_eurot", "n_10")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "Tere! Te tõite pitsa?",
+                    npcRu = "Здравствуйте! Вы привезли пиццу?",
+                    questionRu = "Уточните у клиента способ оплаты:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kas maksate sularahas või kaardiga?", "Платите наличными или картой?", true),
+                        Choice("Kas teil on koer?", "У вас есть собака?", false),
+                        Choice("Mis kell on?", "Который час?", false),
+                    ),
+                    npcReplyEt = "Sularahas. Siin on kümme eurot.",
+                    npcReplyRu = "Наличными. Вот десять евро.",
+                    teachWordIds = listOf("p_maksate_q", "m_sularaha", "m_kaart")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Сумма ровная. Передайте чек и пожелайте приятного аппетита:",
+                    choices = listOf(
+                        Choice("Aitäh! Siin on kviitung. Head isu!", "Спасибо! Вот чек. Приятного аппетита!", true),
+                        Choice("Vabandust, mul ei ole pitsat.", "Извините, у меня нет пиццы.", false),
+                        Choice("Ei, see on liiga vähe.", "Нет, этого слишком мало.", false),
+                    ),
+                    npcReplyEt = "Suur aitäh! Nägemist.",
+                    npcReplyRu = "Большое спасибо! До свидания.",
+                    teachWordIds = listOf("m_kviitung", "p_head_isu", "g_nagemist")
+                ),
+            )
+        ),
+        // ---- Тема: ПРОБЛЕМА С АДРЕСОМ ----
+        Order(
+            id = "o8", restaurant = "Indica Curry", customer = "Rein",
+            address = "Tehnika 18 (aadress segane)", distanceKm = 3.4, payout = 5.40,
+            itemsEt = "Kaks karrit ja nan-leib",
+            itemsRu = "Два карри и лепёшка нан",
+            steps = listOf(
+                askReadyStep("Tere! Jah, kõik on pakitud.", "Здравствуйте! Да, всё упаковано."),
+                DialogueStep(
+                    speaker = Speaker.NARRATOR,
+                    npcEt = "Navigaator viib vale kohta — seda maja numbrit pole.",
+                    npcRu = "Навигатор привёл не туда — такого номера дома нет.",
+                    questionRu = "Что случилось? Выберите верную фразу:",
+                    choices = listOf(
+                        Choice("Aadress on vale.", "Адрес неверный.", true),
+                        Choice("Toit on valmis.", "Еда готова.", false),
+                        Choice("Lift on katki.", "Лифт сломан.", false),
+                    ),
+                    teachWordIds = listOf("p_aadress_q")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "Halloo?",
+                    npcRu = "Алло?",
+                    questionRu = "Позвоните клиенту и уточните, верный ли адрес:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Tere! Kas see aadress on õige?", "Здравствуйте! Этот адрес верный?", true),
+                        Choice("Kas teile maitseb karri?", "Вам нравится карри?", false),
+                        Choice("Head ööd!", "Спокойной ночи!", false),
+                    ),
+                    npcReplyEt = "Oi, ei! Õige maja on kollane, teisel pool tänavat.",
+                    npcReplyRu = "Ой, нет! Нужный дом жёлтый, на другой стороне улицы.",
+                    teachWordIds = listOf("p_aadress_q", "s_maja")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Уточните, где именно находится дом:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kus maja täpselt asub?", "Где именно находится дом?", true),
+                        Choice("Mis su lemmiktoit on?", "Какая твоя любимая еда?", false),
+                        Choice("Kas sajab lund?", "Идёт снег?", false),
+                    ),
+                    npcReplyEt = "Roheline uks, teine korrus. Korter neli.",
+                    npcReplyRu = "Зелёная дверь, второй этаж. Квартира четыре.",
+                    teachWordIds = listOf("p_kus_maja_q", "s_uks", "n_4")
+                ),
+                handoverStep(),
+            )
+        ),
+        // ---- Тема: КЛИЕНТА НЕТ ДОМА ----
+        Order(
+            id = "o9", restaurant = "Sushi Tokyo", customer = "Jaan",
+            address = "Mustamäe tee 16, korter 21", distanceKm = 2.9, payout = 4.90,
+            itemsEt = "Üks sushikomplekt ja miso supp",
+            itemsRu = "Один суши-сет и суп мисо",
+            steps = listOf(
+                askReadyStep("Jah, valmis. Head teed!", "Да, готов. Счастливого пути!"),
+                DialogueStep(
+                    speaker = Speaker.NARRATOR,
+                    npcEt = "Olete kohal, aga klient ei vasta telefonile.",
+                    npcRu = "Вы на месте, но клиент не отвечает на телефон.",
+                    questionRu = "Клиент не отвечает. Что сделать?",
+                    choices = listOf(
+                        Choice("Ma helistan teile veel kord.", "Я позвоню вам ещё раз.", true),
+                        Choice("Söön toidu ise ära.", "Съем еду сам.", false),
+                        Choice("Sõidan kohe koju.", "Сразу поеду домой.", false),
+                    ),
+                    npcReplyEt = "(Klient ikka ei vasta...)",
+                    npcReplyRu = "(Клиент всё ещё не отвечает...)",
+                    teachWordIds = listOf("p_helistan")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "Klient kirjutas: „Vabandust, ma ei kuulnud!“",
+                    npcRu = "Клиент написал: «Извините, я не слышал!»",
+                    questionRu = "Спросите, оставить ли заказ под дверью:",
+                    courierAsks = true,
+                    choices = listOf(
+                        Choice("Kas jätan toidu ukse taha?", "Оставить еду под дверью?", true),
+                        Choice("Kas maksate kaardiga?", "Платите картой?", false),
+                        Choice("Kus on lift?", "Где лифт?", false),
+                    ),
+                    npcReplyEt = "Jah, jätke ukse taha, palun.",
+                    npcReplyRu = "Да, оставьте под дверью, пожалуйста.",
+                    teachWordIds = listOf("p_ukse_taha", "s_uks")
+                ),
+                DialogueStep(
+                    speaker = Speaker.KLIENT,
+                    npcEt = "", npcRu = "",
+                    questionRu = "Подтвердите: оставите под дверью и сделаете фото:",
+                    choices = listOf(
+                        Choice("Selge, jätan ukse taha ja teen foto.", "Понятно, оставлю под дверью и сделаю фото.", true),
+                        Choice("Ei, ma võtan toidu endale.", "Нет, я заберу еду себе.", false),
+                        Choice("Pööra paremale.", "Поверни направо.", false),
+                    ),
+                    npcReplyEt = "Suur aitäh! Vabandust veel kord.",
+                    npcReplyRu = "Большое спасибо! Ещё раз извините.",
+                    teachWordIds = listOf("p_foto", "p_ukse_taha")
                 ),
             )
         ),

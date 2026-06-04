@@ -97,18 +97,32 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         if (s.answered) return
         val choice = s.step.choices[i]
 
-        if (choice.correct) {
-            val msgs = s.transcript.toMutableList()
-            msgs += ChatMsg(true, choice.et, choice.ru, "🛵 Вы")
-            if (s.step.npcReplyEt.isNotBlank()) {
-                msgs += ChatMsg(false, s.step.npcReplyEt, s.step.npcReplyRu,
-                    npcLabel(s.step.speaker) + " отвечает")
-            }
-            state = state.copy(
-                learnedIds = state.learnedIds + s.step.teachWordIds,
-                correct = state.correct + 1
-            )
+        if (!choice.correct) {
+            state = state.copy(wrong = state.wrong + 1)
             repo.save(state)
+            session = s.copy(
+                wrongSelected = s.wrongSelected + i,
+                selected = null,
+                mistakes = s.mistakes + 1
+            )
+            return
+        }
+
+        // Верный ответ: добавляем реплику курьера и ответ персонажа.
+        val msgs = s.transcript.toMutableList()
+        msgs += ChatMsg(true, choice.et, choice.ru, "🛵 Вы")
+        if (s.step.npcReplyEt.isNotBlank()) {
+            msgs += ChatMsg(false, s.step.npcReplyEt, s.step.npcReplyRu,
+                npcLabel(s.step.speaker) + " отвечает")
+        }
+        state = state.copy(
+            learnedIds = state.learnedIds + s.step.teachWordIds,
+            correct = state.correct + 1
+        )
+        repo.save(state)
+
+        if (s.isLastStep) {
+            // Последний шаг — ждём кнопку «Завершить доставку».
             session = s.copy(
                 transcript = msgs,
                 answered = true,
@@ -116,12 +130,15 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 selected = i
             )
         } else {
-            state = state.copy(wrong = state.wrong + 1)
-            repo.save(state)
+            // Сразу переходим к следующему шагу — без кнопки «Далее».
+            val nextStep = s.order.steps[s.stepIndex + 1]
             session = s.copy(
-                wrongSelected = s.wrongSelected + i,
+                transcript = msgs + openingMessages(nextStep),
+                stepIndex = s.stepIndex + 1,
                 selected = null,
-                mistakes = s.mistakes + 1
+                wrongSelected = emptySet(),
+                answered = false,
+                correctCount = s.correctCount + 1
             )
         }
     }
