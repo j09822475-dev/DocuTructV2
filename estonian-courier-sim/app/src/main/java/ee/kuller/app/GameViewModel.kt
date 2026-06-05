@@ -11,7 +11,10 @@ import ee.kuller.app.data.DialogueFactory
 import ee.kuller.app.data.GameRepository
 import ee.kuller.app.data.GameState
 import ee.kuller.app.data.OrderFactory
+import ee.kuller.app.model.Nav
+import ee.kuller.app.model.NavOption
 import ee.kuller.app.model.Order
+import ee.kuller.app.model.Phase
 import ee.kuller.app.model.Thread
 import ee.kuller.app.model.Turn
 import ee.kuller.app.util.Speaker as Tts
@@ -27,7 +30,6 @@ fun threadLabel(thread: Thread): String = when (thread) {
     Thread.TUGI -> "🎧 Поддержка"
 }
 
-/** Сообщение в одном из чатов. */
 data class ChatMsg(
     val thread: Thread,
     val fromCourier: Boolean,
@@ -36,22 +38,23 @@ data class ChatMsg(
     val label: String
 )
 
-/** Порядок вкладок-чатов. */
 val THREAD_ORDER = listOf(Thread.RESTORAN, Thread.KLIENT, Thread.TUGI)
 
 data class OrderSession(
     val order: Order,
+    val phases: Map<String, Phase>,
+    val phaseId: String,
     val turns: List<Turn>,
     val turnIndex: Int = 0,
     val transcript: List<ChatMsg> = emptyList(),
     val activeThread: Thread = Thread.RESTORAN,
-    val threadsSeen: Set<Thread> = emptySet(),
+    val threadsSeen: Set<Thread> = setOf(Thread.RESTORAN),
     val unread: Set<Thread> = emptySet(),
     val awaiting: Boolean = false,
+    val nav: Nav.Choose? = null,
     val atEnd: Boolean = false,
     val typing: Thread? = null,
     val selected: Int? = null,
-    val wrongSelected: Set<Int> = emptySet(),
     val correctCount: Int = 0,
     val mistakes: Int = 0,
     val ratingBonus: Double = 0.0,
@@ -68,56 +71,52 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private val tts = Tts(app)
     private var revealJob: Job? = null
 
-    var state by mutableStateOf(repo.load())
-        private set
-    var online by mutableStateOf(false)
-        private set
-    var session by mutableStateOf<OrderSession?>(null)
-        private set
-    var availableOrders by mutableStateOf<List<Order>>(emptyList())
-        private set
-    var lastResult by mutableStateOf<DeliveryResult?>(null)
-        private set
+    var state by mutableStateOf(repo.load()); private set
+    var online by mutableStateOf(false); private set
+    var session by mutableStateOf<OrderSession?>(null); private set
+    var availableOrders by mutableStateOf<List<Order>>(emptyList()); private set
+    var lastResult by mutableStateOf<DeliveryResult?>(null); private set
 
-    fun toggleOnline() {
-        online = !online
-        if (online) refreshOrders()
-    }
-
+    fun toggleOnline() { online = !online; if (online) refreshOrders() }
     fun refreshOrders() { availableOrders = OrderFactory.batch(5) }
-
     fun speak(text: String) = tts.speak(text, flush = true)
 
     fun startOrder(order: Order) {
         revealJob?.cancel()
-        val turns = DialogueFactory.build(order).map {
-            if (it is Turn.Ask) it.copy(choices = it.choices.shuffled()) else it
+        val delivery = DialogueFactory.build(order)
+        // Перемешиваем варианты во всех фазах.
+        val phases = delivery.phases.mapValues { (_, ph) ->
+            ph.copy(turns = ph.turns.map {
+                if (it is Turn.Ask) it.copy(choices = it.choices.shuffled()) else it
+            })
         }
-        session = OrderSession(order = order, turns = turns)
+        val start = phases.getValue(delivery.start)
+        session = OrderSession(
+            order = order, phases = phases, phaseId = delivery.start,
+            turns = start.turns, activeThread = start.thread,
+            threadsSeen = setOf(start.thread)
+        )
         lastResult = null
         revealUntilAsk()
     }
 
-    /** Показывает реплики по одной (с «печатает…») до ближайшего хода курьера. */
     private fun revealUntilAsk() {
         revealJob?.cancel()
         revealJob = viewModelScope.launch {
             while (true) {
                 val s = session ?: return@launch
                 when (val turn = s.turns.getOrNull(s.turnIndex)) {
-                    null -> { session = s.copy(atEnd = true, typing = null); return@launch }
-                    is Turn.Ask -> {
-                        // Курьер должен ответить в этом чате — переключаемся в него.
-                        session = s.copy(
-                            awaiting = true, typing = null,
-                            activeThread = turn.thread,
-                            threadsSeen = s.threadsSeen + turn.thread,
-                            unread = s.unread - turn.thread
-                        )
+                    null -> {
+                        // Фаза закончилась → навигация.
+                        when (val nav = s.phases[s.phaseId]?.nav) {
+                            is Nav.Choose -> session = s.copy(nav = nav, typing = null, awaiting = false)
+                            else -> session = s.copy(atEnd = true, typing = null, awaiting = false, nav = null)
+                        }
                         return@launch
                     }
+                    is Turn.Ask -> { session = s.copy(awaiting = true, typing = null); return@launch }
                     is Turn.Say -> {
-                        session = s.copy(typing = turn.thread, threadsSeen = s.threadsSeen + turn.thread)
+                        session = s.copy(typing = turn.thread)
                         delay(1000)
                         val cur = session ?: return@launch
                         val msg = ChatMsg(turn.thread, false, turn.et, turn.ru, threadLabel(turn.thread))
@@ -142,7 +141,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun select(index: Int) {
         val s = session ?: return
-        if (!s.awaiting || index in s.wrongSelected) return
+        if (!s.awaiting) return
         session = s.copy(selected = index)
     }
 
@@ -153,14 +152,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val i = s.selected ?: return
         val choice = ask.choices[i]
 
-        // Обучающий вопрос: неверный ответ — «попробуй ещё».
-        if (!ask.branching && !choice.correct) {
-            state = state.copy(wrong = state.wrong + 1)
-            repo.save(state)
-            session = s.copy(wrongSelected = s.wrongSelected + i, selected = null, mistakes = s.mistakes + 1)
-            return
-        }
-
         val msg = ChatMsg(ask.thread, true, choice.et, choice.ru, "🛵 Вы")
         state = state.copy(
             learnedIds = if (choice.correct) state.learnedIds + ask.teachWordIds else state.learnedIds,
@@ -169,7 +160,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         )
         repo.save(state)
 
-        // Ветвление: вставляем followUp выбранного варианта сразу после текущего хода.
+        // Любой вариант рабочий: вставляем его ветку и идём дальше.
         val newTurns = buildList {
             addAll(s.turns.subList(0, s.turnIndex + 1))
             addAll(choice.followUp)
@@ -181,12 +172,29 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             turnIndex = s.turnIndex + 1,
             awaiting = false,
             selected = null,
-            wrongSelected = emptySet(),
             correctCount = s.correctCount + if (choice.correct) 1 else 0,
             mistakes = s.mistakes + if (choice.correct) 0 else 1,
             ratingBonus = s.ratingBonus + choice.ratingDelta
         )
         tts.speak(choice.et, flush = true)
+        revealUntilAsk()
+    }
+
+    /** Курьер выбрал, что делать дальше (какой чат открыть). */
+    fun navChoose(option: NavOption) {
+        val s = session ?: return
+        val phase = s.phases[option.phase] ?: return
+        session = s.copy(
+            phaseId = option.phase,
+            turns = phase.turns,
+            turnIndex = 0,
+            activeThread = phase.thread,
+            threadsSeen = s.threadsSeen + phase.thread,
+            unread = s.unread - phase.thread,
+            nav = null,
+            awaiting = false,
+            selected = null
+        )
         revealUntilAsk()
     }
 
@@ -200,8 +208,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val tip = if (perfect) s.order.payout * 0.25 else 0.0
         val earned = s.order.payout + tip
         val xpGain = s.correctCount * 20 + if (perfect) 30 else 0
-
-        val baseDelta = if (perfect) 0.02 else -0.03 * s.mistakes
+        val baseDelta = if (perfect) 0.02 else -0.02 * s.mistakes
         val newRating = min(5.0, max(3.0, state.rating + baseDelta + s.ratingBonus))
 
         state = state.copy(
@@ -211,7 +218,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             rating = newRating
         )
         repo.save(state)
-
         lastResult = DeliveryResult(
             order = s.order, steps = s.correctCount, mistakes = s.mistakes,
             earned = earned, tip = tip, xp = xpGain, perfect = perfect
@@ -219,10 +225,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         session = s.copy(finished = true)
     }
 
-    fun cancelOrder() {
-        revealJob?.cancel()
-        session = null
-    }
+    fun cancelOrder() { revealJob?.cancel(); session = null }
 
     fun closeResult() {
         session = null

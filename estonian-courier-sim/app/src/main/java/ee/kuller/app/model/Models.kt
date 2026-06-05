@@ -17,23 +17,21 @@ data class Category(
     val words: List<WordEntry>
 )
 
-/** Сценарий доставки — определяет среднюю часть диалога. */
+/** Сценарий доставки. */
 enum class Scenario {
     FACE_DOOR, LIFT_BROKEN, GATE_CODE, DIRECTIONS, LEAVE_DOOR, CASH,
     WRONG_ADDRESS, NOT_HOME, LATE, OFFICE, CANCELLED,
-    COMPLAINT,    // клиент жалуется (холодная еда)
-    BREAKDOWN,    // поломка транспорта в пути
-    SPOILED,      // повреждённая упаковка / еда вытекла
+    COMPLAINT, BREAKDOWN, SPOILED,
 }
 
-/** Отдельные чаты-собеседники (как в реальном приложении курьера). */
+/** Отдельные чаты-собеседники. */
 enum class Thread { RESTORAN, KLIENT, TUGI }
 
 /**
- * Вариант ответа курьера.
+ * Вариант ответа курьера. Любой вариант РАБОЧИЙ: после выбора разворачивается
+ * его ветка [followUp], затем диалог сходится к завершению текущей фазы.
  *  - [correct] — рекомендуемый/вежливый вариант (даёт XP);
- *  - [followUp] — ветка диалога, которая разворачивается после выбора;
- *  - [ratingDelta] — как выбор влияет на рейтинг курьера.
+ *  - [ratingDelta] — влияние на рейтинг.
  */
 data class Choice(
     val et: String,
@@ -43,7 +41,7 @@ data class Choice(
     val ratingDelta: Double = 0.0,
 )
 
-/** Реплика-ход диалога. У каждого хода есть [thread] — в каком чате он происходит. */
+/** Реплика-ход диалога. У каждого хода есть чат [thread]. */
 sealed interface Turn {
     val thread: Thread
 
@@ -53,17 +51,42 @@ sealed interface Turn {
         val ru: String
     ) : Turn
 
+    /** Вопрос-развилка: каждый вариант ведёт в свою ветку. */
     data class Ask(
         override val thread: Thread,
         val promptRu: String,
-        val courier: Boolean,        // курьер сам спрашивает (для подписи)
-        val branching: Boolean,      // true → любой вариант ведёт в свою ветку (без «попробуй ещё»)
+        val courier: Boolean,
         val choices: List<Choice>,
         val teachWordIds: List<String> = emptyList()
     ) : Turn
 }
 
-/** Заказ хранит факты; реплики собирает DialogueFactory. */
+/** Что происходит после завершения фазы (реплики в одном чате закончились). */
+sealed interface Nav {
+    /** Доставка завершена. */
+    data object End : Nav
+
+    /** Курьер сам выбирает, что делать дальше (какой чат открыть). */
+    data class Choose(val promptRu: String, val options: List<NavOption>) : Nav
+}
+
+data class NavOption(val labelRu: String, val phase: String)
+
+/** Фаза диалога — разговор в ОДНОМ чате, затем навигация [nav]. */
+data class Phase(
+    val id: String,
+    val thread: Thread,
+    val turns: List<Turn>,
+    val nav: Nav
+)
+
+/** Готовый диалог доставки: стартовая фаза + все фазы по id. */
+data class Delivery(
+    val start: String,
+    val phases: Map<String, Phase>
+)
+
+/** Заказ хранит факты; диалог собирает DialogueFactory. */
 data class Order(
     val id: String,
     val restaurant: String,

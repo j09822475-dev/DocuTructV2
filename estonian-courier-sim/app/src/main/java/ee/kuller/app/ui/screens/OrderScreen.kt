@@ -29,10 +29,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,7 +58,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     val messages = session.messages(session.activeThread)
     val showTyping = session.typing == session.activeThread
     val listState = rememberLazyListState()
-    LaunchedEffect(messages.size, showTyping, session.awaiting, session.atEnd, session.activeThread) {
+    LaunchedEffect(messages.size, showTyping, session.awaiting, session.atEnd, session.activeThread, session.nav != null) {
         val extra = if (showTyping) 1 else 0
         if (messages.isNotEmpty() || showTyping) {
             listState.animateScrollToItem(messages.size + 1 + extra)
@@ -67,7 +67,6 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Шапка
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -76,21 +75,15 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                 Icon(Icons.Filled.Close, null, Modifier.size(18.dp)); Text(" Отмена")
             }
             Column(Modifier.weight(1f)) {
-                Text(
-                    "${session.order.restaurant} → ${session.order.customer}",
+                Text("${session.order.restaurant} → ${session.order.customer}",
                     fontWeight = FontWeight.Bold, fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    session.order.address, fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
+                    color = MaterialTheme.colorScheme.onBackground)
+                Text(session.order.address, fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
             }
         }
-        LinearProgressIndicator(
-            progress = { session.progress },
-            modifier = Modifier.fillMaxWidth().height(5.dp)
-        )
+        LinearProgressIndicator(progress = { session.progress },
+            modifier = Modifier.fillMaxWidth().height(5.dp))
 
         // Вкладки-чаты
         if (session.tabs.size > 1) {
@@ -100,12 +93,10 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 session.tabs.forEach { t ->
-                    val unread = t in session.unread
                     FilterChip(
                         selected = t == session.activeThread,
                         onClick = { vm.setActiveThread(t) },
-                        label = { Text(threadLabel(t) + if (unread) "  🔴" else "") },
-                        colors = FilterChipDefaults.filterChipColors()
+                        label = { Text(threadLabel(t) + if (t in session.unread) "  🔴" else "") }
                     )
                 }
             }
@@ -118,60 +109,60 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(Modifier.height(8.dp)) }
-            itemsIndexed(messages) { _, msg ->
-                ChatBubble(msg = msg, onSpeak = { vm.speak(msg.et) })
-            }
+            itemsIndexed(messages) { _, msg -> ChatBubble(msg) { vm.speak(msg.et) } }
             if (showTyping) item { TypingBubble(threadLabel(session.activeThread)) }
             item { Spacer(Modifier.height(4.dp)) }
         }
 
         // Нижняя панель
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
-            Column(
-                Modifier.fillMaxWidth().heightIn(max = 340.dp).padding(12.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 val ask = session.currentAsk
+                val nav = session.nav
                 when {
                     session.atEnd -> {
-                        Button(
-                            onClick = { vm.finishDelivery() },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        ) { Text("Завершить доставку 🏁", fontWeight = FontWeight.Bold) }
+                        Button(onClick = { vm.finishDelivery() },
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Text("Завершить доставку 🏁", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    nav != null -> {
+                        Text(nav.promptRu, fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 8.dp))
+                        nav.options.forEach { opt ->
+                            Button(onClick = { vm.navChoose(opt) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(14.dp)) {
+                                Text(opt.labelRu, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                     session.awaiting && ask != null && ask.thread == session.activeThread -> {
-                        Text(
-                            ask.promptRu,
-                            fontWeight = FontWeight.Bold, fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            if (ask.courier) "🛵 Выберите, что сказать:" else "🛵 Выберите ответ:",
-                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
-                        )
-                        ask.choices.forEachIndexed { i, choice ->
-                            AnswerOption(
-                                et = choice.et, ru = choice.ru,
-                                selected = session.selected == i,
-                                wrong = i in session.wrongSelected,
-                                onClick = { vm.select(i) },
-                                onSpeak = { vm.speak(choice.et) }
-                            )
-                        }
-                        if (session.wrongSelected.isNotEmpty()) {
+                        // Прокручиваемые варианты + ЗАКРЕПЛЁННАЯ кнопка «Отправить»
+                        Column(Modifier.heightIn(max = 270.dp).verticalScroll(rememberScrollState())) {
+                            Text(ask.promptRu, fontWeight = FontWeight.Bold, fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface)
                             Text(
-                                "❌ Vale — proovi uuesti. (Неверно — попробуйте ещё раз.)",
-                                fontSize = 12.sp, color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(top = 4.dp)
+                                if (ask.courier) "🛵 Выберите, что сказать:" else "🛵 Выберите ответ:",
+                                fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
                             )
+                            ask.choices.forEachIndexed { i, choice ->
+                                AnswerOption(
+                                    et = choice.et, ru = choice.ru,
+                                    selected = session.selected == i,
+                                    onClick = { vm.select(i) },
+                                    onSpeak = { vm.speak(choice.et) }
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(8.dp))
                         Button(
                             onClick = { vm.confirm() },
                             enabled = session.selected != null,
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp))
@@ -179,25 +170,18 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                         }
                     }
                     session.awaiting && ask != null -> {
-                        // Ответить нужно в другом чате
-                        Text(
-                            "Нужно ответить в чате «${threadLabel(ask.thread)}»",
+                        Text("Ответьте в чате «${threadLabel(ask.thread)}»",
                             fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        Button(
-                            onClick = { vm.setActiveThread(ask.thread) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        ) { Text("Открыть «${threadLabel(ask.thread)}»", fontWeight = FontWeight.Bold) }
+                            modifier = Modifier.padding(bottom = 8.dp))
+                        OutlinedButton(onClick = { vm.setActiveThread(ask.thread) },
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+                            Text("Открыть «${threadLabel(ask.thread)}»")
+                        }
                     }
                     else -> {
-                        Text(
-                            "💬 …",
-                            fontSize = 16.sp,
+                        Text("💬 …", fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
+                            modifier = Modifier.padding(vertical = 12.dp))
                     }
                 }
             }
@@ -216,24 +200,18 @@ private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
         bottomStart = if (courier) 18.dp else 4.dp,
         bottomEnd = if (courier) 4.dp else 18.dp
     )
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = if (courier) Arrangement.End else Arrangement.Start
-    ) {
+    Row(Modifier.fillMaxWidth(),
+        horizontalArrangement = if (courier) Arrangement.End else Arrangement.Start) {
         Column(
             horizontalAlignment = if (courier) Alignment.End else Alignment.Start,
             modifier = Modifier.widthIn(max = 290.dp)
         ) {
-            Text(
-                msg.label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            Text(msg.label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 color = scheme.onBackground.copy(alpha = 0.6f),
-                modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp)
-            )
+                modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp))
             Surface(color = bubbleColor, shape = shape) {
-                Row(
-                    Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.widthIn(max = 230.dp)) {
                         Text(msg.et, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = onBubble)
                         if (msg.ru.isNotBlank()) {
@@ -251,53 +229,36 @@ private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
 private fun TypingBubble(label: String) {
     val scheme = MaterialTheme.colorScheme
     Column(horizontalAlignment = Alignment.Start) {
-        Text(
-            label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold,
             color = scheme.onBackground.copy(alpha = 0.6f),
-            modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp)
-        )
-        Surface(
-            color = scheme.surfaceVariant,
-            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp)
-        ) {
-            Text(
-                "печатает •••",
-                fontSize = 14.sp,
+            modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 2.dp))
+        Surface(color = scheme.surfaceVariant,
+            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp)) {
+            Text("печатает •••", fontSize = 14.sp,
                 color = scheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-            )
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp))
         }
     }
 }
 
 @Composable
 private fun AnswerOption(
-    et: String, ru: String, selected: Boolean, wrong: Boolean,
+    et: String, ru: String, selected: Boolean,
     onClick: () -> Unit, onSpeak: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val border: Color = when {
-        wrong -> scheme.error
-        selected -> scheme.primary
-        else -> scheme.onSurface.copy(alpha = 0.12f)
-    }
-    val bg: Color = when {
-        wrong -> scheme.error.copy(alpha = 0.08f)
-        selected -> scheme.primary.copy(alpha = 0.08f)
-        else -> scheme.surface
-    }
+    val border: Color = if (selected) scheme.primary else scheme.onSurface.copy(alpha = 0.12f)
+    val bg: Color = if (selected) scheme.primary.copy(alpha = 0.08f) else scheme.surface
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             .border(2.dp, border, RoundedCornerShape(14.dp))
-            .clickable(enabled = !wrong, onClick = onClick),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = bg)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(et, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = if (wrong) scheme.error else scheme.onSurface)
+                Text(et, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = scheme.onSurface)
                 Text(ru, fontSize = 12.sp, color = scheme.onSurface.copy(alpha = 0.65f))
             }
             SpeakButton(onClick = onSpeak)
@@ -315,21 +276,14 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
     ) {
         Spacer(Modifier.height(24.dp))
         Text(if (r.perfect) "🏆" else "🏁", fontSize = 64.sp)
-        Text(
-            if (r.perfect) "Доставка без ошибок!" else "Доставка выполнена",
+        Text(if (r.perfect) "Доставка без ошибок!" else "Доставка выполнена",
             fontWeight = FontWeight.Bold, fontSize = 24.sp,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            "${r.order.restaurant} → ${r.order.customer}",
-            fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-        )
+            color = MaterialTheme.colorScheme.onBackground)
+        Text("${r.order.restaurant} → ${r.order.customer}", fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
         Spacer(Modifier.height(20.dp))
-        Card(
-            Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 ResultRow("Верных ответов", "${r.steps}")
                 ResultRow("Ошибок", if (r.mistakes == 0) "нет 🎯" else "${r.mistakes}")
@@ -341,11 +295,10 @@ private fun ResultView(vm: GameViewModel, onExit: () -> Unit) {
             }
         }
         Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = { vm.closeResult(); onExit() },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp)
-        ) { Text("Дальше работать 🛵", fontWeight = FontWeight.Bold) }
+        Button(onClick = { vm.closeResult(); onExit() },
+            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) {
+            Text("Дальше работать 🛵", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

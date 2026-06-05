@@ -1,17 +1,21 @@
 package ee.kuller.app.data
 
 import ee.kuller.app.model.Choice
+import ee.kuller.app.model.Delivery
+import ee.kuller.app.model.Nav
+import ee.kuller.app.model.NavOption
 import ee.kuller.app.model.Order
+import ee.kuller.app.model.Phase
 import ee.kuller.app.model.Scenario
 import ee.kuller.app.model.Thread
 import ee.kuller.app.model.Turn
 
 /**
- * Генератор диалогов доставки.
+ * Сборщик диалога-доставки как ГРАФА ФАЗ.
  *
- * Реплики распределены по ОТДЕЛЬНЫМ ЧАТАМ ([Thread]): ресторан, клиент, поддержка.
- * Часть вопросов — обучающие (один верный вариант), часть — РАЗВИЛКИ ([branching]),
- * где каждый ответ ведёт в свою ветку с последствиями (рейтинг, жалобы, поддержка).
+ * Каждая фаза — разговор в ОДНОМ чате; внутри фазы вопросы ветвятся (любой
+ * вариант рабочий и ведёт к логичному завершению фазы). После фазы курьер САМ
+ * выбирает, что делать дальше ([Nav.Choose]) — написать клиенту или в поддержку.
  */
 object DialogueFactory {
 
@@ -19,495 +23,404 @@ object DialogueFactory {
     private fun client(et: String, ru: String) = Turn.Say(Thread.KLIENT, et, ru)
     private fun support(et: String, ru: String) = Turn.Say(Thread.TUGI, et, ru)
 
-    /** Обучающий вопрос: один верный вариант, остальные — «попробуй ещё». */
-    private fun learnAsk(
-        thread: Thread, promptRu: String, courier: Boolean,
-        correct: Pair<String, String>, wrong: List<Pair<String, String>>, teach: List<String>
-    ): Turn {
-        val choices = buildList {
-            add(Choice(correct.first, correct.second, correct = true))
-            wrong.shuffled().take(2).forEach { add(Choice(it.first, it.second, correct = false)) }
-        }
-        return Turn.Ask(thread, promptRu, courier, branching = false, choices = choices, teachWordIds = teach)
-    }
+    private fun c(
+        et: String, ru: String, correct: Boolean = true,
+        rating: Double = 0.0, followUp: List<Turn> = emptyList()
+    ) = Choice(et, ru, correct, followUp, rating)
 
-    /** Развилка: каждый вариант ведёт в свою ветку (followUp) с последствиями. */
-    private fun decideAsk(
-        thread: Thread, promptRu: String, courier: Boolean,
+    private fun ask(
+        thread: Thread, prompt: String, courier: Boolean,
         choices: List<Choice>, teach: List<String> = emptyList()
-    ): Turn = Turn.Ask(thread, promptRu, courier, branching = true, choices = choices, teachWordIds = teach)
+    ): Turn = Turn.Ask(thread, prompt, courier, choices, teach)
 
-    private fun enRoute() = learnAsk(
-        Thread.KLIENT, "Напишите клиенту, что забрали заказ и уже едете:", true,
-        correct = listOf(
-            "Tere! Võtsin tellimuse, olen kohe kohal." to "Здравствуйте! Забрал заказ, скоро буду.",
-            "Tere! Olen teel, kohe kohal." to "Здравствуйте! Я в пути, скоро буду.",
-        ).random(),
-        wrong = listOf(
-            "Ma ei leidnud restorani." to "Я не нашёл ресторан.",
-            "Söön teie toidu ära." to "Съем вашу еду.",
-            "Head ööd!" to "Спокойной ночи!",
+    private val hub = Nav.Choose(
+        "Заказ у вас. Что дальше?",
+        listOf(NavOption("📲 Написать клиенту", "client"), NavOption("🎧 Связаться с поддержкой", "support_opt"))
+    )
+
+    // ---------- общие фазы ----------
+    private fun restPhase(o: Order): Phase = Phase(
+        "rest", Thread.RESTORAN,
+        buildList {
+            add(
+                ask(
+                    Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и спросите, готов ли заказ:", true,
+                    listOf(
+                        c("Tere! Kas tellimus on valmis?", "Здравствуйте! Заказ готов?"),
+                        c("Head aega, nägemist!", "До свидания!", correct = false, rating = -0.05,
+                            followUp = listOf(rest("Oih, te ikka tulite tellimusele järele? Üks hetk.", "Ой, вы всё-таки за заказом? Минутку."))),
+                        c("Üks õlu, palun.", "Одно пиво, пожалуйста.", correct = false, rating = -0.03,
+                            followUp = listOf(rest("Me ei müü õlut. Aga teie tellimus on kohe valmis.", "Мы не продаём пиво. Но ваш заказ сейчас будет."))),
+                    ),
+                    listOf("g_tere", "p_valmis_q")
+                )
+            )
+            add(rest("Tere! Teil on tellimus: ${o.itemsEt}, eks?", "Здравствуйте! У вас заказ: ${o.itemsRu}, верно?"))
+            add(
+                ask(
+                    Thread.RESTORAN, "Сверьте заказ и подтвердите, что всё верно:", false,
+                    listOf(
+                        c(o.confirmEt, o.confirmRu),
+                        c("Ei, see on vale tellimus.", "Нет, это неверный заказ.", correct = false, rating = -0.05,
+                            followUp = listOf(rest("Kontrollin... ei, kõik on õige.", "Проверяю... нет, всё верно."))),
+                        c("Üks õlu, palun.", "Одно пиво.", correct = false, rating = -0.03,
+                            followUp = listOf(rest("Naljakas! Aga siin on teie toit.", "Смешно! Но вот ваша еда."))),
+                    ),
+                    o.itemTeach
+                )
+            )
+            add(rest("Peaaegu valmis, oota üks minut.", "Почти готово, подожди минутку."))
+            add(rest("Nüüd on valmis. Palun, head teed!", "Теперь готово. Пожалуйста, счастливого пути!"))
+        },
+        hub
+    )
+
+    private fun supportOptPhase(): Phase = Phase(
+        "support_opt", Thread.TUGI,
+        listOf(
+            support("Tere! Klienditugi kuuleb. Kuidas saan aidata?", "Здравствуйте! Поддержка слушает. Чем помочь?"),
+            ask(
+                Thread.TUGI, "Что напишете в поддержку?", true,
+                listOf(
+                    c("Kõik on hästi, tahtsin vaid kontrollida.", "Всё хорошо, хотел только уточнить.",
+                        followUp = listOf(support("Suurepärane! Head tööd.", "Отлично! Хорошей работы."))),
+                    c("Kas aadress on kindlasti õige?", "Адрес точно верный?",
+                        followUp = listOf(support("Jah, aadress on õige. Edu!", "Да, адрес верный. Удачи!"))),
+                    c("Ma tahan koju minna.", "Я хочу домой.", correct = false, rating = -0.05,
+                        followUp = listOf(support("Palun lõpetage tellimus enne. Aitäh.", "Пожалуйста, сначала завершите заказ. Спасибо."))),
+                ),
+                listOf("p_tugi_q", "g_tere")
+            )
         ),
-        teach = listOf("p_kohal", "g_tere")
+        Nav.Choose("Что дальше?", listOf(NavOption("📲 Написать клиенту", "client")))
     )
 
-    // ---------------- 1. РЕСТОРАН ----------------
-    private val moment = listOf(
-        "Üks hetk, vaatan." to "Минутку, смотрю.",
-        "Kohe vaatan järele." to "Сейчас проверю.",
-        "Oota natuke, palun." to "Подожди немного, пожалуйста.",
-    )
-    private val almostReady = listOf(
-        "Peaaegu valmis, oota üks minut." to "Почти готово, подожди минутку.",
-        "Kohe-kohe, veel üks hetk." to "Сейчас-сейчас, ещё момент.",
-        "Pakin kohe kotti." to "Сейчас сложу в пакет.",
-    )
-    private val ready = listOf(
-        "Nüüd on valmis. Palun, head teed!" to "Теперь готово. Пожалуйста, счастливого пути!",
-        "Valmis! Võta, head teed!" to "Готово! Держи, счастливого пути!",
+    /** Стандартная передача заказа лицом к лицу. */
+    private fun handover(): List<Turn> = listOf(
+        ask(
+            Thread.KLIENT, "Передайте заказ и пожелайте приятного аппетита:", false,
+            listOf(
+                c("Palun, siin on teie tellimus. Head isu!", "Пожалуйста, вот ваш заказ. Приятного аппетита!"),
+                c("Vabandust, ma sõin selle ära.", "Извините, я это съел.", correct = false, rating = -0.1,
+                    followUp = listOf(client("Mida?! See pole naljakas.", "Что?! Это не смешно."))),
+                c("Ei, see on minu tellimus.", "Нет, это мой заказ.", correct = false, rating = -0.1,
+                    followUp = listOf(client("Kuidas palun?", "Простите, что?"))),
+            ),
+            listOf("g_palun", "p_head_isu")
+        ),
+        client("Suur aitäh! Head isu, nägemist!", "Большое спасибо! Приятного аппетита, до свидания!")
     )
 
-    private fun pickup(o: Order): List<Turn> = buildList {
-        add(
-            learnAsk(
-                Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и спросите, готов ли заказ:", true,
-                correct = listOf(
-                    "Tere! Kas tellimus on valmis?" to "Здравствуйте! Заказ готов?",
-                    "Tervist! Kas saan tellimuse kätte?" to "Здравствуйте! Можно забрать заказ?",
-                ).random(),
-                wrong = listOf(
-                    "Head aega, nägemist!" to "До свидания!",
-                    "Ei, aitäh, ma ei taha." to "Нет, спасибо, я не хочу.",
-                    "Kus on tualett?" to "Где туалет?",
-                ),
-                teach = listOf("g_tere", "p_valmis_q")
-            )
+    // ---------- фазы клиента/поддержки по сценариям ----------
+    private fun scenarioPhases(o: Order): List<Phase> = when (o.scenario) {
+
+        Scenario.FACE_DOOR -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Kus te olete?", "Здравствуйте! Где вы?"))
+                add(ask(Thread.KLIENT, "Ответьте, что вы на месте, и спросите, где вас найти:", false, listOf(
+                    c("Olen kohal, maja ees. Kus ma teid leian?", "Я на месте, перед домом. Где мне вас найти?"),
+                    c("Vabandust, ma eksisin ära.", "Извините, я заблудился.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Oh ei... Ma tulen teile vastu.", "О нет... Я выйду навстречу."))),
+                    c("Ei, mul ei ole midagi.", "Нет, у меня ничего нет.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Kuidas? Ma tellisin toidu!", "Как? Я заказал еду!"))),
+                ), listOf("p_kohal", "p_kus_q", "s_maja")))
+                add(client("Näen teid! Tulen kohe alla.", "Вижу вас! Сейчас спущусь."))
+                addAll(handover())
+            }, Nav.End)
         )
-        val m = moment.random()
-        add(rest("Tere! ${m.first}", "Здравствуйте! ${m.second}"))
-        add(rest("Teil on tellimus: ${o.itemsEt}, eks?", "У вас заказ: ${o.itemsRu}, верно?"))
-        add(
-            learnAsk(
-                Thread.RESTORAN, "Сверьте заказ и подтвердите, что всё верно:", false,
-                correct = o.confirmEt to o.confirmRu,
-                wrong = listOf(
-                    "Ei, see on vale tellimus." to "Нет, это неверный заказ.",
-                    "Üks õlu, palun." to "Одно пиво, пожалуйста.",
-                    "Ma ei tea." to "Я не знаю.",
-                ),
-                teach = o.itemTeach
-            )
+
+        Scenario.LIFT_BROKEN -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Olen kolmandal korrusel. Lift on katki.", "Здравствуйте! Я на третьем этаже. Лифт сломан."))
+                add(ask(Thread.KLIENT, "Лифт сломан. Спросите, спустится клиент или вам подняться:", true, listOf(
+                    c("Kas tulete alla või tulen üles?", "Вы спуститесь или мне подняться?"),
+                    c("Kas pitsa on kuum?", "Пицца горячая?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ää... lihtsalt tooge palun üles.", "Эм... просто принесите наверх."))),
+                    c("Ma ootan all igatahes.", "Я в любом случае жду внизу.", correct = false, rating = -0.03,
+                        followUp = listOf(client("Olgu, ma tulen siis ise alla.", "Ладно, тогда я сам спущусь."))),
+                ), listOf("p_alla_voi_q", "s_korrus", "s_lift")))
+                add(client("Tulen ise alla, üks minut!", "Сейчас сам спущусь, минутку!"))
+                addAll(handover())
+            }, Nav.End)
         )
-        val a = almostReady.random()
-        add(rest(a.first, a.second))
-        val r = ready.random()
-        add(rest(r.first, r.second))
+
+        Scenario.GATE_CODE -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Värav on lukus, korter üheksa.", "Здравствуйте! Ворота заперты, квартира девять."))
+                add(ask(Thread.KLIENT, "Ворота заперты — спросите код двери:", true, listOf(
+                    c("Mis on ukse kood?", "Какой код двери?"),
+                    c("Head ööd!", "Спокойной ночи!", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mis? Praegu on päev!", "Что? Сейчас день!"))),
+                    c("Ma jätan toidu lihtsalt siia.", "Я просто оставлю еду здесь.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ei-ei, palun tooge ukse juurde!", "Нет-нет, принесите к двери!"))),
+                ), listOf("p_kood_q", "n_9", "s_korter")))
+                add(client("Kood on üks-kaks-kolm-neli.", "Код — один-два-три-четыре."))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.DIRECTIONS -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Maja on hoovis, seda on raske leida.", "Здравствуйте! Дом во дворе, его трудно найти."))
+                add(ask(Thread.KLIENT, "Спросите у клиента, как к нему пройти:", true, listOf(
+                    c("Kuidas ma teie juurde saan?", "Как мне к вам пройти?"),
+                    c("Mis kell on?", "Который час?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Hmm? Lihtsalt tulge hoovi.", "Хм? Просто зайдите во двор."))),
+                    c("Leidke ise mind.", "Найдите меня сами.", correct = false, rating = -0.05,
+                        followUp = listOf(client("See on teie töö, mitte minu.", "Это ваша работа, не моя."))),
+                ), listOf("p_kuidas_q")))
+                add(client("Minge otse, siis paremale. Kollane maja.", "Идите прямо, потом направо. Жёлтый дом."))
+                add(ask(Thread.KLIENT, "Подтвердите, что поняли дорогу:", false, listOf(
+                    c("Selge: otse ja siis paremale.", "Понятно: прямо, потом направо."),
+                    c("Selge: tagasi ja vasakule.", "Понятно: назад и налево.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ei-ei! Otse ja paremale!", "Нет-нет! Прямо и направо!"))),
+                    c("Ma ei saa aru.", "Я не понимаю.", correct = false, rating = -0.03,
+                        followUp = listOf(client("Otse. Siis. Paremale. Kollane maja!", "Прямо. Потом. Направо. Жёлтый дом!"))),
+                ), listOf("s_otse", "s_paremale", "s_maja")))
+                add(client("Just nii! Ootan ukse ees.", "Именно! Жду у двери."))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.LEAVE_DOOR -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Jätke palun toit ukse taha. Värava kood on viis-kuus-seitse-kaheksa.", "Здравствуйте! Оставьте еду под дверью. Код ворот пять-шесть-семь-восемь."))
+                add(ask(Thread.KLIENT, "Уточните номер квартиры:", true, listOf(
+                    c("Selge! Mis on korteri number?", "Понятно! Какой номер квартиры?"),
+                    c("Pööra paremale.", "Поверни направо.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mida? Ma räägin korterist.", "Что? Я про квартиру."))),
+                    c("Ma ei jäta ust taha.", "Я не оставлю под дверью.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Palun jätke, mul pole aega.", "Пожалуйста, оставьте, у меня нет времени."))),
+                ), listOf("p_korter_q", "n_5", "n_6", "n_7", "n_8")))
+                add(client("Korter kaks. Aitäh!", "Квартира два. Спасибо!"))
+                add(ask(Thread.KLIENT, "Подтвердите: оставите под дверью и сделаете фото:", false, listOf(
+                    c("Selge, jätan ukse taha ja teen foto.", "Понятно, оставлю под дверью и сделаю фото."),
+                    c("Ei, ma võtan toidu endale.", "Нет, я заберу еду себе.", correct = false, rating = -0.15,
+                        followUp = listOf(client("See on vargus!", "Это воровство!"))),
+                    c("Ma helistan teile.", "Я позвоню вам.", correct = false, rating = -0.02,
+                        followUp = listOf(client("Pole vaja, lihtsalt jätke ukse taha.", "Не надо, просто оставьте под дверью."))),
+                ), listOf("p_foto", "p_ukse_taha")))
+                add(client("Suur aitäh! Head isu!", "Большое спасибо! Приятного аппетита!"))
+            }, Nav.End)
+        )
+
+        Scenario.CASH -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Te tõite minu tellimuse? Palju ma võlgnen?", "Здравствуйте! Вы привезли мой заказ? Сколько я должен?"))
+                add(ask(Thread.KLIENT, "С клиента 10 €. Назовите сумму:", false, listOf(
+                    c("Kümme eurot, palun.", "Десять евро, пожалуйста."),
+                    c("Sada eurot.", "Сто евро.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Mida?! See on liiga palju!", "Что?! Это слишком много!"))),
+                    c("Ma ei tea.", "Я не знаю.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Vaadake äpist, palun.", "Посмотрите в приложении, пожалуйста."))),
+                ), listOf("m_maksab", "m_eurot", "n_10")))
+                add(client("Selge. Kas saan kaardiga maksta?", "Понятно. Можно картой?"))
+                add(ask(Thread.KLIENT, "Ответьте про способ оплаты:", false, listOf(
+                    c("Jah, või sularahas — kuidas soovite.", "Да, или наличными — как хотите."),
+                    c("Ainult sularaha.", "Только наличные.", correct = false, rating = -0.03,
+                        followUp = listOf(client("Hästi, mul on sularaha.", "Ладно, у меня есть наличные."))),
+                    c("Ma ei võta raha.", "Я не беру деньги.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Aga tellimus on tasuline...", "Но заказ платный..."))),
+                ), listOf("p_maksate_q", "m_sularaha", "m_kaart")))
+                add(client("Maksan kaardiga. Aitäh!", "Плачу картой. Спасибо!"))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.WRONG_ADDRESS -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Halloo?", "Алло?"))
+                add(ask(Thread.KLIENT, "Уточните, верный ли адрес:", true, listOf(
+                    c("Tere! Kas see aadress on õige?", "Здравствуйте! Этот адрес верный?"),
+                    c("Kas teile maitseb karri?", "Вам нравится карри?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mis? Ei... kus mu toit on?", "Что? Нет... где моя еда?"))),
+                    c("Te elate vales kohas.", "Вы живёте не там.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Vabandust?! See on minu kodu.", "Простите?! Это мой дом."))),
+                ), listOf("p_aadress_q")))
+                add(client("Oi, ei! Õige maja on kollane, teisel pool tänavat.", "Ой, нет! Нужный дом жёлтый, на другой стороне улицы."))
+                add(ask(Thread.KLIENT, "Уточните, где именно дом:", true, listOf(
+                    c("Kus maja täpselt asub?", "Где именно находится дом?"),
+                    c("Kas sajab lund?", "Идёт снег?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ää... roheline uks, teisel korrusel.", "Эм... зелёная дверь, второй этаж."))),
+                    c("Tulge ise välja.", "Выйдите сами.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Olgu, ma tulen õue.", "Ладно, я выйду на улицу."))),
+                ), listOf("p_kus_maja_q", "s_maja")))
+                add(client("Roheline uks, teine korrus, korter neli.", "Зелёная дверь, второй этаж, квартира четыре."))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.NOT_HOME -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("(Telefon ei vasta...)", "(Телефон не отвечает...)"))
+                add(ask(Thread.KLIENT, "Клиент не отвечает. Что сделать?", true, listOf(
+                    c("Ma helistan teile veel kord.", "Я позвоню вам ещё раз.",
+                        followUp = listOf(client("Vabandust, ma ei kuulnud! Olen kohe ukse juures.", "Извините, я не слышал! Сейчас буду у двери."))),
+                    c("Söön toidu ise ära.", "Съем еду сам.", correct = false, rating = -0.15,
+                        followUp = listOf(client("Halloo! Ärge sööge mu toitu!", "Алло! Не ешьте мою еду!"))),
+                    c("Sõidan kohe koju.", "Сразу поеду домой.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Oodake! Ma olen kodus!", "Подождите! Я дома!"))),
+                ), listOf("p_helistan")))
+                add(ask(Thread.KLIENT, "Спросите, оставить ли под дверью:", true, listOf(
+                    c("Kas jätan toidu ukse taha?", "Оставить еду под дверью?"),
+                    c("Kas maksate kaardiga?", "Платите картой?", correct = false, rating = -0.03,
+                        followUp = listOf(client("Ää, lihtsalt jätke ukse taha.", "Эм, просто оставьте под дверью."))),
+                    c("Ma ootan tund aega.", "Я подожду час.", correct = false, rating = -0.03,
+                        followUp = listOf(client("Pole vaja! Jätke ukse taha.", "Не надо! Оставьте под дверью."))),
+                ), listOf("p_ukse_taha", "s_uks")))
+                add(client("Jah, jätke ukse taha, palun. Aitäh!", "Да, оставьте под дверью, пожалуйста. Спасибо!"))
+            }, Nav.End)
+        )
+
+        Scenario.LATE -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Kus mu toit on? Ma ootan juba ammu.", "Здравствуйте! Где моя еда? Я уже давно жду."))
+                add(ask(Thread.KLIENT, "Вы опоздали (была пробка). Извинитесь:", true, listOf(
+                    c("Vabandust hilinemise pärast, olin ummikus.", "Извините за опоздание, я был в пробке."),
+                    c("See pole minu süü.", "Это не моя вина.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Ikkagi ebameeldiv.", "Всё равно неприятно."))),
+                    c("Teie toit on otsas.", "Ваша еда закончилась.", correct = false, rating = -0.15,
+                        followUp = listOf(client("Mida?! Ma olen näljane!", "Что?! Я голодный!"))),
+                ), listOf("p_hilinen", "g_vabandust")))
+                add(client("Pole hullu! Peaasi, et olete kohal.", "Ничего страшного! Главное, что вы здесь."))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.OFFICE -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Tooge palun kontorisse, teine korrus.", "Здравствуйте! Принесите в офис, второй этаж."))
+                add(ask(Thread.KLIENT, "Уточните номер кабинета:", true, listOf(
+                    c("Selge! Mis kabinetis te olete?", "Понятно! В каком вы кабинете?"),
+                    c("Pööra paremale.", "Поверни направо.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ää? Ma räägin kontorist.", "Эм? Я про офис."))),
+                    c("Tulge ise alla.", "Спуститесь сами.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mul on koosolek, palun tooge üles.", "У меня встреча, принесите наверх."))),
+                ), listOf("p_kabinet_q", "s_korrus")))
+                add(client("Kabinet kakskümmend üks, vastuvõtu juures.", "Кабинет двадцать один, у ресепшена."))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        Scenario.CANCELLED -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Vabandust! Ma pean tellimuse tühistama.", "Извините! Мне нужно отменить заказ."))
+                add(ask(Thread.KLIENT, "Клиент отменяет заказ. Ваш ответ:", false, listOf(
+                    c("Selge, pole probleemi. Head aega!", "Понятно, без проблем. До свидания!"),
+                    c("Ei, te peate maksma!", "Нет, вы должны заплатить!", correct = false, rating = -0.15,
+                        followUp = listOf(client("Ma tühistasin reeglite järgi!", "Я отменил по правилам!"))),
+                    c("Söön teie toidu ise ära.", "Съем вашу еду сам.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Tehke, mis tahate...", "Делайте что хотите..."))),
+                ), listOf("g_head_aega", "g_vabandust")))
+                add(client("Aitäh mõistmise eest!", "Спасибо за понимание!"))
+            }, Nav.End)
+        )
+
+        Scenario.COMPLAINT -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Aga toit on külm! Ma ootasin liiga kaua.", "Здравствуйте! Но еда холодная! Я слишком долго ждал."))
+                add(ask(Thread.KLIENT, "Клиент жалуется на холодную еду. Ваш ответ:", false, listOf(
+                    c("Vabandust! See on ebameeldiv. Lahendame selle.", "Извините! Это неприятно. Решим это.",
+                        followUp = listOf(client("Olen pettunud. Mida te teete?", "Я разочарован. Что вы сделаете?"))),
+                    c("See on restorani süü, mitte minu.", "Это вина ресторана, не моя.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Mind ei huvita, kelle süü!", "Мне всё равно, чья вина!"))),
+                    c("Pole minu probleem.", "Не моя проблема.", correct = false, rating = -0.2,
+                        followUp = listOf(client("Kohutav! Ma annan ühe tärni.", "Ужасно! Поставлю одну звезду."))),
+                ), listOf("g_vabandust")))
+            }, Nav.Choose("Как поступить с жалобой?", listOf(
+                NavOption("🎧 Связаться с поддержкой", "support_complaint"),
+                NavOption("🙇 Извиниться и завершить", "client_apo"),
+            ))),
+            Phase("support_complaint", Thread.TUGI, buildList {
+                add(support("Klienditugi. Kuulen teid.", "Поддержка. Слушаю вас."))
+                add(ask(Thread.TUGI, "Опишите проблему поддержке:", true, listOf(
+                    c("Klient sai külma toidu, palun hüvitist.", "Клиент получил холодную еду, прошу компенсацию.",
+                        followUp = listOf(support("Selge, lisame kliendile kupongi. Tänan!", "Понятно, добавим клиенту купон. Спасибо!"))),
+                    c("Klient on lihtsalt vihane.", "Клиент просто злой.", correct = false, rating = -0.05,
+                        followUp = listOf(support("Palun olge professionaalne.", "Пожалуйста, будьте профессиональны."))),
+                ), listOf("p_tugi_q")))
+            }, Nav.Choose("Что дальше?", listOf(NavOption("📲 Вернуться к клиенту", "client_resolved")))),
+            Phase("client_resolved", Thread.KLIENT, buildList {
+                add(client("Sain kupongi! Aitäh, et aitasite.", "Я получил купон! Спасибо, что помогли."))
+                addAll(handover())
+            }, Nav.End),
+            apologyPhase(),
+        )
+
+        Scenario.BREAKDOWN -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Ootan tellimust.", "Здравствуйте! Жду заказ."))
+                add(ask(Thread.KLIENT, "В пути сломался велосипед. Что напишете клиенту?", true, listOf(
+                    c("Vabandust, mu ratas läks katki. Hilinen veidi.", "Извините, мой велосипед сломался. Немного опоздаю.",
+                        followUp = listOf(client("Selge, ma ootan. Aitäh, et teatasite!", "Понятно, я подожду. Спасибо, что предупредили!"))),
+                    c("Ma ei saa kohale tulla.", "Я не смогу приехать.", correct = false, rating = -0.15,
+                        followUp = listOf(client("Mis?! Aga ma olen näljane!", "Что?! Но я голодный!"))),
+                    c("Teie probleem.", "Ваша проблема.", correct = false, rating = -0.2,
+                        followUp = listOf(client("Milline ebaviisakus!", "Какая грубость!"))),
+                ), listOf("p_hilinen", "g_vabandust")))
+            }, Nav.Choose("Транспорт сломан. Что дальше?", listOf(
+                NavOption("🎧 Связаться с поддержкой", "support_break"),
+            ))),
+            Phase("support_break", Thread.TUGI, buildList {
+                add(support("Klienditugi: nägime probleemi. Mis juhtus?", "Поддержка: мы видим проблему. Что случилось?"))
+                add(ask(Thread.TUGI, "Сообщите в поддержку о поломке:", true, listOf(
+                    c("Mu sõiduk on katki, vajan abi.", "Мой транспорт сломан, нужна помощь.",
+                        followUp = listOf(support("Saadame appi teise kulleri. Tänan!", "Отправим другого курьера. Спасибо!"))),
+                    c("Kõik on korras.", "Всё в порядке.", correct = false, rating = -0.05,
+                        followUp = listOf(support("Kindel? Hoidke ühendust.", "Уверены? Оставайтесь на связи."))),
+                ), listOf("p_katki")))
+                add(client("Sain toidu kätte, aitäh abi eest!", "Я получил еду, спасибо за помощь!"))
+            }, Nav.End),
+        )
+
+        Scenario.SPOILED -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Oih... kott on märg. Kas toiduga on kõik korras?", "Здравствуйте! Ой... пакет мокрый. С едой всё в порядке?"))
+                add(ask(Thread.KLIENT, "Упаковка протекла в пути. Ваш ответ:", false, listOf(
+                    c("Kontrollin kohe... Vabandust, pakend lekkis.", "Сейчас проверю... Извините, упаковка протекла.",
+                        followUp = listOf(client("Toit on tõesti laiali. Mida te teete?", "Еда и правда растеклась. Что вы сделаете?"))),
+                    c("Kõik on korras, ärge muretsege.", "Всё хорошо, не волнуйтесь.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Aga toit on ju laiali!", "Но еда же растеклась!"))),
+                    c("Pole minu mure.", "Не моя забота.", correct = false, rating = -0.2,
+                        followUp = listOf(client("Ma annan ühe tärni!", "Я поставлю одну звезду!"))),
+                ), listOf("p_umber_q", "g_vabandust")))
+            }, Nav.Choose("Упаковка протекла. Что дальше?", listOf(
+                NavOption("🎧 Связаться с поддержкой", "support_spoiled"),
+                NavOption("🙇 Извиниться и завершить", "client_apo"),
+            ))),
+            Phase("support_spoiled", Thread.TUGI, buildList {
+                add(support("Klienditugi. Kirjeldage probleemi.", "Поддержка. Опишите проблему."))
+                add(ask(Thread.TUGI, "Опишите проблему поддержке:", true, listOf(
+                    c("Pakend lekkis, toit on rikutud. Palun uus tellimus.", "Упаковка протекла, еда испорчена. Прошу новый заказ.",
+                        followUp = listOf(support("Vormistame uue tellimuse tasuta. Vabandust!", "Оформим новый заказ бесплатно. Извините!"))),
+                    c("Unustage, pole midagi.", "Забудьте, ничего.", correct = false, rating = -0.05,
+                        followUp = listOf(support("Kindel? Olgu.", "Уверены? Хорошо."))),
+                ), listOf("p_tugi_q", "g_vabandust")))
+                add(client("Selge, ootan uut tellimust. Aitäh!", "Понятно, жду новый заказ. Спасибо!"))
+            }, Nav.End),
+            apologyPhase(),
+        )
     }
 
-    // ---------------- 2. ПОИСК КЛИЕНТА / СОБЫТИЕ ----------------
-    private fun findClient(o: Order): List<Turn> = when (o.scenario) {
-        Scenario.FACE_DOOR -> buildList {
-            add(enRoute())
-            add(client("Tere! Kus te olete?", "Здравствуйте! Где вы?"))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Ответьте, что вы на месте, и спросите, где его найти:", false,
-                    correct = "Olen kohal, maja ees. Kus ma teid leian?" to "Я на месте, перед домом. Где мне вас найти?",
-                    wrong = listOf(
-                        "Vabandust, ma eksisin ära." to "Извините, я заблудился.",
-                        "Ei, mul ei ole midagi." to "Нет, у меня ничего нет.",
-                    ),
-                    teach = listOf("p_kohal", "p_kus_q", "s_maja")
-                )
-            )
-            add(client("Näen teid! Tulen kohe alla.", "Вижу вас! Сейчас спущусь."))
-        }
+    /** Общая фаза «извиниться и завершить» (для жалобы/протечки). */
+    private fun apologyPhase(): Phase = Phase(
+        "client_apo", Thread.KLIENT, buildList {
+            add(ask(Thread.KLIENT, "Извинитесь напрямую и завершите:", false, listOf(
+                c("Veel kord vabandust. Palun, teie tellimus. Head isu!", "Ещё раз извините. Пожалуйста, ваш заказ. Приятного аппетита!"),
+                c("Pole midagi teha.", "Ничего не поделать.", correct = false, rating = -0.05,
+                    followUp = listOf(client("Hmm.", "Хм."))),
+            ), listOf("g_vabandust", "p_head_isu")))
+            add(client("Olgu... aitäh.", "Ладно... спасибо."))
+        },
+        Nav.End
+    )
 
-        Scenario.LIFT_BROKEN -> buildList {
-            add(enRoute())
-            add(client("Tere! Olen kolmandal korrusel. Lift on katki.", "Здравствуйте! Я на третьем этаже. Лифт сломан."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Лифт сломан. Спросите, спустится клиент или вам подняться:", true,
-                    correct = "Kas tulete alla või tulen üles?" to "Вы спуститесь или мне подняться?",
-                    wrong = listOf(
-                        "Kas pitsa on kuum?" to "Пицца горячая?",
-                        "Pööra vasakule." to "Поверни налево.",
-                    ),
-                    teach = listOf("p_alla_voi_q", "s_korrus", "s_lift")
-                )
-            )
-            add(client("Oi, ma tulen ise alla. Üks minut!", "Ой, я сам спущусь. Одну минуту!"))
+    fun build(o: Order): Delivery {
+        val phases = buildMap {
+            put("rest", restPhase(o))
+            put("support_opt", supportOptPhase())
+            scenarioPhases(o).forEach { put(it.id, it) }
         }
-
-        Scenario.GATE_CODE -> buildList {
-            add(enRoute())
-            add(client("Tere! Olen üheksandas korteris, aga värav on lukus.", "Здравствуйте! Я в квартире девять, но ворота заперты."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Ворота заперты — спросите код двери:", true,
-                    correct = "Mis on ukse kood?" to "Какой код двери?",
-                    wrong = listOf(
-                        "Kas teil on kass?" to "У вас есть кошка?",
-                        "Head ööd!" to "Спокойной ночи!",
-                    ),
-                    teach = listOf("p_kood_q", "n_9", "s_korter")
-                )
-            )
-            add(client("Kood on üks-kaks-kolm-neli.", "Код — один-два-три-четыре."))
-        }
-
-        Scenario.DIRECTIONS -> buildList {
-            add(enRoute())
-            add(client("Tere! Maja on hoovis, seda on raske leida.", "Здравствуйте! Дом во дворе, его трудно найти."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Спросите у клиента, как к нему пройти:", true,
-                    correct = "Kuidas ma teie juurde saan?" to "Как мне к вам пройти?",
-                    wrong = listOf(
-                        "Kas teile meeldib kohv?" to "Вам нравится кофе?",
-                        "Mis kell on?" to "Который час?",
-                    ),
-                    teach = listOf("p_kuidas_q")
-                )
-            )
-            add(client("Minge otse, siis paremale. Kollane maja.", "Идите прямо, потом направо. Жёлтый дом."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Клиент объяснил дорогу. Подтвердите, что поняли:", false,
-                    correct = "Selge: otse ja siis paremale." to "Понятно: прямо, потом направо.",
-                    wrong = listOf(
-                        "Selge: tagasi ja vasakule." to "Понятно: назад и налево.",
-                        "Ma ei saa aru." to "Я не понимаю.",
-                    ),
-                    teach = listOf("s_otse", "s_paremale", "s_maja")
-                )
-            )
-            add(client("Just nii! Ootan ukse ees.", "Именно! Жду у двери."))
-        }
-
-        Scenario.LEAVE_DOOR -> buildList {
-            add(enRoute())
-            add(client("Tere! Jätke palun toit ukse taha. Värava kood on viis-kuus-seitse-kaheksa.", "Здравствуйте! Оставьте, пожалуйста, еду под дверью. Код ворот пять-шесть-семь-восемь."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Уточните номер квартиры:", true,
-                    correct = "Selge! Mis on korteri number?" to "Понятно! Какой номер квартиры?",
-                    wrong = listOf(
-                        "Kas te tantsite?" to "Вы танцуете?",
-                        "Pööra paremale." to "Поверни направо.",
-                    ),
-                    teach = listOf("p_korter_q", "n_5", "n_6", "n_7", "n_8")
-                )
-            )
-            add(client("Korter kaks. Aitäh!", "Квартира два. Спасибо!"))
-        }
-
-        Scenario.CASH -> buildList {
-            add(
-                learnAsk(
-                    Thread.RESTORAN, "🏪 Ресторан: клиент платит наличными, 10 €. Сколько взять с клиента?", false,
-                    correct = "Kümme eurot." to "Десять евро.",
-                    wrong = listOf("Kaks eurot." to "Два евро.", "Sada eurot." to "Сто евро."),
-                    teach = listOf("m_maksab", "m_eurot", "n_10")
-                )
-            )
-            add(client("Tere! Te tõite minu tellimuse?", "Здравствуйте! Вы привезли мой заказ?"))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Уточните способ оплаты:", true,
-                    correct = "Kas maksate sularahas või kaardiga?" to "Платите наличными или картой?",
-                    wrong = listOf("Kas teil on koer?" to "У вас есть собака?", "Mis kell on?" to "Который час?"),
-                    teach = listOf("p_maksate_q", "m_sularaha", "m_kaart")
-                )
-            )
-            add(client("Sularahas. Siin on kümme eurot.", "Наличными. Вот десять евро."))
-        }
-
-        Scenario.WRONG_ADDRESS -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Вы приехали, но такого дома нет. Что случилось?", false,
-                    correct = "Aadress on vale." to "Адрес неверный.",
-                    wrong = listOf("Toit on valmis." to "Еда готова.", "Lift on katki." to "Лифт сломан."),
-                    teach = listOf("p_aadress_q")
-                )
-            )
-            add(client("Halloo?", "Алло?"))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Позвоните клиенту и уточните, верный ли адрес:", true,
-                    correct = "Tere! Kas see aadress on õige?" to "Здравствуйте! Этот адрес верный?",
-                    wrong = listOf("Kas teile maitseb karri?" to "Вам нравится карри?", "Head ööd!" to "Спокойной ночи!"),
-                    teach = listOf("p_aadress_q")
-                )
-            )
-            add(client("Oi, ei! Õige maja on kollane, teisel pool tänavat.", "Ой, нет! Нужный дом жёлтый, на другой стороне улицы."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Уточните, где именно дом:", true,
-                    correct = "Kus maja täpselt asub?" to "Где именно находится дом?",
-                    wrong = listOf("Mis su lemmiktoit on?" to "Какая твоя любимая еда?", "Kas sajab lund?" to "Идёт снег?"),
-                    teach = listOf("p_kus_maja_q", "s_maja")
-                )
-            )
-            add(client("Roheline uks, teine korrus, korter neli.", "Зелёная дверь, второй этаж, квартира четыре."))
-        }
-
-        Scenario.NOT_HOME -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Вы на месте, но клиент не отвечает на телефон. Что сделать?", false,
-                    correct = "Ma helistan teile veel kord." to "Я позвоню вам ещё раз.",
-                    wrong = listOf("Söön toidu ise ära." to "Съем еду сам.", "Sõidan kohe koju." to "Сразу поеду домой."),
-                    teach = listOf("p_helistan")
-                )
-            )
-            add(client("Vabandust, ma ei kuulnud telefoni!", "Извините, я не слышал телефон!"))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Спросите, оставить ли заказ под дверью:", true,
-                    correct = "Kas jätan toidu ukse taha?" to "Оставить еду под дверью?",
-                    wrong = listOf("Kas maksate kaardiga?" to "Платите картой?", "Kus on lift?" to "Где лифт?"),
-                    teach = listOf("p_ukse_taha", "s_uks")
-                )
-            )
-            add(client("Jah, jätke ukse taha, palun.", "Да, оставьте под дверью, пожалуйста."))
-        }
-
-        Scenario.LATE -> buildList {
-            add(enRoute())
-            add(client("Tere! Kus mu toit on? Ma ootan juba ammu.", "Здравствуйте! Где моя еда? Я уже давно жду."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Вы немного опоздали (была пробка). Извинитесь:", true,
-                    correct = "Vabandust hilinemise pärast, olin ummikus." to "Извините за опоздание, я был в пробке.",
-                    wrong = listOf("Teie toit on otsas." to "Ваша еда закончилась.", "Ma ei tule kohale." to "Я не приеду."),
-                    teach = listOf("p_hilinen", "g_vabandust")
-                )
-            )
-            add(client("Pole hullu! Peaasi, et olete kohal.", "Ничего страшного! Главное, что вы здесь."))
-        }
-
-        Scenario.OFFICE -> buildList {
-            add(enRoute())
-            add(client("Tere! Tooge palun kontorisse, teine korrus.", "Здравствуйте! Принесите, пожалуйста, в офис, второй этаж."))
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Уточните номер кабинета:", true,
-                    correct = "Selge! Mis kabinetis te olete?" to "Понятно! В каком вы кабинете?",
-                    wrong = listOf("Kas teil on kass?" to "У вас есть кошка?", "Pööra paremale." to "Поверни направо."),
-                    teach = listOf("p_kabinet_q", "s_korrus")
-                )
-            )
-            add(client("Kabinet kakskümmend üks, vastuvõtu juures.", "Кабинет двадцать один, у ресепшена."))
-        }
-
-        Scenario.CANCELLED -> buildList {
-            add(enRoute())
-            add(client("Vabandust! Ma pean tellimuse tühistama.", "Извините! Мне нужно отменить заказ."))
-        }
-
-        // ----- ПРОБЛЕМНЫЕ СЮЖЕТЫ С РАЗВИЛКАМИ -----
-        Scenario.COMPLAINT -> buildList {
-            add(enRoute())
-            add(client("Tere! Aga toit on külm! Ma ootasin liiga kaua.", "Здравствуйте! Но еда холодная! Я слишком долго ждал."))
-            add(
-                decideAsk(
-                    Thread.KLIENT, "Клиент жалуется на холодную еду. Как ответите?", false,
-                    choices = listOf(
-                        Choice(
-                            "Vabandust! Pöördun kohe klienditoe poole.", "Извините! Сразу обращусь в поддержку.",
-                            correct = true, ratingDelta = 0.05,
-                            followUp = listOf(
-                                support("Tere, klienditugi. Kuidas saan aidata?", "Здравствуйте, поддержка. Чем помочь?"),
-                                decideAsk(
-                                    Thread.TUGI, "Опишите проблему поддержке:", true,
-                                    choices = listOf(
-                                        Choice(
-                                            "Klient sai külma toidu, palun hüvitist.", "Клиент получил холодную еду, прошу компенсацию.",
-                                            correct = true, ratingDelta = 0.1,
-                                            followUp = listOf(
-                                                support("Selge, lisame kliendile kupongi. Aitäh!", "Понятно, добавим клиенту купон. Спасибо!"),
-                                                client("Oo, sain kupongi! Tänan abi eest.", "О, я получил купон! Спасибо за помощь.")
-                                            )
-                                        ),
-                                        Choice(
-                                            "Pole midagi, unustage.", "Ничего, забудьте.",
-                                            correct = false, ratingDelta = -0.05,
-                                            followUp = listOf(support("Olgu, head aega.", "Хорошо, до свидания."))
-                                        ),
-                                    ),
-                                    teach = listOf("p_tugi_q")
-                                )
-                            )
-                        ),
-                        Choice(
-                            "See on restorani süü, mitte minu.", "Это вина ресторана, не моя.",
-                            correct = false, ratingDelta = -0.1,
-                            followUp = listOf(client("Hmm, ikkagi pettumus...", "Хм, всё равно обидно..."))
-                        ),
-                        Choice(
-                            "Pole minu probleem.", "Не моя проблема.",
-                            correct = false, ratingDelta = -0.2,
-                            followUp = listOf(client("See on kohutav teenindus! Ma kirjutan halva arvustuse.", "Это ужасный сервис! Я напишу плохой отзыв."))
-                        ),
-                    ),
-                    teach = listOf("g_vabandust", "p_tugi_q")
-                )
-            )
-        }
-
-        Scenario.BREAKDOWN -> buildList {
-            add(enRoute())
-            add(client("Tere! Ootan tellimust.", "Здравствуйте! Жду заказ."))
-            add(
-                decideAsk(
-                    Thread.KLIENT, "В пути сломался велосипед. Что написать клиенту?", true,
-                    choices = listOf(
-                        Choice(
-                            "Vabandust, mu ratas läks katki. Hilinen veidi.", "Извините, мой велосипед сломался. Немного опоздаю.",
-                            correct = true, ratingDelta = 0.05,
-                            followUp = listOf(client("Selge, ma ootan. Aitäh, et teatasite!", "Понятно, я подожду. Спасибо, что предупредили!"))
-                        ),
-                        Choice(
-                            "Ma ei saa kohale tulla.", "Я не смогу приехать.",
-                            correct = false, ratingDelta = -0.15,
-                            followUp = listOf(client("Mis?! Aga ma olen näljane!", "Что?! Но я голодный!"))
-                        ),
-                    ),
-                    teach = listOf("p_hilinen", "g_vabandust")
-                )
-            )
-            add(support("Klienditugi: nägime, et teil on probleem. Mis juhtus?", "Поддержка: мы видим у вас проблему. Что случилось?"))
-            add(
-                decideAsk(
-                    Thread.TUGI, "Сообщите в поддержку о поломке:", true,
-                    choices = listOf(
-                        Choice(
-                            "Mu sõiduk on katki, vajan abi.", "Мой транспорт сломан, нужна помощь.",
-                            correct = true, ratingDelta = 0.05,
-                            followUp = listOf(support("Saadame appi teise kulleri. Tänan!", "Отправим на помощь другого курьера. Спасибо!"))
-                        ),
-                        Choice(
-                            "Kõik on korras.", "Всё в порядке.",
-                            correct = false, ratingDelta = -0.05,
-                            followUp = listOf(support("Kindel? Olgu, hoidke ühendust.", "Уверены? Хорошо, оставайтесь на связи."))
-                        ),
-                    ),
-                    teach = listOf("p_katki")
-                )
-            )
-        }
-
-        Scenario.SPOILED -> buildList {
-            add(rest("Pane tähele: pakend on veidi lahti.", "Обрати внимание: упаковка немного открыта."))
-            add(
-                decideAsk(
-                    Thread.RESTORAN, "Упаковка повреждена, еда может вытечь. Что сделать?", true,
-                    choices = listOf(
-                        Choice(
-                            "Kas saate ümber pakkida?", "Можете переупаковать?",
-                            correct = true, ratingDelta = 0.1,
-                            followUp = listOf(
-                                rest("Muidugi! Pakime uuesti, korralikult.", "Конечно! Переупакуем как следует."),
-                                enRoute(),
-                                client("Tere! Tellimus on terve ja korralik. Aitäh!", "Здравствуйте! Заказ целый и аккуратный. Спасибо!")
-                            )
-                        ),
-                        Choice(
-                            "Pole midagi, võtan nii.", "Ничего, возьму так.",
-                            correct = false, ratingDelta = -0.15,
-                            followUp = listOf(
-                                enRoute(),
-                                client("Toit on laiali! Pakend lekkis kotis.", "Еда растеклась! Упаковка протекла в сумке."),
-                                decideAsk(
-                                    Thread.KLIENT, "Еда вытекла. Как ответить клиенту?", false,
-                                    choices = listOf(
-                                        Choice(
-                                            "Vabandust! Pöördun klienditoe poole hüvitise pärast.", "Извините! Обращусь в поддержку за компенсацией.",
-                                            correct = true, ratingDelta = 0.1,
-                                            followUp = listOf(
-                                                support("Klienditugi: vormistame uue tellimuse tasuta.", "Поддержка: оформим новый заказ бесплатно."),
-                                                client("Aitäh, et lahendasite!", "Спасибо, что решили!")
-                                            )
-                                        ),
-                                        Choice(
-                                            "See pole minu mure.", "Это не моя забота.",
-                                            correct = false, ratingDelta = -0.2,
-                                            followUp = listOf(client("Ma annan teile ühe tärni!", "Я поставлю вам одну звезду!"))
-                                        ),
-                                    ),
-                                    teach = listOf("p_tugi_q", "g_vabandust")
-                                )
-                            )
-                        ),
-                    ),
-                    teach = listOf("p_umber_q")
-                )
-            )
-        }
-    }
-
-    // ---------------- 3. ПЕРЕДАЧА / ФИНАЛ ----------------
-    private fun closing(o: Order): List<Turn> = when (o.scenario) {
-        Scenario.LEAVE_DOOR, Scenario.NOT_HOME -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Подтвердите: оставите под дверью и сделаете фото:", false,
-                    correct = "Selge, jätan ukse taha ja teen foto." to "Понятно, оставлю под дверью и сделаю фото.",
-                    wrong = listOf("Ei, ma võtan toidu endale." to "Нет, я заберу еду себе.", "Pööra paremale." to "Поверни направо."),
-                    teach = listOf("p_foto", "p_ukse_taha")
-                )
-            )
-            add(client("Suur aitäh! Vabandust ja head isu!", "Большое спасибо! Извините и приятного аппетита!"))
-        }
-
-        Scenario.CASH -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Деньги ровные. Передайте чек, заказ и пожелайте приятного аппетита:", false,
-                    correct = "Aitäh! Siin on kviitung. Head isu!" to "Спасибо! Вот чек. Приятного аппетита!",
-                    wrong = listOf("Vabandust, mul ei ole toitu." to "Извините, у меня нет еды.", "Ei, see on liiga vähe." to "Нет, этого мало."),
-                    teach = listOf("m_kviitung", "p_head_isu")
-                )
-            )
-            add(client("Suur aitäh! Nägemist.", "Большое спасибо! До свидания."))
-        }
-
-        Scenario.CANCELLED -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Заказ отменён. Ответьте вежливо и попрощайтесь:", false,
-                    correct = "Selge, pole probleemi. Head aega!" to "Понятно, без проблем. До свидания!",
-                    wrong = listOf("Ei, te peate maksma!" to "Нет, вы должны заплатить!", "Söön teie toidu ära." to "Съем вашу еду."),
-                    teach = listOf("g_head_aega", "g_vabandust")
-                )
-            )
-            add(client("Aitäh mõistmise eest! Vabandust veel kord.", "Спасибо за понимание! Ещё раз извините."))
-        }
-
-        Scenario.BREAKDOWN -> buildList {
-            add(support("Teine kuller võttis tellimuse üle. Tubli töö!", "Другой курьер принял заказ. Хорошая работа!"))
-            add(client("Sain toidu kätte, aitäh abi eest!", "Я получил еду, спасибо за помощь!"))
-        }
-
-        else -> buildList {
-            add(
-                learnAsk(
-                    Thread.KLIENT, "Вы встретились с клиентом. Передайте заказ и пожелайте приятного аппетита:", false,
-                    correct = "Palun, siin on teie tellimus. Head isu!" to "Пожалуйста, вот ваш заказ. Приятного аппетита!",
-                    wrong = listOf("Vabandust, ma sõin selle ära." to "Извините, я это съел.", "Ei, see on minu tellimus." to "Нет, это мой заказ."),
-                    teach = listOf("g_palun", "p_head_isu")
-                )
-            )
-            add(client("Suur aitäh! Ilusat päeva, nägemist!", "Большое спасибо! Хорошего дня, до свидания!"))
-        }
-    }
-
-    fun build(o: Order): List<Turn> = buildList {
-        addAll(pickup(o))
-        addAll(findClient(o))
-        addAll(closing(o))
+        return Delivery("rest", phases)
     }
 }
