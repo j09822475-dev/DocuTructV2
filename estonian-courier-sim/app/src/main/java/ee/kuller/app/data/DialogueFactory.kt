@@ -546,7 +546,21 @@ object DialogueFactory {
                     c("Karjun teie nime.", "Крикну ваше имя.", correct = false, rating = -0.05,
                         followUp = listOf(client("Palun ärge! Lihtsalt helistage.", "Пожалуйста, не надо! Просто позвоните."))),
                 ), listOf("p_uksekell", "s_uksekell")))
-                add(client("Kuulen teid! Avan ukse. Tulge teisele korrusele.", "Слышу вас! Открываю дверь. Поднимитесь на второй этаж."))
+                val whoThere = listOf(
+                    "Kes seal?" to "Кто там?",
+                    "Halloo, kes räägib?" to "Алло, кто говорит?",
+                    "Jah, kes see on?" to "Да, кто это?",
+                    "Kuulen, kes seal?" to "Слушаю, кто там?",
+                ).random()
+                add(client(whoThere.first, whoThere.second))
+                add(ask(Thread.KLIENT, "Клиент спрашивает по домофону, кто пришёл. Ответьте:", false, listOf(
+                    c("Tere, kuller Boltist. Toon teie tellimuse.", "Здравствуйте, курьер из Bolt. Привёз ваш заказ."),
+                    c("Ma ei tea.", "Я не знаю.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mida? Kes te olete?", "Что? Кто вы?"))),
+                    c("Avage lihtsalt uks!", "Просто откройте дверь!", correct = false, rating = -0.05,
+                        followUp = listOf(client("Öelge enne, kes te olete.", "Сначала скажите, кто вы."))),
+                ), listOf("p_jargi", "p_tellimus", "g_tere")))
+                add(client("Selge, kuller! Avan ukse. Tulge teisele korrusele.", "Понятно, курьер! Открываю дверь. Поднимитесь на второй этаж."))
                 addAll(handover())
             }, Nav.End)
         )
