@@ -127,8 +127,9 @@ object DialogueFactory {
                 c("Tühistage tellimus.", "Отмените заказ.", correct = false, rating = -0.1,
                     followUp = listOf(rest("Ei-ei, kohe saab valmis!", "Нет-нет, сейчас будет готово!"))),
             ), listOf("n_5", "g_aitah")))
-            add(rest("Nüüd on valmis: ${o.itemsEt}. Palun!", "Теперь готово: ${o.itemsRu}. Пожалуйста!"))
+            add(rest("Nüüd on valmis: ${o.itemsEt}.", "Теперь готово: ${o.itemsRu}."))
             add(confirmAsk(o))
+            add(readyTurn())
         },
         // 6. Сначала выдали не тот
         buildList {
