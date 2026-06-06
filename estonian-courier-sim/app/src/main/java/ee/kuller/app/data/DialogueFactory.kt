@@ -238,11 +238,25 @@ object DialogueFactory {
         client("Suur aitäh! Head isu, nägemist!", "Большое спасибо! Приятного аппетита, до свидания!")
     )
 
+    /** Опенер курьера: он первым пишет клиенту, что прибыл с заказом. */
+    private fun clientArrived(): Turn = ask(
+        Thread.KLIENT, "Напишите клиенту, что вы прибыли с заказом:", true,
+        listOf(
+            c("Tere! Olen kohal teie tellimusega.", "Здравствуйте! Я на месте с вашим заказом."),
+            c("Kus mu raha on?", "Где мои деньги?", correct = false, rating = -0.05,
+                followUp = listOf(client("Mida? Ma ootan oma toitu.", "Что? Я жду свою еду."))),
+            c("Avage uks kohe!", "Откройте дверь немедленно!", correct = false, rating = -0.05,
+                followUp = listOf(client("Palun olge viisakas.", "Пожалуйста, будьте вежливы."))),
+        ),
+        listOf("g_tere", "p_kohal", "p_tellimus")
+    )
+
     // ---------- фазы клиента/поддержки по сценариям ----------
     private fun scenarioPhases(o: Order): List<Phase> = when (o.scenario) {
 
         Scenario.FACE_DOOR -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Kus te olete?", "Здравствуйте! Где вы?"))
                 add(ask(Thread.KLIENT, "Ответьте, что вы на месте, и спросите, где вас найти:", false, listOf(
                     c("Olen kohal, maja ees. Kus ma teid leian?", "Я на месте, перед домом. Где мне вас найти?"),
@@ -258,6 +272,7 @@ object DialogueFactory {
 
         Scenario.LIFT_BROKEN -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Olen kolmandal korrusel. Lift on katki.", "Здравствуйте! Я на третьем этаже. Лифт сломан."))
                 add(ask(Thread.KLIENT, "Лифт сломан. Спросите, спустится клиент или вам подняться:", true, listOf(
                     c("Kas tulete alla või tulen üles?", "Вы спуститесь или мне подняться?"),
@@ -273,6 +288,7 @@ object DialogueFactory {
 
         Scenario.GATE_CODE -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Värav on lukus, korter üheksa.", "Здравствуйте! Ворота заперты, квартира девять."))
                 add(ask(Thread.KLIENT, "Ворота заперты — спросите код двери:", true, listOf(
                     c("Mis on ukse kood?", "Какой код двери?"),
@@ -288,6 +304,7 @@ object DialogueFactory {
 
         Scenario.DIRECTIONS -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Maja on hoovis, seda on raske leida.", "Здравствуйте! Дом во дворе, его трудно найти."))
                 add(ask(Thread.KLIENT, "Спросите у клиента, как к нему пройти:", true, listOf(
                     c("Kuidas ma teie juurde saan?", "Как мне к вам пройти?"),
@@ -311,6 +328,7 @@ object DialogueFactory {
 
         Scenario.LEAVE_DOOR -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Jätke palun toit ukse taha. Värava kood on viis-kuus-seitse-kaheksa.", "Здравствуйте! Оставьте еду под дверью. Код ворот пять-шесть-семь-восемь."))
                 add(ask(Thread.KLIENT, "Уточните номер квартиры:", true, listOf(
                     c("Selge! Mis on korteri number?", "Понятно! Какой номер квартиры?"),
@@ -333,6 +351,7 @@ object DialogueFactory {
 
         Scenario.CASH -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Te tõite minu tellimuse? Palju ma võlgnen?", "Здравствуйте! Вы привезли мой заказ? Сколько я должен?"))
                 add(ask(Thread.KLIENT, "С клиента 10 €. Назовите сумму:", false, listOf(
                     c("Kümme eurot, palun.", "Десять евро, пожалуйста."),
@@ -356,6 +375,13 @@ object DialogueFactory {
 
         Scenario.WRONG_ADDRESS -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Напишите клиенту, что вы прибыли по адресу:", true, listOf(
+                    c("Tere! Kuller siin, olen teie aadressil.", "Здравствуйте! Курьер, я по вашему адресу."),
+                    c("Olen kohal, aga teid pole.", "Я на месте, но вас нет.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Imelik... kus te olete?", "Странно... где вы?"))),
+                    c("Te andsite vale aadressi.", "Вы дали неверный адрес.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Kontrollime koos, palun.", "Давайте проверим вместе."))),
+                ), listOf("g_tere", "p_jargi", "p_kohal")))
                 add(client("Halloo?", "Алло?"))
                 add(ask(Thread.KLIENT, "Уточните, верный ли адрес:", true, listOf(
                     c("Tere! Kas see aadress on õige?", "Здравствуйте! Этот адрес верный?"),
@@ -379,6 +405,13 @@ object DialogueFactory {
 
         Scenario.NOT_HOME -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Напишите клиенту, что вы прибыли, и позвоните:", true, listOf(
+                    c("Tere! Olen kohal teie tellimusega, helistan teile.", "Здравствуйте! Я на месте с заказом, звоню вам."),
+                    c("Kus te olete?! Ma lahkun.", "Где вы?! Я ухожу.", correct = false, rating = -0.05,
+                        followUp = listOf(client("(Telefon ei vasta...)", "(Телефон не отвечает...)"))),
+                    c("Ma ei viitsi oodata.", "Мне неохота ждать.", correct = false, rating = -0.05,
+                        followUp = listOf(client("(Telefon ei vasta...)", "(Телефон не отвечает...)"))),
+                ), listOf("g_tere", "p_kohal", "p_tellimus")))
                 add(client("(Telefon ei vasta...)", "(Телефон не отвечает...)"))
                 add(ask(Thread.KLIENT, "Клиент не отвечает. Что сделать?", true, listOf(
                     c("Ma helistan teile veel kord.", "Я позвоню вам ещё раз.",
@@ -401,6 +434,7 @@ object DialogueFactory {
 
         Scenario.LATE -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Kus mu toit on? Ma ootan juba ammu.", "Здравствуйте! Где моя еда? Я уже давно жду."))
                 add(ask(Thread.KLIENT, "Вы опоздали (была пробка). Извинитесь:", true, listOf(
                     c("Vabandust hilinemise pärast, olin ummikus.", "Извините за опоздание, я был в пробке."),
@@ -416,6 +450,7 @@ object DialogueFactory {
 
         Scenario.OFFICE -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Tooge palun kontorisse, teine korrus.", "Здравствуйте! Принесите в офис, второй этаж."))
                 add(ask(Thread.KLIENT, "Уточните номер кабинета:", true, listOf(
                     c("Selge! Mis kabinetis te olete?", "Понятно! В каком вы кабинете?"),
@@ -431,6 +466,13 @@ object DialogueFactory {
 
         Scenario.CANCELLED -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Напишите клиенту, что вы уже едете с заказом:", true, listOf(
+                    c("Tere! Olen teel teie tellimusega.", "Здравствуйте! Я уже еду с вашим заказом."),
+                    c("Kus mu jootraha on?", "Где мои чаевые?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ää... ma pean tellimuse tühistama.", "Эм... мне нужно отменить заказ."))),
+                    c("Ärge tülitage mind.", "Не беспокойте меня.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Vabandust... ma tühistan tellimuse.", "Извините... я отменяю заказ."))),
+                ), listOf("g_tere", "p_tellimus", "p_kohal")))
                 add(client("Vabandust! Ma pean tellimuse tühistama.", "Извините! Мне нужно отменить заказ."))
                 add(ask(Thread.KLIENT, "Клиент отменяет заказ. Ваш ответ:", false, listOf(
                     c("Selge, pole probleemi. Head aega!", "Понятно, без проблем. До свидания!"),
@@ -445,6 +487,13 @@ object DialogueFactory {
 
         Scenario.COMPLAINT -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Напишите клиенту, что вы прибыли и передаёте заказ:", true, listOf(
+                    c("Tere! Olen kohal, siin on teie tellimus.", "Здравствуйте! Я на месте, вот ваш заказ."),
+                    c("Kus te nii kaua olite?", "Где вы так долго были?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mina küsin sama!", "Это я хочу спросить!"))),
+                    c("Söögu kiiresti, see jahtub.", "Ешьте быстрее, остынет.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Just nimelt — see ongi külm!", "Вот именно — она холодная!"))),
+                ), listOf("g_tere", "p_kohal", "p_tellimus")))
                 add(client("Tere! Aga toit on külm! Ma ootasin liiga kaua.", "Здравствуйте! Но еда холодная! Я слишком долго ждал."))
                 add(ask(Thread.KLIENT, "Клиент жалуется на холодную еду. Ваш ответ:", false, listOf(
                     c("Vabandust! See on ebameeldiv. Lahendame selle.", "Извините! Это неприятно. Решим это.",
@@ -476,6 +525,13 @@ object DialogueFactory {
 
         Scenario.BREAKDOWN -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Напишите клиенту, что вы в пути с заказом:", true, listOf(
+                    c("Tere! Olen teel teie tellimusega.", "Здравствуйте! Я в пути с вашим заказом."),
+                    c("Kus mu toit on?", "Где моя еда?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Seda küsin mina!", "Это я спрашиваю!"))),
+                    c("Ärge kiirustage mind.", "Не торопите меня.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ma lihtsalt ootan.", "Я просто жду."))),
+                ), listOf("g_tere", "p_tellimus", "p_kohal")))
                 add(client("Tere! Ootan tellimust.", "Здравствуйте! Жду заказ."))
                 add(ask(Thread.KLIENT, "В пути сломался велосипед. Что напишете клиенту?", true, listOf(
                     c("Vabandust, mu ratas läks katki. Hilinen veidi.", "Извините, мой велосипед сломался. Немного опоздаю.",
@@ -496,12 +552,13 @@ object DialogueFactory {
                     c("Kõik on korras.", "Всё в порядке.", correct = false, rating = -0.05,
                         followUp = listOf(support("Kindel? Hoidke ühendust.", "Уверены? Оставайтесь на связи."))),
                 ), listOf("p_katki")))
-                add(client("Sain toidu kätte, aitäh abi eest!", "Я получил еду, спасибо за помощь!"))
+                add(support("Teine kuller on teel kliendi juurde. Tubli töö, aitäh!", "Другой курьер уже едет к клиенту. Хорошая работа, спасибо!"))
             }, Nav.End),
         )
 
         Scenario.SPOILED -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Oih... kott on märg. Kas toiduga on kõik korras?", "Здравствуйте! Ой... пакет мокрый. С едой всё в порядке?"))
                 add(ask(Thread.KLIENT, "Упаковка протекла в пути. Ваш ответ:", false, listOf(
                     c("Kontrollin kohe... Vabandust, pakend lekkis.", "Сейчас проверю... Извините, упаковка протекла.",
@@ -523,13 +580,14 @@ object DialogueFactory {
                     c("Unustage, pole midagi.", "Забудьте, ничего.", correct = false, rating = -0.05,
                         followUp = listOf(support("Kindel? Olgu.", "Уверены? Хорошо."))),
                 ), listOf("p_tugi_q", "g_vabandust")))
-                add(client("Selge, ootan uut tellimust. Aitäh!", "Понятно, жду новый заказ. Спасибо!"))
+                add(support("Uus tellimus on vormistatud. Tänan abi eest!", "Новый заказ оформлен. Спасибо за помощь!"))
             }, Nav.End),
             apologyPhase(),
         )
 
         Scenario.INTERCOM -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
                 add(client("Tere! Maja uksel on fonolukk. Helistage palun uksekellaga.", "Здравствуйте! На двери домофон. Позвоните, пожалуйста, в звонок."))
                 add(ask(Thread.KLIENT, "Узнайте номер квартиры, чтобы набрать на домофоне:", true, listOf(
                     c("Mis on teie korterinumber?", "Какой у вас номер квартиры?"),
