@@ -133,8 +133,8 @@ object OrderFactory {
             payout = payout,
             itemsEt = itemsEt,
             itemsRu = itemsRu,
-            confirmEt = "Jah, $itemsEt. Aitäh!",
-            confirmRu = "Да, $itemsRu. Спасибо!",
+            confirmEt = "Jah, $itemsEt.",
+            confirmRu = "Да, $itemsRu.",
             itemTeach = (chosen.map { it.teach }.distinct() + listOf("g_jah", "g_aitah")),
             scenario = scenario
         )

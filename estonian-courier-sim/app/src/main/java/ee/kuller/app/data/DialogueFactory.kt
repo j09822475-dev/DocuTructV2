@@ -65,6 +65,19 @@ object DialogueFactory {
 
     private fun readyTurn(): Turn = rest("Nüüd on valmis. Palun, head teed!", "Теперь готово. Пожалуйста, счастливого пути!")
 
+    /** Финальный ход курьера в ресторане: благодарит ПОСЛЕ получения заказа. */
+    private fun courierThanks(): Turn = ask(
+        Thread.RESTORAN, "Заберите заказ, поблагодарите и попрощайтесь:", false,
+        listOf(
+            c("Aitäh! Head päeva!", "Спасибо! Хорошего дня!"),
+            c("Lõpuks ometi!", "Наконец-то!", correct = false, rating = -0.03,
+                followUp = listOf(rest("Vabandust ootamise eest.", "Извините за ожидание."))),
+            c("Ma kiirustan, ei räägi.", "Я тороплюсь, не до разговоров.", correct = false, rating = -0.02,
+                followUp = listOf(rest("Olgu, head teed.", "Ладно, счастливого пути."))),
+        ),
+        listOf("g_aitah", "g_head_aega")
+    )
+
     /** 10 разных сюжетов получения заказа в ресторане — выбирается случайно. */
     private fun restScript(o: Order): List<Turn> = listOf(
         // 1. Классический
@@ -74,6 +87,7 @@ object DialogueFactory {
             add(confirmAsk(o))
             add(rest("Peaaegu valmis, oota üks minut.", "Почти готово, подожди минутку."))
             add(readyTurn())
+            add(courierThanks())
         },
         // 2. По имени на заказе
         buildList {
@@ -88,6 +102,7 @@ object DialogueFactory {
             add(rest("Tellimus on ${o.customer} nimele: ${o.itemsEt}.", "Заказ на имя ${o.customer}: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
         // 3. По номеру заказа
         buildList {
@@ -100,7 +115,8 @@ object DialogueFactory {
                 c("Ma ei tea numbrit.", "Я не знаю номер.", correct = false, rating = -0.03,
                     followUp = listOf(rest("See on seitse. Siin on teie toit.", "Это семь. Вот ваша еда."))),
             ), listOf("n_7")))
-            add(rest("Siin on number seitse: ${o.itemsEt}. Head teed!", "Вот номер семь: ${o.itemsRu}. Счастливого пути!"))
+            add(rest("Siin on number seitse: ${o.itemsEt}. Palun!", "Вот номер семь: ${o.itemsRu}. Пожалуйста!"))
+            add(courierThanks())
         },
         // 4. Запара в ресторане
         buildList {
@@ -115,6 +131,7 @@ object DialogueFactory {
             add(rest("Aitäh kannatlikkuse eest! Teil on: ${o.itemsEt}.", "Спасибо за терпение! У вас: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
         // 5. Ещё не готов
         buildList {
@@ -130,6 +147,7 @@ object DialogueFactory {
             add(rest("Nüüd on valmis: ${o.itemsEt}.", "Теперь готово: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
         // 6. Сначала выдали не тот
         buildList {
@@ -145,6 +163,7 @@ object DialogueFactory {
             add(rest("Oih, vabandust! Siin on õige: ${o.itemsEt}.", "Ой, извините! Вот верный: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
         // 7. С собой или на месте
         buildList {
@@ -157,20 +176,22 @@ object DialogueFactory {
                 c("Mõlemat.", "И то, и другое.", correct = false, rating = -0.03,
                     followUp = listOf(rest("Hmm, pakin kaasa siis.", "Хм, тогда упакую с собой."))),
             ), listOf("fq_kaasa", "p_jargi")))
-            add(rest("Selge, pakin kaasa. Head teed!", "Понятно, упакую с собой. Счастливого пути!"))
+            add(rest("Selge, pakin kaasa. Palun, head teed!", "Понятно, упакую с собой. Пожалуйста, счастливого пути!"))
+            add(courierThanks())
         },
         // 8. Проверка комплектности
         buildList {
             add(greetReadyAsk())
             add(rest("Teie tellimus: ${o.itemsEt}. Kontrollige, kas kõik on olemas.", "Ваш заказ: ${o.itemsRu}. Проверьте, всё ли на месте."))
             add(ask(Thread.RESTORAN, "Проверьте сумку и ответьте, всё ли есть:", false, listOf(
-                c("Jah, kõik on olemas. Aitäh!", "Да, всё на месте. Спасибо!"),
+                c("Jah, kõik on olemas.", "Да, всё на месте."),
                 c("Midagi on puudu.", "Кое-чего не хватает.", correct = false, rating = 0.02,
                     followUp = listOf(rest("Oih, tõesti! Lisan kohe. Nüüd kõik.", "Ой, и правда! Сейчас добавлю. Теперь всё."))),
                 c("Ma ei vaata.", "Я не буду проверять.", correct = false, rating = -0.05,
                     followUp = listOf(rest("Palun kontrollige, et vältida probleeme.", "Пожалуйста, проверьте, чтобы избежать проблем."))),
             ), listOf("p_veel_q", "g_aitah")))
-            add(rest("Suurepärane! Head teed!", "Отлично! Счастливого пути!"))
+            add(rest("Suurepärane! Palun, head teed!", "Отлично! Пожалуйста, счастливого пути!"))
+            add(courierThanks())
         },
         // 9. «Вы из Bolt?»
         buildList {
@@ -185,6 +206,7 @@ object DialogueFactory {
             add(rest("Suurepärane! Teie tellimus: ${o.itemsEt}.", "Отлично! Ваш заказ: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
         // 10. Утреннее приветствие
         buildList {
@@ -198,6 +220,7 @@ object DialogueFactory {
             add(rest("Tere hommikust! Teil on: ${o.itemsEt}.", "Доброе утро! У вас: ${o.itemsRu}."))
             add(confirmAsk(o))
             add(readyTurn())
+            add(courierThanks())
         },
     ).random()
 
