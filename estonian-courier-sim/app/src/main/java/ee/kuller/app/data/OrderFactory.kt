@@ -100,11 +100,11 @@ object OrderFactory {
     /** Сценарии, типичные для каждого типа заведения. */
     private val scenarioByVenue: Map<Venue, List<Scenario>> = mapOf(
         Venue.PIZZA to listOf(Scenario.LEAVE_DOOR, Scenario.FACE_DOOR, Scenario.CASH, Scenario.LATE, Scenario.SPOILED),
-        Venue.SUSHI to listOf(Scenario.LIFT_BROKEN, Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.SPOILED, Scenario.COMPLAINT),
-        Venue.ASIAN to listOf(Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.LATE, Scenario.WRONG_ADDRESS, Scenario.COMPLAINT),
+        Venue.SUSHI to listOf(Scenario.LIFT_BROKEN, Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.SPOILED, Scenario.COMPLAINT, Scenario.INTERCOM),
+        Venue.ASIAN to listOf(Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.LATE, Scenario.WRONG_ADDRESS, Scenario.COMPLAINT, Scenario.INTERCOM),
         Venue.BURGER to listOf(Scenario.FACE_DOOR, Scenario.LEAVE_DOOR, Scenario.CASH, Scenario.BREAKDOWN),
-        Venue.CAFE to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.LATE, Scenario.COMPLAINT),
-        Venue.SOUP to listOf(Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.SPOILED),
+        Venue.CAFE to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.LATE, Scenario.COMPLAINT, Scenario.INTERCOM),
+        Venue.SOUP to listOf(Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.SPOILED, Scenario.INTERCOM),
         Venue.BAKERY to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.CANCELLED, Scenario.LATE),
         Venue.GENERIC to Scenario.entries.toList(),
     )

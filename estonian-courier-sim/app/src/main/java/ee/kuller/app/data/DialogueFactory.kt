@@ -527,6 +527,29 @@ object DialogueFactory {
             }, Nav.End),
             apologyPhase(),
         )
+
+        Scenario.INTERCOM -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(client("Tere! Maja uksel on fonolukk. Helistage palun uksekellaga.", "Здравствуйте! На двери домофон. Позвоните, пожалуйста, в звонок."))
+                add(ask(Thread.KLIENT, "Узнайте номер квартиры, чтобы набрать на домофоне:", true, listOf(
+                    c("Mis on teie korterinumber?", "Какой у вас номер квартиры?"),
+                    c("Kas teil on koer?", "У вас есть собака?", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ää? Korter on kakskümmend kolm.", "Эм? Квартира двадцать три."))),
+                    c("Ma jätan toidu õue.", "Оставлю еду на улице.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Ei, palun helistage uksekellaga.", "Нет, пожалуйста, позвоните в домофон."))),
+                ), listOf("p_korter_q", "s_uksekell", "s_fonolukk")))
+                add(client("Korter kakskümmend kolm.", "Квартира двадцать три."))
+                add(ask(Thread.KLIENT, "Наберите номер квартиры на домофоне и позвоните:", false, listOf(
+                    c("Vajutan kakskümmend kolm ja helistan uksekellaga.", "Наберу двадцать три и позвоню в домофон."),
+                    c("Koputan lihtsalt uksele.", "Просто постучу в дверь.", correct = false, rating = -0.03,
+                        followUp = listOf(client("Te ei jõua ukseni. Kasutage uksekella.", "Вы не дойдёте до двери. Воспользуйтесь домофоном."))),
+                    c("Karjun teie nime.", "Крикну ваше имя.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Palun ärge! Lihtsalt helistage.", "Пожалуйста, не надо! Просто позвоните."))),
+                ), listOf("p_uksekell", "s_uksekell")))
+                add(client("Kuulen teid! Avan ukse. Tulge teisele korrusele.", "Слышу вас! Открываю дверь. Поднимитесь на второй этаж."))
+                addAll(handover())
+            }, Nav.End)
+        )
     }
 
     /** Общая фаза «извиниться и завершить» (для жалобы/протечки). */

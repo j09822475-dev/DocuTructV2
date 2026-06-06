@@ -94,6 +94,8 @@ object Content {
                 WordEntry("s_maja", "Maja", "Дом", "Kollane maja."),
                 WordEntry("s_korter", "Korter", "Квартира", "Korter number viis."),
                 WordEntry("s_lift", "Lift", "Лифт", "Lift on katki."),
+                WordEntry("s_uksekell", "Uksekell", "Домофон / звонок", "Helistan uksekellaga."),
+                WordEntry("s_fonolukk", "Fonolukk", "Домофонный замок", "Uksel on fonolukk."),
             )
         ),
         Category(
@@ -127,6 +129,7 @@ object Content {
                 // Опоздание, офис, отмена
                 WordEntry("p_hilinen", "Vabandust hilinemise pärast", "Извините за опоздание", "Vabandust hilinemise pärast, olin ummikus."),
                 WordEntry("p_kabinet_q", "Mis kabinetis te olete?", "В каком вы кабинете?", "Selge! Mis kabinetis te olete?"),
+                WordEntry("p_uksekell", "Helistan uksekellaga", "Позвоню в домофон", "Vajutan korterinumbri ja helistan uksekellaga."),
                 // Поддержка и проблемы
                 WordEntry("p_tugi_q", "Pöördun klienditoe poole", "Обращусь в поддержку", "Vabandust! Pöördun kohe klienditoe poole."),
                 WordEntry("p_umber_q", "Kas saate ümber pakkida?", "Можете переупаковать?", "Pakend lekib. Kas saate ümber pakkida?"),

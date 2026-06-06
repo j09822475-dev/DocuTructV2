@@ -21,7 +21,7 @@ data class Category(
 enum class Scenario {
     FACE_DOOR, LIFT_BROKEN, GATE_CODE, DIRECTIONS, LEAVE_DOOR, CASH,
     WRONG_ADDRESS, NOT_HOME, LATE, OFFICE, CANCELLED,
-    COMPLAINT, BREAKDOWN, SPOILED,
+    COMPLAINT, BREAKDOWN, SPOILED, INTERCOM,
 }
 
 /** Отдельные чаты-собеседники. */
