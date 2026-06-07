@@ -109,7 +109,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(Modifier.height(8.dp)) }
-            itemsIndexed(messages) { _, msg -> ChatBubble(msg) { vm.speak(msg.et) } }
+            itemsIndexed(messages) { _, msg -> ChatBubble(msg) { vm.speak(msg.et, msg.fromCourier, msg.thread) } }
             if (showTyping) item { TypingBubble(threadLabel(session.activeThread)) }
             item { Spacer(Modifier.height(4.dp)) }
         }
@@ -154,7 +154,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                                     et = choice.et, ru = choice.ru,
                                     selected = session.selected == i,
                                     onClick = { vm.select(i) },
-                                    onSpeak = { vm.speak(choice.et) }
+                                    onSpeak = { vm.speak(choice.et, true, ask.thread) }
                                 )
                             }
                         }

@@ -79,7 +79,17 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleOnline() { online = !online; if (online) refreshOrders() }
     fun refreshOrders() { availableOrders = OrderFactory.batch(5) }
-    fun speak(text: String) = tts.speak(text, flush = true)
+    /** Тон голоса по роли: курьер — базовый, клиент — выше, ресторан — ниже, поддержка — средне. */
+    private fun pitchOf(thread: Thread, fromCourier: Boolean): Float = when {
+        fromCourier -> 1.0f
+        thread == Thread.KLIENT -> 1.25f
+        thread == Thread.RESTORAN -> 0.8f
+        else -> 1.1f
+    }
+
+    /** Озвучить вручную (по кнопке 🔊) голосом нужного собеседника. */
+    fun speak(text: String, fromCourier: Boolean, thread: Thread) =
+        tts.speak(text, flush = true, pitch = pitchOf(thread, fromCourier))
 
     fun startOrder(order: Order) {
         revealJob?.cancel()
@@ -126,7 +136,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                             typing = null,
                             unread = if (turn.thread == cur.activeThread) cur.unread else cur.unread + turn.thread
                         )
-                        tts.speak(turn.et, flush = false)
+                        tts.speak(turn.et, flush = false, pitch = pitchOf(turn.thread, false))
                         delay(300)
                     }
                 }
@@ -176,7 +186,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             mistakes = s.mistakes + if (choice.correct) 0 else 1,
             ratingBonus = s.ratingBonus + choice.ratingDelta
         )
-        tts.speak(choice.et, flush = true)
+        tts.speak(choice.et, flush = true, pitch = pitchOf(ask.thread, true))
         revealUntilAsk()
     }
 

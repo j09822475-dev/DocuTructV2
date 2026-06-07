@@ -19,14 +19,15 @@ class Speaker(context: Context) {
         if (status == TextToSpeech.SUCCESS) ready = true
     }
 
-    fun speak(text: String, flush: Boolean = true) {
+    fun speak(text: String, flush: Boolean = true, pitch: Float = 1.0f) {
         if (!ready || text.isBlank()) return
         val estonian = Locale("et", "EE")
         val res = tts.setLanguage(estonian)
         if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
             tts.setLanguage(Locale.getDefault())
         }
-        tts.setSpeechRate(0.9f)
+        tts.setPitch(pitch)        // разный тон = разные «голоса» собеседников
+        tts.setSpeechRate(0.95f)
         val mode = if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
         tts.speak(text, mode, null, text.hashCode().toString())
     }
