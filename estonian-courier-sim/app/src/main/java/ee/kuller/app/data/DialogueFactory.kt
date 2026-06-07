@@ -39,17 +39,33 @@ object DialogueFactory {
     )
 
     // ---------- общие фазы ----------
-    private fun greetReadyAsk(): Turn = ask(
-        Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и спросите, готов ли заказ:", true,
-        listOf(
-            c("Tere! Kas tellimus on valmis?", "Здравствуйте! Заказ готов?"),
-            c("Head aega, nägemist!", "До свидания!", correct = false, rating = -0.05,
-                followUp = listOf(rest("Oih, te ikka tulite tellimusele järele? Üks hetk.", "Ой, вы всё-таки за заказом? Минутку."))),
-            c("Üks õlu, palun.", "Одно пиво, пожалуйста.", correct = false, rating = -0.03,
-                followUp = listOf(rest("Me ei müü õlut. Aga teie tellimus on kohe valmis.", "Мы не продаём пиво. Но ваш заказ сейчас будет."))),
-        ),
-        listOf("g_tere", "p_valmis_q")
-    )
+    private fun greetReadyAsk(o: Order): Turn {
+        val no = (100000..999999).random()
+        // 10+ вариантов, как курьер представляет заказ: по имени, по номеру, и т.д.
+        val correct = listOf(
+            "Tere! Kas tellimus on valmis?" to "Здравствуйте! Заказ готов?",
+            "Tere päevast! Mul on tellimus nimele ${o.customer}." to "Добрый день! У меня заказ на имя ${o.customer}.",
+            "Tervist! Tulin tellimusele järele, nimi ${o.customer}." to "Здравствуйте! Я за заказом, имя ${o.customer}.",
+            "Head päeva! Kas tellimus ${o.customer} nimele on valmis?" to "Добрый день! Заказ на имя ${o.customer} готов?",
+            "Tere! Vaadake palun, tellimus number $no." to "Здравствуйте! Посмотрите, пожалуйста, заказ №$no.",
+            "Tere! Mul on Bolti tellimus, number $no." to "Здравствуйте! У меня заказ Bolt, номер $no.",
+            "Tere! Kuller siin, tellimus ${o.customer} nimele." to "Здравствуйте! Курьер, заказ на имя ${o.customer}.",
+            "Tervist! Tellimus number $no, kas on valmis?" to "Здравствуйте! Заказ №$no, готов?",
+            "Tere! Tulin Boltist tellimusele järele." to "Здравствуйте! Я из Bolt за заказом.",
+            "Head päeva! Tellimus ${o.customer}, palun." to "Добрый день! Заказ ${o.customer}, пожалуйста.",
+        ).random()
+        return ask(
+            Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и попросите ваш заказ:", true,
+            listOf(
+                c(correct.first, correct.second),
+                c("Head aega, nägemist!", "До свидания!", correct = false, rating = -0.05,
+                    followUp = listOf(rest("Oih, te ikka tulite tellimusele järele? Üks hetk.", "Ой, вы всё-таки за заказом? Минутку."))),
+                c("Üks õlu, palun.", "Одно пиво, пожалуйста.", correct = false, rating = -0.03,
+                    followUp = listOf(rest("Me ei müü õlut. Aga teie tellimus on kohe valmis.", "Мы не продаём пиво. Но ваш заказ сейчас будет."))),
+            ),
+            listOf("g_tere", "p_jargi", "p_valmis_q", "p_nimi_q")
+        )
+    }
 
     private fun confirmAsk(o: Order): Turn = ask(
         Thread.RESTORAN, "Сверьте заказ и подтвердите, что всё верно:", false,
@@ -82,7 +98,7 @@ object DialogueFactory {
     private fun restScript(o: Order): List<Turn> = listOf(
         // 1. Классический
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Jah! Teil on tellimus: ${o.itemsEt}, eks?", "Да! У вас заказ: ${o.itemsRu}, верно?"))
             add(confirmAsk(o))
             add(rest("Peaaegu valmis, oota üks minut.", "Почти готово, подожди минутку."))
@@ -106,7 +122,7 @@ object DialogueFactory {
         },
         // 3. По номеру заказа
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Jah! Teie tellimuse number on seitse.", "Да! Номер вашего заказа — семь."))
             add(ask(Thread.RESTORAN, "Назовите номер заказа, чтобы забрать:", false, listOf(
                 c("Number seitse, palun.", "Номер семь, пожалуйста."),
@@ -135,7 +151,7 @@ object DialogueFactory {
         },
         // 5. Ещё не готов
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Vabandust, see pole veel valmis. Umbes viis minutit.", "Извините, ещё не готово. Около пяти минут."))
             add(ask(Thread.RESTORAN, "Заказ ещё готовится. Ответьте:", true, listOf(
                 c("Selge, ootan viis minutit.", "Понятно, подожду пять минут."),
@@ -151,7 +167,7 @@ object DialogueFactory {
         },
         // 6. Сначала выдали не тот
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Jah, siin on teie tellimus.", "Да, вот ваш заказ."))
             add(ask(Thread.RESTORAN, "Проверьте — точно ваш заказ? Спросите:", true, listOf(
                 c("Kas see on õige tellimus?", "Это верный заказ?"),
@@ -167,7 +183,7 @@ object DialogueFactory {
         },
         // 7. С собой или на месте
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Teil on: ${o.itemsEt}. Kas kaasa või sööte kohapeal?", "У вас: ${o.itemsRu}. С собой или здесь?"))
             add(ask(Thread.RESTORAN, "Вы курьер — заказ навынос. Ответьте:", false, listOf(
                 c("Kaasa, palun. Olen kuller.", "С собой, пожалуйста. Я курьер."),
@@ -181,7 +197,7 @@ object DialogueFactory {
         },
         // 8. Проверка комплектности
         buildList {
-            add(greetReadyAsk())
+            add(greetReadyAsk(o))
             add(rest("Teie tellimus: ${o.itemsEt}. Kontrollige, kas kõik on olemas.", "Ваш заказ: ${o.itemsRu}. Проверьте, всё ли на месте."))
             add(ask(Thread.RESTORAN, "Проверьте сумку и ответьте, всё ли есть:", false, listOf(
                 c("Jah, kõik on olemas.", "Да, всё на месте."),
