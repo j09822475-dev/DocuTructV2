@@ -275,7 +275,7 @@ object DialogueFactory {
             ),
             listOf("g_palun", "p_head_isu")
         ),
-        client("Suur aitäh! Head isu, nägemist!", "Большое спасибо! Приятного аппетита, до свидания!")
+        client("Suur aitäh! Ilusat päeva, nägemist!", "Большое спасибо! Хорошего дня, до свидания!")
     )
 
     /** Опенер курьера: он первым пишет клиенту, что прибыл с заказом. */
@@ -385,7 +385,7 @@ object DialogueFactory {
                     c("Ma helistan teile.", "Я позвоню вам.", correct = false, rating = -0.02,
                         followUp = listOf(client("Pole vaja, lihtsalt jätke ukse taha.", "Не надо, просто оставьте под дверью."))),
                 ), listOf("p_foto", "p_ukse_taha")))
-                add(client("Suur aitäh! Head isu!", "Большое спасибо! Приятного аппетита!"))
+                add(client("Suur aitäh! Ilusat päeva, nägemist!", "Большое спасибо! Хорошего дня, до свидания!"))
             }, Nav.End)
         )
 
