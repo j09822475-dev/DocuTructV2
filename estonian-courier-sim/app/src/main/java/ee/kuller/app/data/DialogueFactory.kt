@@ -39,31 +39,23 @@ object DialogueFactory {
     )
 
     // ---------- общие фазы ----------
-    private fun greetReadyAsk(o: Order): Turn {
-        val no = (100000..999999).random()
-        // 10+ вариантов, как курьер представляет заказ: по имени, по номеру, и т.д.
-        val correct = listOf(
-            "Tere! Kas tellimus on valmis?" to "Здравствуйте! Заказ готов?",
-            "Tere päevast! Mul on tellimus nimele ${o.customer}." to "Добрый день! У меня заказ на имя ${o.customer}.",
-            "Tervist! Tulin tellimusele järele, nimi ${o.customer}." to "Здравствуйте! Я за заказом, имя ${o.customer}.",
-            "Head päeva! Kas tellimus ${o.customer} nimele on valmis?" to "Добрый день! Заказ на имя ${o.customer} готов?",
-            "Tere! Vaadake palun, tellimus number $no." to "Здравствуйте! Посмотрите, пожалуйста, заказ №$no.",
-            "Tere! Mul on Bolti tellimus, number $no." to "Здравствуйте! У меня заказ Bolt, номер $no.",
-            "Tere! Kuller siin, tellimus ${o.customer} nimele." to "Здравствуйте! Курьер, заказ на имя ${o.customer}.",
-            "Tervist! Tellimus number $no, kas on valmis?" to "Здравствуйте! Заказ №$no, готов?",
-            "Tere! Tulin Boltist tellimusele järele." to "Здравствуйте! Я из Bolt за заказом.",
-            "Head päeva! Tellimus ${o.customer}, palun." to "Добрый день! Заказ ${o.customer}, пожалуйста.",
+    private fun courierOpen(): Turn {
+        val greet = listOf(
+            "Tere! Tulin tellimusele järele." to "Здравствуйте! Я за заказом.",
+            "Tervist! Mul on kulleritellimus." to "Здравствуйте! У меня курьерский заказ.",
+            "Head päeva! Tulin tellimusele järele." to "Добрый день! Я за заказом.",
+            "Tere! Kuller siin, tulin tellimusele järele." to "Здравствуйте! Курьер, я за заказом.",
         ).random()
         return ask(
-            Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и попросите ваш заказ:", true,
+            Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и скажите, что вы за заказом:", true,
             listOf(
-                c(correct.first, correct.second),
+                c(greet.first, greet.second),
                 c("Head aega, nägemist!", "До свидания!", correct = false, rating = -0.05,
                     followUp = listOf(rest("Oih, te ikka tulite tellimusele järele? Üks hetk.", "Ой, вы всё-таки за заказом? Минутку."))),
                 c("Üks õlu, palun.", "Одно пиво, пожалуйста.", correct = false, rating = -0.03,
-                    followUp = listOf(rest("Me ei müü õlut. Aga teie tellimus on kohe valmis.", "Мы не продаём пиво. Но ваш заказ сейчас будет."))),
+                    followUp = listOf(rest("Me ei müü õlut. Kas tulite tellimusele järele?", "Мы не продаём пиво. Вы за заказом?"))),
             ),
-            listOf("g_tere", "p_jargi", "p_valmis_q", "p_nimi_q")
+            listOf("g_tere", "p_jargi")
         )
     }
 
@@ -94,151 +86,93 @@ object DialogueFactory {
         listOf("g_aitah", "g_head_aega")
     )
 
-    /** 10 разных сюжетов получения заказа в ресторане — выбирается случайно. */
-    private fun restScript(o: Order): List<Turn> = listOf(
-        // 1. Классический
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Jah! Teil on tellimus: ${o.itemsEt}, eks?", "Да! У вас заказ: ${o.itemsRu}, верно?"))
-            add(confirmAsk(o))
-            add(rest("Peaaegu valmis, oota üks minut.", "Почти готово, подожди минутку."))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 2. По имени на заказе
-        buildList {
-            add(rest("Tere! Tere tulemast!", "Здравствуйте! Добро пожаловать!"))
-            add(ask(Thread.RESTORAN, "Поздоровайтесь и спросите, на какое имя заказ:", true, listOf(
-                c("Tere! Mis nimi on tellimusel?", "Здравствуйте! На какое имя заказ?"),
-                c("Andke mulle suvaline tellimus.", "Дайте любой заказ.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Ee, ma vajan nime.", "Эм, мне нужно имя."))),
-                c("Head aega!", "До свидания!", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Oodake, te ei võtnud tellimust!", "Подождите, вы не забрали заказ!"))),
-            ), listOf("g_tere", "p_nimi_q")))
-            add(rest("Tellimus on ${o.customer} nimele: ${o.itemsEt}.", "Заказ на имя ${o.customer}: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 3. По номеру заказа
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Jah! Teie tellimuse number on seitse.", "Да! Номер вашего заказа — семь."))
-            add(ask(Thread.RESTORAN, "Назовите номер заказа, чтобы забрать:", false, listOf(
-                c("Number seitse, palun.", "Номер семь, пожалуйста."),
-                c("Number sada.", "Номер сто.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Ei, number seitse.", "Нет, номер семь."))),
-                c("Ma ei tea numbrit.", "Я не знаю номер.", correct = false, rating = -0.03,
-                    followUp = listOf(rest("See on seitse. Siin on teie toit.", "Это семь. Вот ваша еда."))),
-            ), listOf("n_7")))
-            add(rest("Siin on number seitse: ${o.itemsEt}. Palun!", "Вот номер семь: ${o.itemsRu}. Пожалуйста!"))
-            add(courierThanks())
-        },
-        // 4. Запара в ресторане
-        buildList {
-            add(rest("Tere! Meil on praegu väga kiire. Üks hetk!", "Здравствуйте! У нас сейчас очень много дел. Минутку!"))
-            add(ask(Thread.RESTORAN, "В ресторане запара. Ответьте вежливо:", true, listOf(
-                c("Pole muret, ma ootan.", "Не беспокойтесь, я подожду."),
-                c("Kiirustage, mul pole aega!", "Поторопитесь, у меня нет времени!", correct = false, rating = -0.1,
-                    followUp = listOf(rest("Me teeme nii kiiresti kui saame.", "Мы делаем так быстро, как можем."))),
-                c("Ma lähen ära.", "Я ухожу.", correct = false, rating = -0.1,
-                    followUp = listOf(rest("Oodake, kohe valmis!", "Подождите, сейчас готово!"))),
-            ), listOf("g_tere")))
-            add(rest("Aitäh kannatlikkuse eest! Teil on: ${o.itemsEt}.", "Спасибо за терпение! У вас: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 5. Ещё не готов
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Vabandust, see pole veel valmis. Umbes viis minutit.", "Извините, ещё не готово. Около пяти минут."))
-            add(ask(Thread.RESTORAN, "Заказ ещё готовится. Ответьте:", true, listOf(
-                c("Selge, ootan viis minutit.", "Понятно, подожду пять минут."),
-                c("See on liiga kaua!", "Это слишком долго!", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Anname endast parima.", "Постараемся побыстрее."))),
-                c("Tühistage tellimus.", "Отмените заказ.", correct = false, rating = -0.1,
-                    followUp = listOf(rest("Ei-ei, kohe saab valmis!", "Нет-нет, сейчас будет готово!"))),
-            ), listOf("n_5", "g_aitah")))
-            add(rest("Nüüd on valmis: ${o.itemsEt}.", "Теперь готово: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 6. Сначала выдали не тот
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Jah, siin on teie tellimus.", "Да, вот ваш заказ."))
-            add(ask(Thread.RESTORAN, "Проверьте — точно ваш заказ? Спросите:", true, listOf(
-                c("Kas see on õige tellimus?", "Это верный заказ?"),
-                c("Aitäh, ma lähen!", "Спасибо, я пошёл!", correct = false, rating = -0.1,
-                    followUp = listOf(rest("Oodake! See oli vale tellimus!", "Подождите! Это был неверный заказ!"))),
-                c("Pole vahet.", "Без разницы.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Vahet on! See pole teie oma.", "Разница есть! Это не ваш."))),
-            ), listOf("p_oige_q")))
-            add(rest("Oih, vabandust! Siin on õige: ${o.itemsEt}.", "Ой, извините! Вот верный: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 7. С собой или на месте
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Teil on: ${o.itemsEt}. Kas kaasa või sööte kohapeal?", "У вас: ${o.itemsRu}. С собой или здесь?"))
-            add(ask(Thread.RESTORAN, "Вы курьер — заказ навынос. Ответьте:", false, listOf(
-                c("Kaasa, palun. Olen kuller.", "С собой, пожалуйста. Я курьер."),
-                c("Söön kohapeal.", "Поем здесь.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Aga see on kulleritellimus, eks?", "Но это же курьерский заказ, верно?"))),
-                c("Mõlemat.", "И то, и другое.", correct = false, rating = -0.03,
-                    followUp = listOf(rest("Hmm, pakin kaasa siis.", "Хм, тогда упакую с собой."))),
-            ), listOf("fq_kaasa", "p_jargi")))
-            add(rest("Selge, pakin kaasa. Palun, head teed!", "Понятно, упакую с собой. Пожалуйста, счастливого пути!"))
-            add(courierThanks())
-        },
-        // 8. Проверка комплектности
-        buildList {
-            add(greetReadyAsk(o))
-            add(rest("Teie tellimus: ${o.itemsEt}. Kontrollige, kas kõik on olemas.", "Ваш заказ: ${o.itemsRu}. Проверьте, всё ли на месте."))
-            add(ask(Thread.RESTORAN, "Проверьте сумку и ответьте, всё ли есть:", false, listOf(
-                c("Jah, kõik on olemas.", "Да, всё на месте."),
-                c("Midagi on puudu.", "Кое-чего не хватает.", correct = false, rating = 0.02,
-                    followUp = listOf(rest("Oih, tõesti! Lisan kohe. Nüüd kõik.", "Ой, и правда! Сейчас добавлю. Теперь всё."))),
-                c("Ma ei vaata.", "Я не буду проверять.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Palun kontrollige, et vältida probleeme.", "Пожалуйста, проверьте, чтобы избежать проблем."))),
-            ), listOf("p_veel_q", "g_aitah")))
-            add(rest("Suurepärane! Palun, head teed!", "Отлично! Пожалуйста, счастливого пути!"))
-            add(courierThanks())
-        },
-        // 9. «Вы из Bolt?»
-        buildList {
-            add(rest("Tere! Kas teie olete Boltist?", "Здравствуйте! Вы из Bolt?"))
-            add(ask(Thread.RESTORAN, "Подтвердите, что вы курьер за заказом:", true, listOf(
-                c("Jah, tulin tellimusele järele.", "Да, я пришёл за заказом."),
-                c("Ei, ma lihtsalt vaatan.", "Нет, я просто смотрю.", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Ah, vabandust. Siis oodake.", "А, извините. Тогда подождите."))),
-                c("Kes küsib?", "Кто спрашивает?", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Meie, restoran. Kas tellimuse järele?", "Мы, ресторан. За заказом?"))),
-            ), listOf("p_jargi", "g_jah")))
-            add(rest("Suurepärane! Teie tellimus: ${o.itemsEt}.", "Отлично! Ваш заказ: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-        // 10. Утреннее приветствие
-        buildList {
-            add(ask(Thread.RESTORAN, "Поздоровайтесь по-утреннему и спросите про заказ:", true, listOf(
-                c("Tere hommikust! Kas tellimus on valmis?", "Доброе утро! Заказ готов?"),
-                c("Head ööd! Tellimus?", "Спокойной ночи! Заказ?", correct = false, rating = -0.03,
-                    followUp = listOf(rest("Ee... praegu on hommik. Aga jah.", "Эм... сейчас утро. Но да."))),
-                c("Üks õlu hommikuks!", "Одно пиво на утро!", correct = false, rating = -0.05,
-                    followUp = listOf(rest("Ei, me ei müü õlut.", "Нет, мы не продаём пиво."))),
-            ), listOf("g_hommik", "p_valmis_q")))
-            add(rest("Tere hommikust! Teil on: ${o.itemsEt}.", "Доброе утро! У вас: ${o.itemsRu}."))
-            add(confirmAsk(o))
-            add(readyTurn())
-            add(courierThanks())
-        },
-    ).random()
+    /** Получение заказа: курьер ВСЕГДА инициирует, ресторан НЕ знает заказ и
+     *  уточняет (имя получателя / номер / показать в приложении). 5 вариантов. */
+    private fun restScript(o: Order): List<Turn> {
+        val no = (100000..999999).random()
+        return listOf(
+            // 1. Ресторан спрашивает имя получателя
+            buildList {
+                add(courierOpen())
+                add(rest("Tere! Mis nimi on tellimusel?", "Здравствуйте! На какое имя заказ?"))
+                add(ask(Thread.RESTORAN, "Назовите получателя заказа:", false, listOf(
+                    c("Tellimus on ${o.customer} nimele.", "Заказ на имя ${o.customer}."),
+                    c("Ma ei tea nime.", "Я не знаю имя.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Ilma nimeta ma ei leia tellimust.", "Без имени я не найду заказ."))),
+                    c("Pole vahet, andke midagi.", "Без разницы, дайте что-нибудь.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Ma vajan õiget nime.", "Мне нужно правильное имя."))),
+                ), listOf("p_nimi_q")))
+                add(rest("Üks hetk... Leidsin! ${o.itemsEt}.", "Минутку... Нашёл! ${o.itemsRu}."))
+                add(confirmAsk(o))
+                add(readyTurn())
+                add(courierThanks())
+            },
+            // 2. Ресторан спрашивает номер заказа
+            buildList {
+                add(courierOpen())
+                add(rest("Tere! Mis on tellimuse number?", "Здравствуйте! Какой номер заказа?"))
+                add(ask(Thread.RESTORAN, "Назовите номер заказа из приложения:", false, listOf(
+                    c("Tellimuse number on $no.", "Номер заказа $no."),
+                    c("Ma ei vaadanud numbrit.", "Я не смотрел номер.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Vaadake palun äpist.", "Посмотрите, пожалуйста, в приложении."))),
+                    c("Number üks.", "Номер один.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Hmm, sellist pole. Kontrollige.", "Хм, такого нет. Проверьте."))),
+                ), emptyList()))
+                add(rest("Number $no... Jah, siin: ${o.itemsEt}.", "Номер $no... Да, вот: ${o.itemsRu}."))
+                add(confirmAsk(o))
+                add(readyTurn())
+                add(courierThanks())
+            },
+            // 3. Ресторан просит показать заказ в приложении
+            buildList {
+                add(courierOpen())
+                add(rest("Tere! Näidake palun tellimust äpis.", "Здравствуйте! Покажите, пожалуйста, заказ в приложении."))
+                add(ask(Thread.RESTORAN, "Покажите заказ — назовите имя и состав:", false, listOf(
+                    c("Palun, siin: ${o.customer}, ${o.itemsEt}.", "Пожалуйста, вот: ${o.customer}, ${o.itemsRu}."),
+                    c("Mul pole äppi.", "У меня нет приложения.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Kuidas te siis tellimuse saite?", "А как вы тогда получили заказ?"))),
+                    c("Vaadake ise.", "Сами смотрите.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("See on teie telefonis, palun.", "Это в вашем телефоне, пожалуйста."))),
+                ), listOf("p_nimi_q")))
+                add(rest("Aitäh! Üks hetk, toon: ${o.itemsEt}.", "Спасибо! Минутку, несу: ${o.itemsRu}."))
+                add(confirmAsk(o))
+                add(readyTurn())
+                add(courierThanks())
+            },
+            // 4. Запара: ресторан быстро спрашивает имя
+            buildList {
+                add(courierOpen())
+                add(rest("Tere! Meil on kiire. Kelle nimele tellimus?", "Здравствуйте! У нас запара. На чьё имя заказ?"))
+                add(ask(Thread.RESTORAN, "Быстро назовите имя получателя:", false, listOf(
+                    c("${o.customer} nimele, palun.", "На имя ${o.customer}, пожалуйста."),
+                    c("Kiirustage ise!", "Сами поторопитесь!", correct = false, rating = -0.1,
+                        followUp = listOf(rest("Me proovime. Aga kelle nimele?", "Мы стараемся. Но на чьё имя?"))),
+                    c("Ükskõik kelle.", "Чьё угодно.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Ei, ma vajan nime.", "Нет, мне нужно имя."))),
+                ), listOf("p_nimi_q")))
+                add(rest("Selge! Üks hetk... Valmis: ${o.itemsEt}.", "Понятно! Минутку... Готово: ${o.itemsRu}."))
+                add(confirmAsk(o))
+                add(readyTurn())
+                add(courierThanks())
+            },
+            // 5. Ресторан переспрашивает имя и сверяет состав
+            buildList {
+                add(courierOpen())
+                add(rest("Tere! Kelle tellimus?", "Здравствуйте! Чей заказ?"))
+                add(ask(Thread.RESTORAN, "Назовите получателя:", false, listOf(
+                    c("${o.customer}.", "${o.customer}."),
+                    c("Ma unustasin nime.", "Я забыл имя.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Vaadake äpist nime, palun.", "Посмотрите имя в приложении, пожалуйста."))),
+                    c("Teie peate teadma.", "Вы должны знать.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Meil on palju tellimusi. Mis nimi?", "У нас много заказов. Какое имя?"))),
+                ), listOf("p_nimi_q")))
+                add(rest("Aa, ${o.customer}! Kas tellimus on ${o.itemsEt}?", "А, ${o.customer}! Заказ — ${o.itemsRu}?"))
+                add(confirmAsk(o))
+                add(readyTurn())
+                add(courierThanks())
+            },
+        ).random()
+    }
 
     private fun restPhase(o: Order): Phase = Phase("rest", Thread.RESTORAN, restScript(o), hub)
 
