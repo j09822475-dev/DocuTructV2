@@ -119,7 +119,6 @@ object OrderFactory {
         }
         val itemsEt = chosen.joinToString(" ja ") { it.et }
         val itemsRu = chosen.joinToString(" и ") { it.ru }
-        val korter = Random.nextInt(1, 40)
         val payout = (300 + Random.nextInt(350)) / 100.0
         val distance = (8 + Random.nextInt(45)) / 10.0
         val scenario = (scenarioByVenue[r.venue] ?: Scenario.entries.toList()).random()
@@ -128,7 +127,7 @@ object OrderFactory {
             id = id,
             restaurant = r.name,
             customer = customer,
-            address = "${streets.random()}, korter $korter",
+            address = streets.random(),   // без номера квартиры — её называет клиент в диалоге
             distanceKm = distance,
             payout = payout,
             itemsEt = itemsEt,

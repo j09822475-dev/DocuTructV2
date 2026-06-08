@@ -10,7 +10,8 @@ data class GameState(
     val rating: Double = 5.0,       // рейтинг курьера (как в Bolt/Wolt)
     val correct: Int = 0,           // верных ответов
     val wrong: Int = 0,             // ошибок
-    val learnedIds: Set<String> = emptySet() // выученные слова
+    val learnedIds: Set<String> = emptySet(), // выученные слова
+    val reps: Map<String, Int> = emptyMap()   // сколько раз слово отработано (для скрытия перевода)
 ) {
     val level: Int get() = xp / 100 + 1
     val xpInLevel: Int get() = xp % 100
@@ -29,7 +30,12 @@ class GameRepository(context: Context) {
         rating = prefs.getFloat("rating", 5.0f).toDouble(),
         correct = prefs.getInt("correct", 0),
         wrong = prefs.getInt("wrong", 0),
-        learnedIds = prefs.getStringSet("learned", emptySet())?.toSet() ?: emptySet()
+        learnedIds = prefs.getStringSet("learned", emptySet())?.toSet() ?: emptySet(),
+        reps = (prefs.getString("reps", "") ?: "").split(";")
+            .mapNotNull { e ->
+                val p = e.split(":")
+                if (p.size == 2) p[0] to (p[1].toIntOrNull() ?: 0) else null
+            }.toMap()
     )
 
     fun save(state: GameState) {
@@ -41,6 +47,7 @@ class GameRepository(context: Context) {
             .putInt("correct", state.correct)
             .putInt("wrong", state.wrong)
             .putStringSet("learned", state.learnedIds)
+            .putString("reps", state.reps.entries.joinToString(";") { "${it.key}:${it.value}" })
             .apply()
     }
 

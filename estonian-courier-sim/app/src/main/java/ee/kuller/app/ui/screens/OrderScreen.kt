@@ -109,7 +109,9 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { Spacer(Modifier.height(8.dp)) }
-            itemsIndexed(messages) { _, msg -> ChatBubble(msg) { vm.speak(msg.et, msg.fromCourier, msg.thread) } }
+            itemsIndexed(messages) { _, msg ->
+                ChatBubble(msg, vm.maskRu(msg.ru)) { vm.speak(msg.et, msg.fromCourier, msg.thread) }
+            }
             if (showTyping) item { TypingBubble(threadLabel(session.activeThread)) }
             item { Spacer(Modifier.height(4.dp)) }
         }
@@ -190,7 +192,7 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
 }
 
 @Composable
-private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
+private fun ChatBubble(msg: ChatMsg, displayRu: String, onSpeak: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val courier = msg.fromCourier
     val bubbleColor = if (courier) scheme.primary else scheme.surfaceVariant
@@ -214,8 +216,8 @@ private fun ChatBubble(msg: ChatMsg, onSpeak: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.widthIn(max = 230.dp)) {
                         Text(msg.et, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = onBubble)
-                        if (msg.ru.isNotBlank()) {
-                            Text(msg.ru, fontSize = 13.sp, color = onBubble.copy(alpha = 0.8f))
+                        if (displayRu.isNotBlank()) {
+                            Text(displayRu, fontSize = 13.sp, color = onBubble.copy(alpha = 0.8f))
                         }
                     }
                     SpeakButton(onClick = onSpeak, tint = if (courier) scheme.onPrimary else scheme.primary)

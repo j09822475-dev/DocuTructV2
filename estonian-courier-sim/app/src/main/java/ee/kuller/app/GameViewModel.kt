@@ -163,10 +163,16 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val choice = ask.choices[i]
 
         val msg = ChatMsg(ask.thread, true, choice.et, choice.ru, "🛵 Вы")
+        val newReps = if (choice.correct && ask.teachWordIds.isNotEmpty()) {
+            state.reps.toMutableMap().apply {
+                ask.teachWordIds.forEach { put(it, (get(it) ?: 0) + 1) }
+            }
+        } else state.reps
         state = state.copy(
             learnedIds = if (choice.correct) state.learnedIds + ask.teachWordIds else state.learnedIds,
             correct = state.correct + if (choice.correct) 1 else 0,
-            wrong = state.wrong + if (choice.correct) 0 else 1
+            wrong = state.wrong + if (choice.correct) 0 else 1,
+            reps = newReps
         )
         repo.save(state)
 
@@ -260,6 +266,29 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moneyStr(): String = "%.2f €".format(state.money)
     fun ratingStr(): String = "%.2f".format(state.rating)
+
+    /**
+     * Скрывает в русском тексте перевод тех слов, что отработаны ≥ [MASTERY] раз
+     * (заменяет на «…»), чтобы вспоминать значение самому.
+     */
+    fun maskRu(text: String): String {
+        if (state.reps.isEmpty()) return text
+        var s = text
+        for ((id, n) in state.reps) {
+            if (n < MASTERY) continue
+            val w = Content.word(id) ?: continue
+            for (gloss in w.ru.split('/', ',').map { it.trim() }.filter { it.length >= 3 }) {
+                val p = java.util.regex.Pattern.compile(
+                    "(?<![\\p{L}])" + java.util.regex.Pattern.quote(gloss) + "\\p{L}*",
+                    java.util.regex.Pattern.CASE_INSENSITIVE or java.util.regex.Pattern.UNICODE_CASE
+                )
+                s = p.matcher(s).replaceAll("…")
+            }
+        }
+        return s
+    }
+
+    companion object { const val MASTERY = 20 }
 
     override fun onCleared() {
         super.onCleared()
