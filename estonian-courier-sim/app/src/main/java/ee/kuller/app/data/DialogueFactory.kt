@@ -33,6 +33,57 @@ object DialogueFactory {
         choices: List<Choice>, teach: List<String> = emptyList()
     ): Turn = Turn.Ask(thread, prompt, courier, choices, teach)
 
+    /** Вариант объяснения дороги клиентом + подходящее/неподходящее подтверждение курьера. */
+    private data class Dir(
+        val say: Pair<String, String>,
+        val ok: Pair<String, String>,
+        val bad: Pair<String, String>,
+        val teach: List<String>,
+    )
+
+    private val dirVariants = listOf(
+        Dir("Minge otse, siis paremale. Kollane maja." to "Идите прямо, потом направо. Жёлтый дом.",
+            "Selge: otse ja siis paremale." to "Понятно: прямо, потом направо.",
+            "Selge: tagasi ja vasakule." to "Понятно: назад и налево.",
+            listOf("s_otse", "s_paremale", "s_maja")),
+        Dir("Pöörake vasakule, sinine maja hoovis." to "Поверните налево, синий дом во дворе.",
+            "Selge: vasakule, maja hoovis." to "Понятно: налево, дом во дворе.",
+            "Selge: paremale, esimene maja." to "Понятно: направо, первый дом.",
+            listOf("s_vasakule", "s_maja")),
+        Dir("Sissepääs on tagant, hoovi poolt." to "Вход сзади, со стороны двора.",
+            "Selge: sissepääs hoovi poolt." to "Понятно: вход со стороны двора.",
+            "Selge: sissepääs tänava poolt." to "Понятно: вход со стороны улицы.",
+            listOf("s_uks", "s_maja")),
+        Dir("Minge keldrist sisse, kõige alumine uks." to "Заходите через подвал, самая нижняя дверь.",
+            "Selge: kelder, alumine uks." to "Понятно: подвал, нижняя дверь.",
+            "Selge: ülemine korrus, lift." to "Понятно: верхний этаж, лифт.",
+            listOf("s_uks", "s_korrus")),
+        Dir("Roheline maja, teine sissepääs." to "Зелёный дом, второй вход.",
+            "Selge: roheline maja, teine uks." to "Понятно: зелёный дом, вторая дверь.",
+            "Selge: punane maja, esimene uks." to "Понятно: красный дом, первая дверь.",
+            listOf("s_maja", "s_uks")),
+        Dir("Sõitke otse lõpuni, siis paremale. Punane maja." to "Прямо до конца, потом направо. Красный дом.",
+            "Selge: otse lõpuni ja paremale." to "Понятно: прямо до конца и направо.",
+            "Selge: kohe vasakule." to "Понятно: сразу налево.",
+            listOf("s_otse", "s_paremale", "s_maja")),
+        Dir("Maja on tagahoovis, väravast sisse." to "Дом в заднем дворе, входить через ворота.",
+            "Selge: tagahoovi, väravast sisse." to "Понятно: в задний двор, через ворота.",
+            "Selge: peauksest, esiküljelt." to "Понятно: через парадную, спереди.",
+            listOf("s_maja", "s_uks")),
+        Dir("Esimene maja vasakul, valge uks." to "Первый дом слева, белая дверь.",
+            "Selge: esimene maja vasakul, valge uks." to "Понятно: первый дом слева, белая дверь.",
+            "Selge: viimane maja paremal." to "Понятно: последний дом справа.",
+            listOf("s_vasakule", "s_maja", "s_uks")),
+        Dir("Minge läbi värava, siis trepist üles." to "Идите через ворота, потом вверх по лестнице.",
+            "Selge: värava kaudu, trepist üles." to "Понятно: через ворота, вверх по лестнице.",
+            "Selge: liftiga alla keldrisse." to "Понятно: на лифте вниз в подвал.",
+            listOf("s_uks", "s_lift")),
+        Dir("Kollane maja, sissepääs küljelt." to "Жёлтый дом, вход сбоку.",
+            "Selge: kollane maja, küljelt sisse." to "Понятно: жёлтый дом, заходить сбоку.",
+            "Selge: otse peauksest." to "Понятно: прямо через парадную.",
+            listOf("s_maja", "s_uks")),
+    )
+
     private val hub = Nav.Choose(
         "Заказ у вас. Что дальше?",
         listOf(NavOption("📲 Написать клиенту", "client"), NavOption("🎧 Связаться с поддержкой", "support_opt"))
@@ -278,24 +329,25 @@ object DialogueFactory {
 
         Scenario.DIRECTIONS -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                val dir = dirVariants.random()
                 add(clientArrived())
-                add(client("Tere! Maja on hoovis, seda on raske leida.", "Здравствуйте! Дом во дворе, его трудно найти."))
+                add(client("Tere! Maja on raske leida.", "Здравствуйте! Дом трудно найти."))
                 add(ask(Thread.KLIENT, "Спросите у клиента, как к нему пройти:", true, listOf(
                     c("Kuidas ma teie juurde saan?", "Как мне к вам пройти?"),
                     c("Mis kell on?", "Который час?", correct = false, rating = -0.05,
-                        followUp = listOf(client("Hmm? Lihtsalt tulge hoovi.", "Хм? Просто зайдите во двор."))),
+                        followUp = listOf(client("Hmm? Kuulake hoolikalt.", "Хм? Послушайте внимательно."))),
                     c("Leidke ise mind.", "Найдите меня сами.", correct = false, rating = -0.05,
                         followUp = listOf(client("See on teie töö, mitte minu.", "Это ваша работа, не моя."))),
                 ), listOf("p_kuidas_q")))
-                add(client("Minge otse, siis paremale. Kollane maja.", "Идите прямо, потом направо. Жёлтый дом."))
+                add(client(dir.say.first, dir.say.second))
                 add(ask(Thread.KLIENT, "Подтвердите, что поняли дорогу:", false, listOf(
-                    c("Selge: otse ja siis paremale.", "Понятно: прямо, потом направо."),
-                    c("Selge: tagasi ja vasakule.", "Понятно: назад и налево.", correct = false, rating = -0.05,
-                        followUp = listOf(client("Ei-ei! Otse ja paremale!", "Нет-нет! Прямо и направо!"))),
+                    c(dir.ok.first, dir.ok.second),
+                    c(dir.bad.first, dir.bad.second, correct = false, rating = -0.05,
+                        followUp = listOf(client("Ei-ei! Kuulake uuesti.", "Нет-нет! Послушайте ещё раз."))),
                     c("Ma ei saa aru.", "Я не понимаю.", correct = false, rating = -0.03,
-                        followUp = listOf(client("Otse. Siis. Paremale. Kollane maja!", "Прямо. Потом. Направо. Жёлтый дом!"))),
-                ), listOf("s_otse", "s_paremale", "s_maja")))
-                add(client("Just nii! Ootan ukse ees.", "Именно! Жду у двери."))
+                        followUp = listOf(client(dir.say.first, dir.say.second))),
+                ), dir.teach))
+                add(client("Just nii! Ootan teid.", "Именно! Жду вас."))
                 addAll(handover())
             }, Nav.End)
         )
