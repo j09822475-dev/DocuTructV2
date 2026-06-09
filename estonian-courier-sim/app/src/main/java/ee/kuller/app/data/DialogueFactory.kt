@@ -84,6 +84,24 @@ object DialogueFactory {
             listOf("s_maja", "s_uks")),
     )
 
+    /** 14 вариантов, где именно в здании находится клиент (офис). */
+    private val officeLocations = listOf(
+        "Kabinet kakskümmend üks, vastuvõtu juures." to "Кабинет 21, у ресепшена.",
+        "Kolmas korrus, kabinet seitse, koridori lõpus." to "Третий этаж, кабинет 7, в конце коридора.",
+        "Teine korrus, esimene uks vasakul." to "Второй этаж, первая дверь слева.",
+        "Neljas korrus, klaasuksega kontor." to "Четвёртый этаж, офис со стеклянной дверью.",
+        "Kabinet kümme, köögi kõrval." to "Кабинет 10, рядом с кухней.",
+        "Viies korrus, otse liftist välja." to "Пятый этаж, прямо из лифта.",
+        "Kabinet kolmkümmend kaks, paremal koridoris." to "Кабинет 32, справа по коридору.",
+        "Teine korrus, suur avatud kontor, akna juures." to "Второй этаж, опенспейс, у окна.",
+        "Kuues korrus, juhi kabinet, lõpus paremal." to "Шестой этаж, кабинет директора, в конце справа.",
+        "Kabinet viis, kohe trepi kõrval." to "Кабинет 5, сразу у лестницы.",
+        "Kolmas korrus, IT-osakond, sinine uks." to "Третий этаж, IT-отдел, синяя дверь.",
+        "Teine korrus, raamatupidamine, viimane uks." to "Второй этаж, бухгалтерия, последняя дверь.",
+        "Seitsmes korrus, terrassi poolt." to "Седьмой этаж, со стороны террасы.",
+        "Kabinet üheksa, valvelaua taga." to "Кабинет 9, за стойкой охраны.",
+    )
+
     private val hub = Nav.Choose(
         "Заказ у вас. Что дальше?",
         listOf(NavOption("📲 Написать клиенту", "client"), NavOption("🎧 Связаться с поддержкой", "support_opt"))
@@ -476,16 +494,17 @@ object DialogueFactory {
 
         Scenario.OFFICE -> listOf(
             Phase("client", Thread.KLIENT, buildList {
+                val loc = officeLocations.random()
                 add(clientArrived())
-                add(client("Tere! Tooge palun kontorisse, teine korrus.", "Здравствуйте! Принесите в офис, второй этаж."))
-                add(ask(Thread.KLIENT, "Уточните номер кабинета:", true, listOf(
+                add(client("Tere! Tooge palun kontorisse.", "Здравствуйте! Принесите, пожалуйста, в офис."))
+                add(ask(Thread.KLIENT, "Уточните номер кабинета / где вас найти:", true, listOf(
                     c("Selge! Mis kabinetis te olete?", "Понятно! В каком вы кабинете?"),
                     c("Pööra paremale.", "Поверни направо.", correct = false, rating = -0.05,
                         followUp = listOf(client("Ää? Ma räägin kontorist.", "Эм? Я про офис."))),
                     c("Tulge ise alla.", "Спуститесь сами.", correct = false, rating = -0.05,
                         followUp = listOf(client("Mul on koosolek, palun tooge üles.", "У меня встреча, принесите наверх."))),
                 ), listOf("p_kabinet_q", "s_korrus")))
-                add(client("Kabinet kakskümmend üks, vastuvõtu juures.", "Кабинет двадцать один, у ресепшена."))
+                add(client(loc.first, loc.second))
                 addAll(handover())
             }, Nav.End)
         )
