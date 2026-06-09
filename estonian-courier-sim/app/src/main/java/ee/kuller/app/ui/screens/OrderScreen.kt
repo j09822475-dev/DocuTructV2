@@ -154,7 +154,8 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
                             )
                             ask.choices.forEachIndexed { i, choice ->
                                 AnswerOption(
-                                    et = choice.et, ru = choice.ru,
+                                    et = choice.et,
+                                    ru = if (vm.hideRu) "" else choice.ru,
                                     selected = session.selected == i,
                                     onClick = { vm.select(i) },
                                     onSpeak = { vm.speak(choice.et, true, ask.thread) }
@@ -262,7 +263,9 @@ private fun AnswerOption(
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(et, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = scheme.onSurface)
-                Text(ru, fontSize = 12.sp, color = scheme.onSurface.copy(alpha = 0.65f))
+                if (ru.isNotBlank()) {
+                    Text(ru, fontSize = 12.sp, color = scheme.onSurface.copy(alpha = 0.65f))
+                }
             }
             SpeakButton(onClick = onSpeak)
         }
