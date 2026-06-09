@@ -110,7 +110,8 @@ fun OrderScreen(vm: GameViewModel, onExit: () -> Unit) {
         ) {
             item { Spacer(Modifier.height(8.dp)) }
             itemsIndexed(messages) { _, msg ->
-                ChatBubble(msg, vm.maskRu(msg.ru)) { vm.speak(msg.et, msg.fromCourier, msg.thread) }
+                val ru = if (vm.hideRu) "" else vm.maskRu(msg.ru)
+                ChatBubble(msg, ru) { vm.speak(msg.et, msg.fromCourier, msg.thread) }
             }
             if (showTyping) item { TypingBubble(threadLabel(session.activeThread)) }
             item { Spacer(Modifier.height(4.dp)) }

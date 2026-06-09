@@ -52,4 +52,7 @@ class GameRepository(context: Context) {
     }
 
     fun clear() = prefs.edit().clear().apply()
+
+    fun loadHideRu(): Boolean = prefs.getBoolean("hideRu", false)
+    fun saveHideRu(value: Boolean) = prefs.edit().putBoolean("hideRu", value).apply()
 }

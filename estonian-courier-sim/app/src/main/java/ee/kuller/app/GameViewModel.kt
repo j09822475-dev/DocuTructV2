@@ -77,6 +77,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     var availableOrders by mutableStateOf<List<Order>>(emptyList()); private set
     var lastResult by mutableStateOf<DeliveryResult?>(null); private set
 
+    /** Глобальный переключатель: скрывать ли русские переводы в чатах. */
+    var hideRu by mutableStateOf(repo.loadHideRu()); private set
+    fun toggleHideRu() { hideRu = !hideRu; repo.saveHideRu(hideRu) }
+
     fun toggleOnline() { online = !online; if (online) refreshOrders() }
     fun refreshOrders() { availableOrders = OrderFactory.batch(5) }
     /** Тон голоса по роли: курьер — базовый, клиент — выше, ресторан — ниже, поддержка — средне. */
