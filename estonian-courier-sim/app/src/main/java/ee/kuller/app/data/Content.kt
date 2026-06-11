@@ -117,7 +117,7 @@ object Content {
                 WordEntry("p_korter_q", "Mis on teie korterinumber?", "Какой у вас номер квартиры?", "Mis on teie korterinumber?"),
                 WordEntry("p_kus_q", "Kus ma teid leian?", "Где мне вас найти?", "Olen kohal. Kus ma teid leian?"),
                 WordEntry("p_kuidas_q", "Kuidas ma teie juurde saan?", "Как мне к вам пройти?", "Maja on hoovis. Kuidas ma teie juurde saan?"),
-                WordEntry("p_kood_q", "Mis on ukse kood?", "Какой код двери?", "Värav on lukus. Mis on ukse kood?"),
+                WordEntry("p_kood_q", "Mis on uksekood?", "Какой код двери?", "Värav on lukus. Mis on uksekood?"),
                 WordEntry("p_alla_voi_q", "Kas tulete alla või tulen üles?", "Вы спуститесь или мне подняться?", "Lift on katki. Kas tulete alla või tulen üles?"),
                 // Оплата, проблемы с адресом, клиента нет дома
                 WordEntry("p_maksate_q", "Kas maksate sularahas või kaardiga?", "Платите наличными или картой?", "Tere! Kas maksate sularahas või kaardiga?"),
@@ -129,7 +129,7 @@ object Content {
                 // Опоздание, офис, отмена
                 WordEntry("p_hilinen", "Vabandust hilinemise pärast", "Извините за опоздание", "Vabandust hilinemise pärast, olin ummikus."),
                 WordEntry("p_kabinet_q", "Mis kabinetis te olete?", "В каком вы кабинете?", "Selge! Mis kabinetis te olete?"),
-                WordEntry("p_uksekell", "Helistan uksekellaga", "Позвоню в домофон", "Vajutan korterinumbri ja helistan uksekellaga."),
+                WordEntry("p_uksekell", "Helistan uksekella", "Позвоню в домофон", "Valin korterinumbri ja helistan uksekella."),
                 // Поддержка и проблемы
                 WordEntry("p_tugi_q", "Pöördun klienditoe poole", "Обращусь в поддержку", "Vabandust! Pöördun kohe klienditoe poole."),
                 WordEntry("p_umber_q", "Kas saate ümber pakkida?", "Можете переупаковать?", "Pakend lekib. Kas saate ümber pakkida?"),

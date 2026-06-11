@@ -99,12 +99,12 @@ object OrderFactory {
 
     /** Сценарии, типичные для каждого типа заведения. */
     private val scenarioByVenue: Map<Venue, List<Scenario>> = mapOf(
-        Venue.PIZZA to listOf(Scenario.LEAVE_DOOR, Scenario.FACE_DOOR, Scenario.CASH, Scenario.LATE, Scenario.SPOILED),
-        Venue.SUSHI to listOf(Scenario.LIFT_BROKEN, Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.SPOILED, Scenario.COMPLAINT, Scenario.INTERCOM),
-        Venue.ASIAN to listOf(Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.LATE, Scenario.WRONG_ADDRESS, Scenario.COMPLAINT, Scenario.INTERCOM),
-        Venue.BURGER to listOf(Scenario.FACE_DOOR, Scenario.LEAVE_DOOR, Scenario.CASH, Scenario.BREAKDOWN),
-        Venue.CAFE to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.LATE, Scenario.COMPLAINT, Scenario.INTERCOM),
-        Venue.SOUP to listOf(Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.SPOILED, Scenario.INTERCOM),
+        Venue.PIZZA to listOf(Scenario.LEAVE_DOOR, Scenario.FACE_DOOR, Scenario.CASH, Scenario.LATE, Scenario.SPOILED, Scenario.ANGRY_CLIENT, Scenario.REFUSE_PAY, Scenario.DOG_YARD),
+        Venue.SUSHI to listOf(Scenario.LIFT_BROKEN, Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.SPOILED, Scenario.COMPLAINT, Scenario.INTERCOM, Scenario.WRONG_ITEMS),
+        Venue.ASIAN to listOf(Scenario.FACE_DOOR, Scenario.OFFICE, Scenario.LATE, Scenario.WRONG_ADDRESS, Scenario.COMPLAINT, Scenario.INTERCOM, Scenario.WRONG_ITEMS, Scenario.ANGRY_CLIENT),
+        Venue.BURGER to listOf(Scenario.FACE_DOOR, Scenario.LEAVE_DOOR, Scenario.CASH, Scenario.BREAKDOWN, Scenario.REFUSE_PAY, Scenario.DRUNK_CLIENT, Scenario.ANGRY_CLIENT),
+        Venue.CAFE to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.LATE, Scenario.COMPLAINT, Scenario.INTERCOM, Scenario.DOG_YARD),
+        Venue.SOUP to listOf(Scenario.GATE_CODE, Scenario.FACE_DOOR, Scenario.DIRECTIONS, Scenario.SPOILED, Scenario.INTERCOM, Scenario.DOG_YARD),
         Venue.BAKERY to listOf(Scenario.OFFICE, Scenario.FACE_DOOR, Scenario.CANCELLED, Scenario.LATE),
         Venue.GENERIC to Scenario.entries.toList(),
     )

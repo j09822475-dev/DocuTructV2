@@ -111,8 +111,8 @@ object DialogueFactory {
     private fun courierOpen(): Turn {
         val greet = listOf(
             "Tere! Tulin tellimusele järele." to "Здравствуйте! Я за заказом.",
-            "Tervist! Mul on kulleritellimus." to "Здравствуйте! У меня курьерский заказ.",
-            "Head päeva! Tulin tellimusele järele." to "Добрый день! Я за заказом.",
+            "Tervist! Olen kuller, tulin tellimusele järele." to "Здравствуйте! Я курьер, я за заказом.",
+            "Tere päevast! Tulin tellimusele järele." to "Добрый день! Я за заказом.",
             "Tere! Kuller siin, tulin tellimusele järele." to "Здравствуйте! Курьер, я за заказом.",
         ).random()
         return ask(
@@ -121,8 +121,8 @@ object DialogueFactory {
                 c(greet.first, greet.second),
                 c("Head aega, nägemist!", "До свидания!", correct = false, rating = -0.05,
                     followUp = listOf(rest("Oih, te ikka tulite tellimusele järele? Üks hetk.", "Ой, вы всё-таки за заказом? Минутку."))),
-                c("Üks õlu, palun.", "Одно пиво, пожалуйста.", correct = false, rating = -0.03,
-                    followUp = listOf(rest("Me ei müü õlut. Kas tulite tellimusele järele?", "Мы не продаём пиво. Вы за заказом?"))),
+                c("Võtan selle koti siit, see on vist minu.", "Возьму вот этот пакет, он вроде мой.", correct = false, rating = -0.05,
+                    followUp = listOf(rest("Oodake! See on teise kulleri tellimus. Küsige alati enne.", "Подождите! Это заказ другого курьера. Всегда сначала спрашивайте."))),
             ),
             listOf("g_tere", "p_jargi")
         )
@@ -134,13 +134,15 @@ object DialogueFactory {
             c(o.confirmEt, o.confirmRu),
             c("Ei, see on vale tellimus.", "Нет, это неверный заказ.", correct = false, rating = -0.05,
                 followUp = listOf(rest("Kontrollin... ei, kõik on õige.", "Проверяю... нет, всё верно."))),
-            c("Üks õlu, palun.", "Одно пиво.", correct = false, rating = -0.03,
-                followUp = listOf(rest("Naljakas! Aga siin on teie toit.", "Смешно! Но вот ваша еда."))),
+            c("Jah, kindlasti õige. Ma ei vaata, mul on kiire.", "Да, точно верный. Я не смотрю, тороплюсь.", correct = false, rating = -0.05,
+                followUp = listOf(
+                    rest("Palun ikka kontrollige. Kui midagi on puudu, on probleem teie oma.", "Пожалуйста, всё-таки проверьте. Если чего-то не хватает — проблема будет ваша."),
+                    rest("Vaatame koos: ${o.itemsEt}. Kõik on olemas.", "Смотрим вместе: ${o.itemsRu}. Всё на месте."))),
         ),
         o.itemTeach
     )
 
-    private fun readyTurn(): Turn = rest("Nüüd on valmis. Palun, head teed!", "Теперь готово. Пожалуйста, счастливого пути!")
+    private fun readyTurn(): Turn = rest("Nii, valmis ongi. Palun, head teed!", "Так, готово. Пожалуйста, счастливого пути!")
 
     /** Финальный ход курьера в ресторане: благодарит ПОСЛЕ получения заказа. */
     private fun courierThanks(): Turn = ask(
@@ -149,8 +151,10 @@ object DialogueFactory {
             c("Aitäh! Head päeva!", "Спасибо! Хорошего дня!"),
             c("Lõpuks ometi!", "Наконец-то!", correct = false, rating = -0.03,
                 followUp = listOf(rest("Vabandust ootamise eest.", "Извините за ожидание."))),
-            c("Ma kiirustan, ei räägi.", "Я тороплюсь, не до разговоров.", correct = false, rating = -0.02,
-                followUp = listOf(rest("Olgu, head teed.", "Ладно, счастливого пути."))),
+            c("Aitäh! (võtab ainult toidukoti)", "Спасибо! (берёт только пакет с едой)", correct = false, rating = -0.03,
+                followUp = listOf(
+                    rest("Oodake! Jook jäi maha, see käib ka tellimusega.", "Подождите! Напиток остался, он тоже к заказу."),
+                    rest("Nüüd on kõik. Head teed!", "Теперь всё. Счастливого пути!"))),
         ),
         listOf("g_aitah", "g_head_aega")
     )
@@ -165,7 +169,7 @@ object DialogueFactory {
                 add(courierOpen())
                 add(rest("Tere! Mis nimi on tellimusel?", "Здравствуйте! На какое имя заказ?"))
                 add(ask(Thread.RESTORAN, "Назовите получателя заказа:", false, listOf(
-                    c("Tellimus on ${o.customer} nimele.", "Заказ на имя ${o.customer}."),
+                    c("Tellimus on ${o.customer} nimel.", "Заказ на имя ${o.customer}."),
                     c("Ma ei tea nime.", "Я не знаю имя.", correct = false, rating = -0.05,
                         followUp = listOf(rest("Ilma nimeta ma ei leia tellimust.", "Без имени я не найду заказ."))),
                     c("Pole vahet, andke midagi.", "Без разницы, дайте что-нибудь.", correct = false, rating = -0.05,
@@ -248,11 +252,11 @@ object DialogueFactory {
     private fun supportOptPhase(): Phase = Phase(
         "support_opt", Thread.TUGI,
         listOf(
-            support("Tere! Klienditugi kuuleb. Kuidas saan aidata?", "Здравствуйте! Поддержка слушает. Чем помочь?"),
+            support("Tere! Siin klienditugi. Kuidas saan aidata?", "Здравствуйте! Это служба поддержки. Чем могу помочь?"),
             ask(
                 Thread.TUGI, "Что напишете в поддержку?", true,
                 listOf(
-                    c("Kõik on hästi, tahtsin vaid kontrollida.", "Всё хорошо, хотел только уточнить.",
+                    c("Kõik on hästi, tahtsin lihtsalt üle küsida.", "Всё хорошо, хотел просто уточнить.",
                         followUp = listOf(support("Suurepärane! Head tööd.", "Отлично! Хорошей работы."))),
                     c("Kas aadress on kindlasti õige?", "Адрес точно верный?",
                         followUp = listOf(support("Jah, aadress on õige. Edu!", "Да, адрес верный. Удачи!"))),
@@ -271,8 +275,8 @@ object DialogueFactory {
             Thread.KLIENT, "Передайте заказ и пожелайте приятного аппетита:", false,
             listOf(
                 c("Palun, siin on teie tellimus. Head isu!", "Пожалуйста, вот ваш заказ. Приятного аппетита!"),
-                c("Vabandust, ma sõin selle ära.", "Извините, я это съел.", correct = false, rating = -0.1,
-                    followUp = listOf(client("Mida?! See pole naljakas.", "Что?! Это не смешно."))),
+                c("Võtke kiiresti, mul on järgmine tellimus ootel.", "Берите быстрее, у меня следующий заказ ждёт.", correct = false, rating = -0.05,
+                    followUp = listOf(client("Üks hetk, palun. Pole vaja mind kiirustada.", "Минутку, пожалуйста. Не надо меня торопить."))),
                 c("Ei, see on minu tellimus.", "Нет, это мой заказ.", correct = false, rating = -0.1,
                     followUp = listOf(client("Kuidas palun?", "Простите, что?"))),
             ),
@@ -285,9 +289,9 @@ object DialogueFactory {
     private fun clientArrived(): Turn = ask(
         Thread.KLIENT, "Напишите клиенту, что вы прибыли с заказом:", true,
         listOf(
-            c("Tere! Olen kohal teie tellimusega.", "Здравствуйте! Я на месте с вашим заказом."),
-            c("Kus mu raha on?", "Где мои деньги?", correct = false, rating = -0.05,
-                followUp = listOf(client("Mida? Ma ootan oma toitu.", "Что? Я жду свою еду."))),
+            c("Tere! Kuller siin, olen teie tellimusega kohal.", "Здравствуйте! Это курьер, я на месте с вашим заказом."),
+            c("Olen all. Teil on kaks minutit, siis ma lähen.", "Я внизу. У вас две минуты, потом я уеду.", correct = false, rating = -0.05,
+                followUp = listOf(client("Palun ärge survestage mind, ma tulen kohe.", "Пожалуйста, не давите на меня, я сейчас выйду."))),
             c("Avage uks kohe!", "Откройте дверь немедленно!", correct = false, rating = -0.05,
                 followUp = listOf(client("Palun olge viisakas.", "Пожалуйста, будьте вежливы."))),
         ),
@@ -334,9 +338,9 @@ object DialogueFactory {
                 add(clientArrived())
                 add(client("Tere! Värav on lukus, korter üheksa.", "Здравствуйте! Ворота заперты, квартира девять."))
                 add(ask(Thread.KLIENT, "Ворота заперты — спросите код двери:", true, listOf(
-                    c("Mis on ukse kood?", "Какой код двери?"),
-                    c("Head ööd!", "Спокойной ночи!", correct = false, rating = -0.05,
-                        followUp = listOf(client("Mis? Praegu on päev!", "Что? Сейчас день!"))),
+                    c("Mis on uksekood?", "Какой код двери?"),
+                    c("Värav on lukus. Tulge ise alla, ma ei otsi koodi.", "Ворота заперты. Спуститесь сами, я не буду искать код.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mul on väike laps kodus, ma ei saa tulla. Kood on olemas, küsige.", "У меня дома маленький ребёнок, я не могу выйти. Код есть, спросите."))),
                     c("Ma jätan toidu lihtsalt siia.", "Я просто оставлю еду здесь.", correct = false, rating = -0.05,
                         followUp = listOf(client("Ei-ei, palun tooge ukse juurde!", "Нет-нет, принесите к двери!"))),
                 ), listOf("p_kood_q", "n_9", "s_korter")))
@@ -349,11 +353,11 @@ object DialogueFactory {
             Phase("client", Thread.KLIENT, buildList {
                 val dir = dirVariants.random()
                 add(clientArrived())
-                add(client("Tere! Maja on raske leida.", "Здравствуйте! Дом трудно найти."))
+                add(client("Tere! Meie maja on raske leida.", "Здравствуйте! Наш дом трудно найти."))
                 add(ask(Thread.KLIENT, "Спросите у клиента, как к нему пройти:", true, listOf(
                     c("Kuidas ma teie juurde saan?", "Как мне к вам пройти?"),
-                    c("Mis kell on?", "Который час?", correct = false, rating = -0.05,
-                        followUp = listOf(client("Hmm? Kuulake hoolikalt.", "Хм? Послушайте внимательно."))),
+                    c("Pole vaja seletada, ma leian GPS-iga.", "Не надо объяснять, найду по GPS.", correct = false, rating = -0.03,
+                        followUp = listOf(client("GPS näitab siin valesti. Kuulake parem mind.", "GPS здесь показывает неправильно. Лучше послушайте меня."))),
                     c("Leidke ise mind.", "Найдите меня сами.", correct = false, rating = -0.05,
                         followUp = listOf(client("See on teie töö, mitte minu.", "Это ваша работа, не моя."))),
                 ), listOf("p_kuidas_q")))
@@ -396,11 +400,13 @@ object DialogueFactory {
         Scenario.CASH -> listOf(
             Phase("client", Thread.KLIENT, buildList {
                 add(clientArrived())
-                add(client("Tere! Te tõite minu tellimuse? Palju ma võlgnen?", "Здравствуйте! Вы привезли мой заказ? Сколько я должен?"))
+                add(client("Tere! Kas te tõite mu tellimuse? Kui palju ma maksma pean?", "Здравствуйте! Вы привезли мой заказ? Сколько мне платить?"))
                 add(ask(Thread.KLIENT, "С клиента 10 €. Назовите сумму:", false, listOf(
                     c("Kümme eurot, palun.", "Десять евро, пожалуйста."),
-                    c("Sada eurot.", "Сто евро.", correct = false, rating = -0.1,
-                        followUp = listOf(client("Mida?! See on liiga palju!", "Что?! Это слишком много!"))),
+                    c("Kaksteist eurot, palun.", "Двенадцать евро, пожалуйста.", correct = false, rating = -0.05,
+                        followUp = listOf(
+                            client("Äpis on kümme eurot. Palun kontrollige oma äpist.", "В приложении десять евро. Проверьте, пожалуйста, в своём приложении."),
+                            client("Näete? Kümme.", "Видите? Десять."))),
                     c("Ma ei tea.", "Я не знаю.", correct = false, rating = -0.05,
                         followUp = listOf(client("Vaadake äpist, palun.", "Посмотрите в приложении, пожалуйста."))),
                 ), listOf("m_maksab", "m_eurot", "n_10")))
@@ -467,8 +473,8 @@ object DialogueFactory {
                 ), listOf("p_helistan")))
                 add(ask(Thread.KLIENT, "Спросите, оставить ли под дверью:", true, listOf(
                     c("Kas jätan toidu ukse taha?", "Оставить еду под дверью?"),
-                    c("Kas maksate kaardiga?", "Платите картой?", correct = false, rating = -0.03,
-                        followUp = listOf(client("Ää, lihtsalt jätke ukse taha.", "Эм, просто оставьте под дверью."))),
+                    c("Jätan ukse taha ja lähen kohe ära.", "Оставлю под дверью и сразу уеду.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Palun tehke enne foto! Muidu ma ei leia tellimust üles.", "Пожалуйста, сначала сделайте фото! Иначе я не найду заказ."))),
                     c("Ma ootan tund aega.", "Я подожду час.", correct = false, rating = -0.03,
                         followUp = listOf(client("Pole vaja! Jätke ukse taha.", "Не надо! Оставьте под дверью."))),
                 ), listOf("p_ukse_taha", "s_uks")))
@@ -536,12 +542,12 @@ object DialogueFactory {
                     c("Tere! Olen kohal, siin on teie tellimus.", "Здравствуйте! Я на месте, вот ваш заказ."),
                     c("Kus te nii kaua olite?", "Где вы так долго были?", correct = false, rating = -0.05,
                         followUp = listOf(client("Mina küsin sama!", "Это я хочу спросить!"))),
-                    c("Söögu kiiresti, see jahtub.", "Ешьте быстрее, остынет.", correct = false, rating = -0.05,
+                    c("Sööge kiiresti, muidu jahtub ära.", "Ешьте быстрее, а то остынет.", correct = false, rating = -0.05,
                         followUp = listOf(client("Just nimelt — see ongi külm!", "Вот именно — она холодная!"))),
                 ), listOf("g_tere", "p_kohal", "p_tellimus")))
                 add(client("Tere! Aga toit on külm! Ma ootasin liiga kaua.", "Здравствуйте! Но еда холодная! Я слишком долго ждал."))
                 add(ask(Thread.KLIENT, "Клиент жалуется на холодную еду. Ваш ответ:", false, listOf(
-                    c("Vabandust! See on ebameeldiv. Lahendame selle.", "Извините! Это неприятно. Решим это.",
+                    c("Vabandust! Saan aru, see on ebameeldiv. Vaatan, mida saab teha.", "Извините! Понимаю, это неприятно. Посмотрю, что можно сделать.",
                         followUp = listOf(client("Olen pettunud. Mida te teete?", "Я разочарован. Что вы сделаете?"))),
                     c("See on restorani süü, mitte minu.", "Это вина ресторана, не моя.", correct = false, rating = -0.1,
                         followUp = listOf(client("Mind ei huvita, kelle süü!", "Мне всё равно, чья вина!"))),
@@ -553,7 +559,7 @@ object DialogueFactory {
                 NavOption("🙇 Извиниться и завершить", "client_apo"),
             ))),
             Phase("support_complaint", Thread.TUGI, buildList {
-                add(support("Klienditugi. Kuulen teid.", "Поддержка. Слушаю вас."))
+                add(support("Klienditugi, tere. Mis mure on?", "Поддержка, здравствуйте. Что случилось?"))
                 add(ask(Thread.TUGI, "Опишите проблему поддержке:", true, listOf(
                     c("Klient sai külma toidu, palun hüvitist.", "Клиент получил холодную еду, прошу компенсацию.",
                         followUp = listOf(support("Selge, lisame kliendile kupongi. Tänan!", "Понятно, добавим клиенту купон. Спасибо!"))),
@@ -590,10 +596,10 @@ object DialogueFactory {
                 NavOption("🎧 Связаться с поддержкой", "support_break"),
             ))),
             Phase("support_break", Thread.TUGI, buildList {
-                add(support("Klienditugi: nägime probleemi. Mis juhtus?", "Поддержка: мы видим проблему. Что случилось?"))
+                add(support("Klienditugi siin. Näeme, et midagi on valesti. Mis juhtus?", "Это поддержка. Видим, что что-то не так. Что случилось?"))
                 add(ask(Thread.TUGI, "Сообщите в поддержку о поломке:", true, listOf(
                     c("Mu sõiduk on katki, vajan abi.", "Мой транспорт сломан, нужна помощь.",
-                        followUp = listOf(support("Saadame appi teise kulleri. Tänan!", "Отправим другого курьера. Спасибо!"))),
+                        followUp = listOf(support("Saadame teise kulleri appi. Tänan!", "Отправим другого курьера на помощь. Спасибо!"))),
                     c("Kõik on korras.", "Всё в порядке.", correct = false, rating = -0.05,
                         followUp = listOf(support("Kindel? Hoidke ühendust.", "Уверены? Оставайтесь на связи."))),
                 ), listOf("p_katki")))
@@ -620,7 +626,7 @@ object DialogueFactory {
             Phase("support_spoiled", Thread.TUGI, buildList {
                 add(support("Klienditugi. Kirjeldage probleemi.", "Поддержка. Опишите проблему."))
                 add(ask(Thread.TUGI, "Опишите проблему поддержке:", true, listOf(
-                    c("Pakend lekkis, toit on rikutud. Palun uus tellimus.", "Упаковка протекла, еда испорчена. Прошу новый заказ.",
+                    c("Pakend lekkis, toit on rikutud. Palun uut tellimust.", "Упаковка протекла, еда испорчена. Прошу новый заказ.",
                         followUp = listOf(support("Vormistame uue tellimuse tasuta. Vabandust!", "Оформим новый заказ бесплатно. Извините!"))),
                     c("Unustage, pole midagi.", "Забудьте, ничего.", correct = false, rating = -0.05,
                         followUp = listOf(support("Kindel? Olgu.", "Уверены? Хорошо."))),
@@ -633,17 +639,17 @@ object DialogueFactory {
         Scenario.INTERCOM -> listOf(
             Phase("client", Thread.KLIENT, buildList {
                 add(clientArrived())
-                add(client("Tere! Maja uksel on fonolukk. Helistage palun uksekellaga.", "Здравствуйте! На двери домофон. Позвоните, пожалуйста, в звонок."))
+                add(client("Tere! Maja uksel on fonolukk. Vajutage palun uksekella.", "Здравствуйте! На двери домофон. Нажмите, пожалуйста, на звонок."))
                 add(ask(Thread.KLIENT, "Узнайте номер квартиры, чтобы набрать на домофоне:", true, listOf(
                     c("Mis on teie korterinumber?", "Какой у вас номер квартиры?"),
-                    c("Kas teil on koer?", "У вас есть собака?", correct = false, rating = -0.05,
-                        followUp = listOf(client("Ää? Korter on kakskümmend kolm.", "Эм? Квартира двадцать три."))),
+                    c("Vajutan suvalist korterit, keegi ikka avab.", "Нажму любую квартиру, кто-нибудь да откроет.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Palun ärge tehke nii! Naabrid pahandavad. Küsige minu korterinumbrit.", "Пожалуйста, не делайте так! Соседи будут недовольны. Спросите мой номер квартиры."))),
                     c("Ma jätan toidu õue.", "Оставлю еду на улице.", correct = false, rating = -0.05,
-                        followUp = listOf(client("Ei, palun helistage uksekellaga.", "Нет, пожалуйста, позвоните в домофон."))),
+                        followUp = listOf(client("Ei, palun vajutage uksekella.", "Нет, пожалуйста, нажмите на звонок."))),
                 ), listOf("p_korter_q", "s_uksekell", "s_fonolukk")))
                 add(client("Korter kakskümmend kolm.", "Квартира двадцать три."))
                 add(ask(Thread.KLIENT, "Наберите номер квартиры на домофоне и позвоните:", false, listOf(
-                    c("Vajutan kakskümmend kolm ja helistan uksekellaga.", "Наберу двадцать три и позвоню в домофон."),
+                    c("Valin korteri kakskümmend kolm ja helistan uksekella.", "Наберу квартиру двадцать три и позвоню в звонок."),
                     c("Koputan lihtsalt uksele.", "Просто постучу в дверь.", correct = false, rating = -0.03,
                         followUp = listOf(client("Te ei jõua ukseni. Kasutage uksekella.", "Вы не дойдёте до двери. Воспользуйтесь домофоном."))),
                     c("Karjun teie nime.", "Крикну ваше имя.", correct = false, rating = -0.05,
@@ -666,6 +672,197 @@ object DialogueFactory {
                 add(client("Selge, kuller! Avan ukse. Tulge teisele korrusele.", "Понятно, курьер! Открываю дверь. Поднимитесь на второй этаж."))
                 addAll(handover())
             }, Nav.End)
+        )
+
+        // ----- Грубый клиент: угрожает одной звездой, нужна деэскалация -----
+        Scenario.ANGRY_CLIENT -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
+                add(client("Lõpuks ometi! Te olete liiga aeglane. Ma annan nagunii ühe tärni!", "Наконец-то! Вы слишком медленный. Я всё равно поставлю одну звезду!"))
+                add(ask(Thread.KLIENT, "Клиент злится и грозит одной звездой. Ответьте спокойно:", false, listOf(
+                    c("Vabandust, et pidite ootama. Siin on teie tellimus, toit on veel kuum.", "Извините, что пришлось ждать. Вот ваш заказ, еда ещё горячая."),
+                    c("Mina ei ole süüdi, restoran oli aeglane.", "Я не виноват, ресторан был медленный.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Mind ei huvita, kes on süüdi! Toidu tõite teie.", "Мне всё равно, кто виноват! Еду привезли вы."))),
+                    c("Kui annate ühe tärni, ei too ma teile enam kunagi toitu.", "Если поставите одну звезду, я вам больше никогда ничего не привезу.", correct = false, rating = -0.2,
+                        followUp = listOf(client("Kas te ähvardate mind?! Nüüd kirjutan ka kaebuse.", "Вы мне угрожаете?! Теперь ещё и жалобу напишу."))),
+                ), listOf("g_vabandust", "p_tellimus")))
+                add(client("Hmm... olgu. Aga ma olen ikka pahane.", "Хм... ладно. Но я всё ещё сердит."))
+                add(ask(Thread.KLIENT, "Постарайтесь сгладить и завершить передачу:", false, listOf(
+                    c("Ma saan aru. Klienditugi saab teid aidata. Palun, head isu!", "Я понимаю. Поддержка сможет вам помочь. Пожалуйста, приятного аппетита!"),
+                    c("Tärnid ei ole tähtsad.", "Звёзды не важны.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Minu arvamus on tähtis!", "Моё мнение важно!"))),
+                    c("Palun pange viis tärni, see on minu töö.", "Пожалуйста, поставьте пять звёзд, это моя работа.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Hinde panen mina ise. Ärge küsige tärne.", "Оценку ставлю я сам. Не выпрашивайте звёзды."))),
+                ), listOf("p_tugi_q", "p_head_isu")))
+                add(client("Olgu. Aitäh toidu eest.", "Ладно. Спасибо за еду."))
+            }, Nav.Choose("Клиент остался недоволен. Что дальше?", listOf(
+                NavOption("🎧 Сообщить в поддержку", "support_rude"),
+                NavOption("🙇 Ещё раз извиниться и завершить", "client_apo"),
+            ))),
+            Phase("support_rude", Thread.TUGI, buildList {
+                add(support("Tere! Siin klienditugi. Kuidas saan aidata?", "Здравствуйте! Это служба поддержки. Чем могу помочь?"))
+                add(ask(Thread.TUGI, "Сообщите об инциденте:", true, listOf(
+                    c("Klient on väga vihane ja ähvardab ühe tärniga. Tellimuse andsin üle.", "Клиент очень зол и грозит одной звездой. Заказ я передал.",
+                        followUp = listOf(support("Aitäh, et teatasite. Märgime selle üles, teie reiting on kaitstud.", "Спасибо, что сообщили. Зафиксируем это, ваш рейтинг защищён."))),
+                    c("Klient on loll, tehke midagi.", "Клиент дурак, сделайте что-нибудь.", correct = false, rating = -0.1,
+                        followUp = listOf(support("Palun rääkige viisakalt. Kirjeldage probleemi rahulikult.", "Пожалуйста, говорите вежливо. Опишите проблему спокойно."))),
+                    c("Pole midagi, unustage.", "Ничего, забудьте.", correct = false, rating = -0.03,
+                        followUp = listOf(support("Parem teatage alati. Siis saame teid kaitsta.", "Лучше всегда сообщайте. Тогда мы сможем вас защитить."))),
+                ), listOf("p_tugi_q")))
+                add(support("Head tööd! Te käitusite õigesti.", "Хорошей работы! Вы поступили правильно."))
+            }, Nav.End),
+            apologyPhase(),
+        )
+
+        // ----- Отказ платить (наличные) — эскалация в поддержку -----
+        Scenario.REFUSE_PAY -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
+                add(client("Tere! Aa, see on sularahas? Mul ei ole raha. Ma ei maksa.", "Здравствуйте! А, это наличными? У меня нет денег. Я не буду платить."))
+                add(ask(Thread.KLIENT, "Заказ наличными, 10 €. Клиент отказывается платить:", false, listOf(
+                    c("Tellimus maksab kümme eurot. Kas saate maksta kaardiga?", "Заказ стоит десять евро. Можете заплатить картой?",
+                        followUp = listOf(client("Ei. Ma ei maksa üldse.", "Нет. Я вообще не буду платить."))),
+                    c("Olgu, võtke toit niisama.", "Ладно, возьмите еду просто так.", correct = false, rating = -0.15,
+                        followUp = listOf(
+                            client("Tõesti? Suur aitäh!", "Правда? Большое спасибо!"),
+                            client("(Raha jääb saamata — see on teie probleem.)", "(Деньги не получены — это ваша проблема.)"))),
+                    c("Makske kohe või toitu ei tule!", "Платите немедленно, или еды не будет!", correct = false, rating = -0.1,
+                        followUp = listOf(client("Ärge karjuge mu peale!", "Не кричите на меня!"))),
+                ), listOf("m_maksab", "n_10", "m_eurot", "m_kaart")))
+                add(client("Ma ei maksa. Tehke, mis tahate.", "Я не заплачу. Делайте что хотите."))
+                add(ask(Thread.KLIENT, "Клиент твёрдо отказывается. Что сделать?", true, listOf(
+                    c("Selge. Ma pöördun klienditoe poole.", "Понятно. Я обращусь в поддержку.",
+                        followUp = listOf(client("Nagu soovite.", "Как хотите."))),
+                    c("Ma kutsun politsei!", "Я вызову полицию!", correct = false, rating = -0.1,
+                        followUp = listOf(client("Politsei? Kümne euro pärast? Olge tõsine.", "Полицию? Из-за десяти евро? Будьте серьёзнее."))),
+                    c("Ma ootan siin, kuni te maksate.", "Я подожду здесь, пока вы заплатите.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Siis ootate väga kaua.", "Тогда вы будете ждать очень долго."))),
+                ), listOf("p_tugi_q", "m_sularaha")))
+            }, Nav.Choose("Клиент не платит. Что дальше?", listOf(
+                NavOption("🎧 Связаться с поддержкой", "support_pay"),
+            ))),
+            Phase("support_pay", Thread.TUGI, buildList {
+                add(support("Klienditugi, tere. Mis mure on?", "Поддержка, здравствуйте. Что случилось?"))
+                add(ask(Thread.TUGI, "Опишите ситуацию поддержке:", true, listOf(
+                    c("Klient ei taha maksta. Tellimus on sularahas, kümme eurot.", "Клиент не хочет платить. Заказ наличными, десять евро.",
+                        followUp = listOf(support("Selge. Ärge andke toitu üle. Tühistame tellimuse, teie tasu jääb alles.", "Понятно. Не отдавайте еду. Отменим заказ, ваша оплата сохранится."))),
+                    c("Ma andsin toidu juba ära.", "Я уже отдал еду.", correct = false, rating = -0.15,
+                        followUp = listOf(support("Sularahatellimusel küsige raha alati enne. Seekord katame kahju, aga pidage meeles.", "При заказе наличными всегда берите деньги до передачи. В этот раз покроем убыток, но запомните."))),
+                    c("Kõik on korras, ei midagi.", "Всё в порядке, ничего.", correct = false, rating = -0.05,
+                        followUp = listOf(support("Kindel? Süsteemis makse puudub. Rääkige ausalt.", "Уверены? В системе нет оплаты. Говорите честно."))),
+                ), listOf("p_tugi_q", "m_sularaha")))
+                add(support("Võtke toit kaasa ja jätkake tööd. Aitäh, et teatasite!", "Заберите еду с собой и продолжайте работу. Спасибо, что сообщили!"))
+            }, Nav.End),
+        )
+
+        // ----- Пьяный клиент у двери -----
+        Scenario.DRUNK_CLIENT -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
+                add(client("Ooo, sõber! Tule sisse, joome koos!", "Ооо, друг! Заходи, выпьем вместе!"))
+                add(ask(Thread.KLIENT, "Клиент нетрезв и зовёт внутрь. Откажитесь вежливо, останьтесь снаружи:", false, listOf(
+                    c("Aitäh, aga ma olen tööl. Palun, siin on teie tellimus.", "Спасибо, но я на работе. Пожалуйста, вот ваш заказ."),
+                    c("Olgu, aga ainult üks klaas.", "Ладно, но только один стакан.", correct = false, rating = -0.2,
+                        followUp = listOf(
+                            client("Super, tule edasi!", "Супер, проходи!"),
+                            client("(Järgmised tellimused hilinevad. Töö ajal külla minna ei tohi.)", "(Следующие заказы опоздают. Во время работы заходить в гости нельзя.)"))),
+                    c("Te olete purjus. Häbi!", "Вы пьяны. Стыдно!", correct = false, rating = -0.1,
+                        followUp = listOf(client("Mida sa ütlesid?! Mine minema!", "Что ты сказал?! Уходи!"))),
+                ), listOf("g_aitah", "p_tellimus")))
+                add(client("Oota... kas ma üldse tellisin midagi? Ma ei mäleta.", "Погоди... я вообще что-то заказывал? Не помню."))
+                add(ask(Thread.KLIENT, "Клиент не помнит заказ. Спокойно подтвердите по приложению:", false, listOf(
+                    c("Jah, see on teie tellimus. Äpis on teie nimi ja see aadress.", "Да, это ваш заказ. В приложении ваше имя и этот адрес.",
+                        followUp = listOf(client("Ahaa... jah, see olen mina!", "Ага... да, это я!"))),
+                    c("Pole vahet, lihtsalt võtke.", "Без разницы, просто берите.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Aga äkki see ei ole minu oma?", "А вдруг это не моё?"))),
+                    c("Kui te ei mäleta, viin toidu tagasi.", "Если не помните, увезу еду обратно.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Ei-ei, oota! Las ma mõtlen...", "Нет-нет, погоди! Дай подумаю..."))),
+                ), listOf("p_nimi_q", "p_oige_q", "g_jah")))
+                add(client("Jah, õige, minu tellimus! Aitäh, sõber!", "Да, точно, мой заказ! Спасибо, друг!"))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        // ----- Собака во дворе -----
+        Scenario.DOG_YARD -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
+                add(client("Tere! Värav on lahti, tulge hoovi. Uks on maja taga.", "Здравствуйте! Ворота открыты, заходите во двор. Дверь за домом."))
+                add(ask(Thread.KLIENT, "Во дворе большая собака без привязи. Напишите клиенту:", true, listOf(
+                    c("Teie hoovis on suur koer. Kas saate koera kinni hoida, palun?", "У вас во дворе большая собака. Можете подержать собаку, пожалуйста?"),
+                    c("Pole hullu, ma lähen ikka sisse.", "Ничего, я всё равно зайду.", correct = false, rating = -0.15,
+                        followUp = listOf(
+                            client("Ärge minge! Ta võib hammustada!", "Не заходите! Она может укусить!"),
+                            client("Oodake värava juures, ma tulen.", "Подождите у ворот, я подойду."))),
+                    c("Ma viskan koti üle aia.", "Я переброшу пакет через забор.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Palun ärge! Kott läheb katki ja koer sööb toidu ära.", "Пожалуйста, не надо! Пакет порвётся, и собака съест еду."))),
+                ), listOf("g_palun", "s_maja", "s_uks")))
+                add(client("Oi, vabandust! Ma panen koera ketti ja tulen ise värava juurde.", "Ой, извините! Посажу собаку на цепь и сам подойду к воротам."))
+                add(ask(Thread.KLIENT, "Согласуйте передачу у ворот:", true, listOf(
+                    c("Aitäh! Ma ootan teid värava juures.", "Спасибо! Я подожду вас у ворот."),
+                    c("Kiiremini, palun, mul on kiire.", "Побыстрее, пожалуйста, я тороплюсь.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Üks hetk! Koer on suur, see võtab aega.", "Минутку! Собака большая, это занимает время."))),
+                    c("Jätan toidu värava taha ja lähen.", "Оставлю еду за воротами и уеду.", correct = false, rating = -0.1,
+                        followUp = listOf(client("Ei, palun oodake! Muidu sööb koer selle ära.", "Нет, пожалуйста, подождите! Иначе собака её съест."))),
+                ), listOf("g_aitah", "p_ootan")))
+                add(client("Olen kohal, koer on toas. Aitäh, et ootasite!", "Я на месте, собака дома. Спасибо, что подождали!"))
+                addAll(handover())
+            }, Nav.End)
+        )
+
+        // ----- Ресторан собрал не то и отказывается менять — эскалация -----
+        Scenario.WRONG_ITEMS -> listOf(
+            Phase("client", Thread.KLIENT, buildList {
+                add(clientArrived())
+                add(client("Tere! ... Oot, see on vale toit! Mina tellisin ${o.itemsEt}, aga kotis on midagi muud.", "Здравствуйте! ...Стоп, это не та еда! Я заказывал ${o.itemsRu}, а в пакете что-то другое."))
+                add(ask(Thread.KLIENT, "Клиенту привезли не те блюда. Ответьте:", false, listOf(
+                    c("Vabandust! Kontrollin kohe äpist. Kott oli kinni, ma ei näinud sisse.", "Извините! Сейчас проверю в приложении. Пакет был закрыт, я не видел внутрь."),
+                    c("Te ise tellisite valesti.", "Вы сами заказали неправильно.", correct = false, rating = -0.15,
+                        followUp = listOf(client("Ei tellinud! Vaadake ise äppi!", "Не заказывал! Сами посмотрите в приложение!"))),
+                    c("Toit on toit. Sööge seda.", "Еда есть еда. Ешьте это.", correct = false, rating = -0.2,
+                        followUp = listOf(client("Mis?! Ma annan ühe tärni ja kirjutan kaebuse!", "Что?! Поставлю одну звезду и напишу жалобу!"))),
+                ), listOf("g_vabandust", "p_oige_q")))
+                add(client("Palun lahendage see ära. Ma ootan.", "Пожалуйста, решите это. Я жду."))
+            }, Nav.Choose("Не те блюда. Что дальше?", listOf(
+                NavOption("🏪 Написать ресторану", "rest_wrong"),
+                NavOption("🎧 Связаться с поддержкой", "support_wrong"),
+            ))),
+            Phase("rest_wrong", Thread.RESTORAN, buildList {
+                add(ask(Thread.RESTORAN, "Напишите ресторану о неверном заказе:", true, listOf(
+                    c("Tere! Klient sai vale tellimuse. Kas saate õige toidu valmis teha?", "Здравствуйте! Клиент получил не тот заказ. Можете приготовить правильную еду?"),
+                    c("Te tegite kõik valesti! See on häbi!", "Вы всё сделали неправильно! Это позор!", correct = false, rating = -0.1,
+                        followUp = listOf(rest("Palun rääkige viisakalt, siis saame aidata.", "Пожалуйста, говорите вежливо, тогда сможем помочь."))),
+                    c("Ma toon toidu tagasi ja võtan ise uue.", "Я привезу еду назад и сам возьму новую.", correct = false, rating = -0.05,
+                        followUp = listOf(rest("Oodake! Ilma klienditoe loata me ei vaheta midagi.", "Подождите! Без разрешения поддержки мы ничего не меняем."))),
+                ), listOf("p_oige_q", "p_valmis_q")))
+                add(rest("Meie andsime õige koti. Me ei saa midagi teha. Pöörduge klienditoe poole.", "Мы выдали правильный пакет. Мы ничего не можем сделать. Обратитесь в поддержку."))
+            }, Nav.Choose("Ресторан отказывается помочь. Что дальше?", listOf(
+                NavOption("🎧 Связаться с поддержкой", "support_wrong"),
+            ))),
+            Phase("support_wrong", Thread.TUGI, buildList {
+                add(support("Tere! Siin klienditugi. Kuidas saan aidata?", "Здравствуйте! Это служба поддержки. Чем могу помочь?"))
+                add(ask(Thread.TUGI, "Опишите проблему поддержке:", true, listOf(
+                    c("Klient sai vale toidu. Restoran ei aita. Palun lahendust.", "Клиент получил не ту еду. Ресторан не помогает. Прошу решения.",
+                        followUp = listOf(support("Selge. Teeme kliendile tagasimakse ja vormistame uue tellimuse.", "Понятно. Сделаем клиенту возврат и оформим новый заказ."))),
+                    c("See on restorani süü, mitte minu!", "Это вина ресторана, не моя!", correct = false, rating = -0.05,
+                        followUp = listOf(support("Me ei otsi süüdlast. Kirjeldage lihtsalt probleemi.", "Мы не ищем виноватых. Просто опишите проблему."))),
+                    c("Klient vist valetab.", "Клиент, наверное, врёт.", correct = false, rating = -0.1,
+                        followUp = listOf(support("Meil on tellimusest foto. Klient ei valeta.", "У нас есть фото заказа. Клиент не врёт."))),
+                ), listOf("p_tugi_q", "p_oige_q")))
+                add(support("Kliendile tuleb tagasimakse. Öelge talle ka. Aitäh abi eest!", "Клиенту будет возврат. Сообщите ему тоже. Спасибо за помощь!"))
+            }, Nav.Choose("Сообщите клиенту решение", listOf(
+                NavOption("📲 Вернуться к клиенту", "client_wrong_end"),
+            ))),
+            Phase("client_wrong_end", Thread.KLIENT, buildList {
+                add(ask(Thread.KLIENT, "Передайте клиенту решение поддержки:", true, listOf(
+                    c("Klienditugi teeb tagasimakse ja uue tellimuse. Vabandust veel kord!", "Поддержка сделает возврат и новый заказ. Ещё раз извините!"),
+                    c("Kõik on korras, ärge muretsege.", "Всё в порядке, не волнуйтесь.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Mis täpselt on korras? Öelge konkreetselt.", "Что именно в порядке? Скажите конкретно."))),
+                    c("Ma ei tea, mis edasi saab.", "Я не знаю, что будет дальше.", correct = false, rating = -0.05,
+                        followUp = listOf(client("Kuidas ei tea? Te ju rääkisite klienditoega!", "Как не знаете? Вы же говорили с поддержкой!"))),
+                ), listOf("g_vabandust", "g_aitah")))
+                add(client("Aitäh abi eest! Te olete tubli kuller.", "Спасибо за помощь! Вы молодец-курьер."))
+            }, Nav.End),
         )
     }
 
