@@ -114,6 +114,11 @@ object DialogueFactory {
             "Tervist! Olen kuller, tulin tellimusele järele." to "Здравствуйте! Я курьер, я за заказом.",
             "Tere päevast! Tulin tellimusele järele." to "Добрый день! Я за заказом.",
             "Tere! Kuller siin, tulin tellimusele järele." to "Здравствуйте! Курьер, я за заказом.",
+            "Tere! Bolt, tulin tellimusele järele." to "Здравствуйте! Bolt, я за заказом.",
+            "Tervist! Mul on üks tellimus välja viia." to "Здравствуйте! У меня заказ на доставку.",
+            "Tere päevast! Kas saan tellimuse kätte?" to "Добрый день! Можно забрать заказ?",
+            "Tere! Olen kuller, tulin tellimust võtma." to "Здравствуйте! Я курьер, пришёл забрать заказ.",
+            "Tervist! Kuller siin, üks tellimus väljaviimiseks." to "Здравствуйте! Курьер, заказ на доставку.",
         ).random()
         return ask(
             Thread.RESTORAN, "Зайдите в ресторан, поздоровайтесь и скажите, что вы за заказом:", true,
@@ -285,18 +290,32 @@ object DialogueFactory {
         client("Suur aitäh! Ilusat päeva, nägemist!", "Большое спасибо! Хорошего дня, до свидания!")
     )
 
-    /** Опенер курьера: он первым пишет клиенту, что прибыл с заказом. */
-    private fun clientArrived(): Turn = ask(
-        Thread.KLIENT, "Напишите клиенту, что вы прибыли с заказом:", true,
-        listOf(
-            c("Tere! Kuller siin, olen teie tellimusega kohal.", "Здравствуйте! Это курьер, я на месте с вашим заказом."),
-            c("Olen all. Teil on kaks minutit, siis ma lähen.", "Я внизу. У вас две минуты, потом я уеду.", correct = false, rating = -0.05,
-                followUp = listOf(client("Palun ärge survestage mind, ma tulen kohe.", "Пожалуйста, не давите на меня, я сейчас выйду."))),
-            c("Avage uks kohe!", "Откройте дверь немедленно!", correct = false, rating = -0.05,
-                followUp = listOf(client("Palun olge viisakas.", "Пожалуйста, будьте вежливы."))),
-        ),
-        listOf("g_tere", "p_kohal", "p_tellimus")
-    )
+    /** Опенер курьера: он первым пишет клиенту, что прибыл с заказом (много вариантов). */
+    private fun clientArrived(): Turn {
+        val greet = listOf(
+            "Tere! Kuller siin, olen teie tellimusega kohal." to "Здравствуйте! Курьер, я на месте с вашим заказом.",
+            "Tere! Toon teie Bolti tellimuse, olen kohal." to "Здравствуйте! Привёз ваш заказ Bolt, я на месте.",
+            "Tervist! Olen teie ukse all teie tellimusega." to "Здравствуйте! Я у вашей двери с заказом.",
+            "Tere päevast! Teie toit on kohal." to "Добрый день! Ваша еда здесь.",
+            "Tere! Olen kohal. Kuhu tellimuse toon?" to "Здравствуйте! Я на месте. Куда принести заказ?",
+            "Tere! Kuller Boltist, teie tellimus on käes." to "Здравствуйте! Курьер из Bolt, ваш заказ у меня.",
+            "Tervist! Jõudsin kohale teie tellimusega." to "Здравствуйте! Я доехал с вашим заказом.",
+            "Tere! Olen maja juures, toon teie toidu." to "Здравствуйте! Я у дома, несу вашу еду.",
+            "Tere! Teie tellimus saabus. Olen all." to "Здравствуйте! Ваш заказ прибыл. Я внизу.",
+            "Tere! Kuller kohal. Kust ma teid leian?" to "Здравствуйте! Курьер на месте. Где мне вас найти?",
+        ).random()
+        return ask(
+            Thread.KLIENT, "Напишите клиенту, что вы прибыли с заказом:", true,
+            listOf(
+                c(greet.first, greet.second),
+                c("Olen all. Teil on kaks minutit, siis ma lähen.", "Я внизу. У вас две минуты, потом я уеду.", correct = false, rating = -0.05,
+                    followUp = listOf(client("Palun ärge survestage mind, ma tulen kohe.", "Пожалуйста, не давите на меня, я сейчас выйду."))),
+                c("Avage uks kohe!", "Откройте дверь немедленно!", correct = false, rating = -0.05,
+                    followUp = listOf(client("Palun olge viisakas.", "Пожалуйста, будьте вежливы."))),
+            ),
+            listOf("g_tere", "p_kohal", "p_tellimus")
+        )
+    }
 
     // ---------- фазы клиента/поддержки по сценариям ----------
     private fun scenarioPhases(o: Order): List<Phase> = when (o.scenario) {
