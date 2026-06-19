@@ -101,7 +101,7 @@ object Content {
         Category(
             id = "phrase", titleEt = "Kulleri fraasid", titleRu = "Фразы курьера", emoji = "🛵",
             words = listOf(
-                WordEntry("p_tellimus", "Teil on tellimus", "У вас заказ", "Tere, teil on tellimus Boltist."),
+                WordEntry("p_tellimus", "Teil on tellimus", "У вас заказ", "Tere, teil on uus tellimus."),
                 WordEntry("p_kohal", "Olen kohal", "Я на месте", "Olen kohal, ootan teid all."),
                 WordEntry("p_alla", "Kas saate alla tulla?", "Можете спуститься?", "Olen ukse ees, kas saate alla tulla?"),
                 WordEntry("p_korrus", "Millisel korrusel te olete?", "На каком вы этаже?", "Vabandust, millisel korrusel te olete?"),

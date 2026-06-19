@@ -7,7 +7,7 @@ data class GameState(
     val money: Double = 0.0,        // заработано €
     val xp: Int = 0,                // опыт (очки изучения)
     val deliveries: Int = 0,        // выполнено доставок
-    val rating: Double = 5.0,       // рейтинг курьера (как в Bolt/Wolt)
+    val rating: Double = 5.0,       // рейтинг курьера
     val correct: Int = 0,           // верных ответов
     val wrong: Int = 0,             // ошибок
     val learnedIds: Set<String> = emptySet(), // выученные слова

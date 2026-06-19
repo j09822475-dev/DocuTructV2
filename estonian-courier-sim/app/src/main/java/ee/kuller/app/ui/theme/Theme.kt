@@ -13,21 +13,21 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Brand palette — inspired by food-delivery apps (Bolt green / Wolt cyan accents)
-val BoltGreen = Color(0xFF0B7A4B)
-val BoltGreenDark = Color(0xFF075C39)
-val WoltCyan = Color(0xFF00B4D8)
+// Brand palette — courier-style green with a cyan accent
+val BrandGreen = Color(0xFF0B7A4B)
+val BrandGreenDark = Color(0xFF075C39)
+val AccentCyan = Color(0xFF00B4D8)
 val Sun = Color(0xFFFFB703)
 val Coral = Color(0xFFE5484D)
 val Ink = Color(0xFF1A1C1A)
 val Cloud = Color(0xFFF3F5F4)
 
 private val LightColors = lightColorScheme(
-    primary = BoltGreen,
+    primary = BrandGreen,
     onPrimary = Color.White,
     primaryContainer = Color(0xFFCDEFDC),
-    onPrimaryContainer = BoltGreenDark,
-    secondary = WoltCyan,
+    onPrimaryContainer = BrandGreenDark,
+    secondary = AccentCyan,
     onSecondary = Color.White,
     tertiary = Sun,
     error = Coral,
@@ -40,9 +40,9 @@ private val LightColors = lightColorScheme(
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF4FD89A),
     onPrimary = Color(0xFF00351E),
-    primaryContainer = BoltGreenDark,
+    primaryContainer = BrandGreenDark,
     onPrimaryContainer = Color(0xFFCDEFDC),
-    secondary = WoltCyan,
+    secondary = AccentCyan,
     tertiary = Sun,
     error = Coral,
     background = Color(0xFF101411),

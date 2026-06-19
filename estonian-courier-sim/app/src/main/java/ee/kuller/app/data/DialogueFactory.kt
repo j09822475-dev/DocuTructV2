@@ -114,7 +114,7 @@ object DialogueFactory {
             "Tervist! Olen kuller, tulin tellimusele järele." to "Здравствуйте! Я курьер, я за заказом.",
             "Tere päevast! Tulin tellimusele järele." to "Добрый день! Я за заказом.",
             "Tere! Kuller siin, tulin tellimusele järele." to "Здравствуйте! Курьер, я за заказом.",
-            "Tere! Bolt, tulin tellimusele järele." to "Здравствуйте! Bolt, я за заказом.",
+            "Tere! Toidukuller, tulin tellimusele järele." to "Здравствуйте! Курьер еды, я за заказом.",
             "Tervist! Mul on üks tellimus välja viia." to "Здравствуйте! У меня заказ на доставку.",
             "Tere päevast! Kas saan tellimuse kätte?" to "Добрый день! Можно забрать заказ?",
             "Tere! Olen kuller, tulin tellimust võtma." to "Здравствуйте! Я курьер, пришёл забрать заказ.",
@@ -294,11 +294,11 @@ object DialogueFactory {
     private fun clientArrived(): Turn {
         val greet = listOf(
             "Tere! Kuller siin, olen teie tellimusega kohal." to "Здравствуйте! Курьер, я на месте с вашим заказом.",
-            "Tere! Toon teie Bolti tellimuse, olen kohal." to "Здравствуйте! Привёз ваш заказ Bolt, я на месте.",
+            "Tere! Toon teie tellimuse, olen kohal." to "Здравствуйте! Привёз ваш заказ, я на месте.",
             "Tervist! Olen teie ukse all teie tellimusega." to "Здравствуйте! Я у вашей двери с заказом.",
             "Tere päevast! Teie toit on kohal." to "Добрый день! Ваша еда здесь.",
             "Tere! Olen kohal. Kuhu tellimuse toon?" to "Здравствуйте! Я на месте. Куда принести заказ?",
-            "Tere! Kuller Boltist, teie tellimus on käes." to "Здравствуйте! Курьер из Bolt, ваш заказ у меня.",
+            "Tere! Kuller siin, teie tellimus on käes." to "Здравствуйте! Курьер, ваш заказ у меня.",
             "Tervist! Jõudsin kohale teie tellimusega." to "Здравствуйте! Я доехал с вашим заказом.",
             "Tere! Olen maja juures, toon teie toidu." to "Здравствуйте! Я у дома, несу вашу еду.",
             "Tere! Teie tellimus saabus. Olen all." to "Здравствуйте! Ваш заказ прибыл. Я внизу.",
@@ -682,7 +682,7 @@ object DialogueFactory {
                 ).random()
                 add(client(whoThere.first, whoThere.second))
                 add(ask(Thread.KLIENT, "Клиент спрашивает по домофону, кто пришёл. Ответьте:", false, listOf(
-                    c("Tere, kuller Boltist. Toon teie tellimuse.", "Здравствуйте, курьер из Bolt. Привёз ваш заказ."),
+                    c("Tere, kuller siin. Toon teie tellimuse.", "Здравствуйте, курьер. Привёз ваш заказ."),
                     c("Ma ei tea.", "Я не знаю.", correct = false, rating = -0.05,
                         followUp = listOf(client("Mida? Kes te olete?", "Что? Кто вы?"))),
                     c("Avage lihtsalt uks!", "Просто откройте дверь!", correct = false, rating = -0.05,
