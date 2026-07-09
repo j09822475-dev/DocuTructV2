@@ -57,6 +57,23 @@ h1 {
   background: #12151a;
 }
 
+.hero-3d {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+  background: #12151a;
+}
+
+.mesh-links {
+  display: flex;
+  gap: 14px;
+}
+
+.mesh-links a {
+  color: #7fd1e0;
+  font-size: 13px;
+}
+
 .hero-img.placeholder {
   display: flex;
   align-items: center;

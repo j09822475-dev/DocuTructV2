@@ -44,6 +44,8 @@ export async function startPreviewServer(port: number): Promise<void> {
             normal: tex("normal.png", e.images.normal),
             mask1: tex("mask1.png", e.images.masks),
             mask2: tex("mask2.png", e.images.masks),
+            model: e.mesh?.glb ? `/files/${dirName}/model/model.glb` : null,
+            modelFbx: e.mesh?.fbx ? `/files/${dirName}/model/model.fbx` : null,
           },
         };
       }),

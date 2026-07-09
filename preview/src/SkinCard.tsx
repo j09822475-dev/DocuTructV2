@@ -17,15 +17,31 @@ export function SkinCard({ skin }: { skin: SkinEntry }) {
   const rarityColor = RARITY_COLORS[c.rarity] ?? "#b0c3d9";
 
   const textures = [
+    // when the 3D viewer occupies the card header, surface the concept art here
+    ...(skin.urls.model ? [{ label: "Concept", url: skin.urls.conceptArt }] : []),
     { label: "Diffuse", url: skin.urls.diffuse },
     { label: "Normal", url: skin.urls.normal },
     { label: "Mask 1", url: skin.urls.mask1 },
     { label: "Mask 2", url: skin.urls.mask2 },
   ].filter((t): t is { label: string; url: string } => t.url !== null);
 
+  const meshDownloads = [
+    { label: "GLB", url: skin.urls.model },
+    { label: "FBX", url: skin.urls.modelFbx },
+  ].filter((m): m is { label: string; url: string } => m.url !== null);
+
   return (
     <article className="card" style={{ borderColor: rarityColor }}>
-      {skin.urls.conceptArt ? (
+      {skin.urls.model ? (
+        <model-viewer
+          className="hero-3d"
+          src={skin.urls.model}
+          alt={`3D модель: ${c.name}`}
+          camera-controls
+          auto-rotate
+          shadow-intensity="1"
+        />
+      ) : skin.urls.conceptArt ? (
         <img className="hero-img" src={skin.urls.conceptArt} alt={c.name} loading="lazy" />
       ) : (
         <div className="hero-img placeholder">нет изображения — сохранены только промпты</div>
@@ -57,6 +73,18 @@ export function SkinCard({ skin }: { skin: SkinEntry }) {
             <p>{c.materials.join(" · ")}</p>
             <h3>Эффекты</h3>
             <p>{c.particleEffects.join(" · ")}</p>
+            {meshDownloads.length > 0 && (
+              <>
+                <h3>3D-модель</h3>
+                <p className="mesh-links">
+                  {meshDownloads.map((m) => (
+                    <a key={m.label} href={m.url} download>
+                      скачать {m.label}
+                    </a>
+                  ))}
+                </p>
+              </>
+            )}
             {textures.length > 0 && (
               <>
                 <h3>Текстуры</h3>

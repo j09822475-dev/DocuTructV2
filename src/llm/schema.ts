@@ -52,4 +52,9 @@ export interface SkinPackageIndexEntry {
     normal: boolean;
     masks: boolean;
   };
+  mesh?: {
+    glb: boolean;
+    fbx: boolean;
+    obj: boolean;
+  };
 }

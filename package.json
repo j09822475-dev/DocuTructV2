@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "@google/model-viewer": "^4.3.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

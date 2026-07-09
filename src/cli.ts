@@ -3,9 +3,10 @@ import { relative } from "node:path";
 import { HEROES, ITEM_SLOTS, findHero, type Hero, type ItemSlot } from "./data/heroes.js";
 import { generateConcept } from "./llm/concept.js";
 import { generateImages } from "./images/generate.js";
+import { generateMesh } from "./mesh/meshy.js";
 import { deriveAllMaps } from "./textures/maps.js";
 import { preparePackageDir, writePackage, listPackages } from "./output/package.js";
-import { mockConcept, mockImage } from "./mock.js";
+import { mockConcept, mockImage, mockMesh } from "./mock.js";
 
 const program = new Command();
 
@@ -22,8 +23,10 @@ program
   .requiredOption("--theme <theme>", `theme/mood, e.g. "ancient frost horror"`)
   .option("--style <style>", "extra style direction passed to the concept model")
   .option("--no-images", "skip image generation, save prompts only")
-  .option("--mock", "offline dry run: fixed concept + placeholder images, no API calls")
-  .action(async (opts: { hero: string; slot: string; theme: string; style?: string; images: boolean; mock?: boolean }) => {
+  .option("--no-mesh", "skip 3D mesh generation (Meshy)")
+  .option("--polycount <n>", "target polycount for the generated mesh", "30000")
+  .option("--mock", "offline dry run: fixed concept + placeholder images/mesh, no API calls")
+  .action(async (opts: { hero: string; slot: string; theme: string; style?: string; images: boolean; mesh: boolean; polycount: string; mock?: boolean }) => {
     const hero: Hero | undefined = findHero(opts.hero);
     if (!hero) {
       console.error(`Unknown hero "${opts.hero}". Known heroes:\n  ${HEROES.map((h) => h.name).join(", ")}`);
@@ -47,6 +50,7 @@ program
 
     const paths = await preparePackageDir(concept);
     let imagesSkippedReason: string | undefined;
+    let meshSkippedReason: string | undefined;
 
     if (opts.mock) {
       console.log("⚙ Writing placeholder images (mock)...");
@@ -76,7 +80,41 @@ program
       });
     }
 
-    await writePackage(concept, paths, { imagesSkippedReason });
+    // 3D mesh: image-to-3D from the concept art (Meshy AI)
+    if (opts.mock) {
+      console.log("⚙ Writing placeholder mesh (mock)...");
+      await mockMesh(paths.modelGlb, concept.colorPalette[1] ?? "#7fd1e0");
+    } else if (!opts.mesh) {
+      meshSkippedReason = "--no-mesh flag";
+      console.log("↷ Mesh generation skipped (--no-mesh)");
+    } else if (imagesSkippedReason) {
+      meshSkippedReason = `no concept art to build a mesh from (${imagesSkippedReason})`;
+      console.warn(`↷ Mesh generation skipped: ${meshSkippedReason}`);
+    } else {
+      console.log("⚙ Generating 3D mesh from concept art (Meshy image-to-3D, takes a few minutes)...");
+      try {
+        const meshResult = await generateMesh(
+          paths.conceptArt,
+          { glb: paths.modelGlb, fbx: paths.modelFbx, obj: paths.modelObj },
+          {
+            polycount: Number(opts.polycount),
+            onProgress: (pct) => process.stdout.write(`\r  Meshy progress: ${pct}%   `),
+          },
+        );
+        process.stdout.write("\n");
+        if (meshResult.skippedReason) {
+          meshSkippedReason = meshResult.skippedReason;
+          console.warn(`↷ ${meshResult.skippedReason}`);
+        } else {
+          console.log(`✓ Mesh downloaded: ${[meshResult.glbPath && "glb", meshResult.fbxPath && "fbx", meshResult.objPath && "obj"].filter(Boolean).join(", ")}`);
+        }
+      } catch (err) {
+        meshSkippedReason = `Meshy generation failed: ${err instanceof Error ? err.message : String(err)}`;
+        console.warn(`\n↷ ${meshSkippedReason} — kit is still written without a mesh`);
+      }
+    }
+
+    await writePackage(concept, paths, { imagesSkippedReason, meshSkippedReason });
     console.log(`\n✓ Skin kit written to ${relative(process.cwd(), paths.dir)}/`);
     console.log(`  Next: read IMPORT.md inside the kit, or run \`npm run cli -- preview\` to browse.`);
   });
