@@ -1,0 +1,39 @@
+{
+  "name": "dota2-skin-generator",
+  "version": "0.1.0",
+  "description": "LLM-powered Dota 2 skin concept and texture kit generator (Claude + gpt-image)",
+  "type": "module",
+  "bin": {
+    "dota2-skins": "./bin/dota2-skins.js"
+  },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p preview/tsconfig.json",
+    "build:preview": "vite build preview",
+    "dev:preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "openai": "^6.45.0",
+    "sharp": "^0.35.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
