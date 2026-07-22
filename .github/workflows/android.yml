@@ -1,9 +1,9 @@
-name: Build Kuller APK
+name: Build Getz ABS Scanner APK
 
 on:
   push:
     paths:
-      - "estonian-courier-sim/**"
+      - "getz-abs-scanner/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -13,12 +13,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # secrets нельзя использовать в step-level if:, поэтому пробрасываем через env
-      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
     defaults:
       run:
-        working-directory: estonian-courier-sim
+        working-directory: getz-abs-scanner
     steps:
       - uses: actions/checkout@v4
 
@@ -38,48 +35,26 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/kuller.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/getz-abs-scanner.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kuller-debug-apk
-          path: estonian-courier-sim/app/build/outputs/apk/debug/kuller.apk
+          name: getz-abs-scanner-apk
+          path: getz-abs-scanner/app/build/outputs/apk/debug/getz-abs-scanner.apk
           if-no-files-found: error
 
-      # ---- Google Play release bundle (.aab) ----
-      - name: Decode upload keystore (if secret is set)
-        if: ${{ env.KEYSTORE_BASE64 != '' }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
-          echo "KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
-          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> "$GITHUB_ENV"
-          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
-
-      - name: Build release AAB (Google Play bundle)
-        run: ./gradlew bundleRelease --no-daemon --stacktrace
-
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: kuller-release-aab
-          path: estonian-courier-sim/app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: warn
-
-      - name: Publish APK + AAB to a public Release
+      - name: Publish APK to a public Release
         if: github.ref == 'refs/heads/claude/estonian-learning-simulator-eXkAJ'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: kuller-latest
-          name: "Kuller — последняя сборка APK"
+          tag_name: getz-latest
+          name: "Getz ABS Scanner — последняя сборка APK"
           body: |
-            **kuller.apk** — установить на телефон (разрешите неизвестные источники).
-            **app-release.aab** — бандл для загрузки в Google Play (подписан ключом загрузки,
-            если в Secrets заданы KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD;
-            иначе подписан debug-ключом только для теста).
+            **getz-abs-scanner.apk** — установить на телефон (разрешите неизвестные источники).
+            Диагностика Hyundai Getz через ELM327 Bluetooth: проверка адаптера,
+            OBD-II двигатель, автоскан модулей (ABS), ручной KWP-режим.
             Собрано из коммита ${{ github.sha }}.
           files: |
-            estonian-courier-sim/app/build/outputs/apk/debug/kuller.apk
-            estonian-courier-sim/app/build/outputs/bundle/release/app-release.aab
+            getz-abs-scanner/app/build/outputs/apk/debug/getz-abs-scanner.apk
           make_latest: true
