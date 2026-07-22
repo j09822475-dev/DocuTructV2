@@ -451,9 +451,31 @@ class MainActivity : AppCompatActivity() {
                 }
                 elm = e
                 log("Канал открыт. Инициализация ELM327…")
-                for (c in listOf("ATZ", "ATE0", "ATL0", "ATS0", "ATH1", "ATSP0")) {
+                // У BLE-клонов ATZ перезапускает и BLE-часть чипа — слетает
+                // notify-подписка и ответы пропадают. Вместо него мягкий ATD.
+                val initCmds = if (e is Elm327Ble)
+                    listOf("ATD", "ATE0", "ATL0", "ATS0", "ATH1", "ATSP0")
+                else
+                    listOf("ATZ", "ATE0", "ATL0", "ATS0", "ATH1", "ATSP0")
+                var gotAnyReply = false
+                for (c in initCmds) {
                     val r = e.send(c, if (c == "ATZ") 8000 else 3000)
+                    if (r.isNotEmpty()) gotAnyReply = true
                     log("$c → $r")
+                }
+                if (!gotAnyReply && e is Elm327Ble) {
+                    log("Ответы не приходят — переподписываюсь на уведомления и повторяю…")
+                    if (e.resubscribeNotifications()) {
+                        for (c in initCmds) {
+                            val r = e.send(c, 3000)
+                            if (r.isNotEmpty()) gotAnyReply = true
+                            log("$c → $r")
+                        }
+                    }
+                }
+                if (!gotAnyReply) {
+                    log("⚠ Адаптер не отвечает на команды. Попробуйте вынуть/вставить адаптер " +
+                        "в OBD и подключиться заново.")
                 }
                 setStatus(true, devName)
                 log("Готово. Рекомендуется сначала «Проверить адаптер».")

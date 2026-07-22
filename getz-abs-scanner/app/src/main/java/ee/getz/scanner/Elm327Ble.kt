@@ -49,11 +49,13 @@ class Elm327Ble(
     private val rx = ConcurrentLinkedQueue<Byte>()
     private var gatt: BluetoothGatt? = null
     @Volatile private var writeChar: BluetoothGattCharacteristic? = null
+    @Volatile private var notifyChar: BluetoothGattCharacteristic? = null
     @Volatile private var connected = false
     @Volatile private var failReason: String? = null
     @Volatile private var mtuPayload = 20
     private val readyLatch = CountDownLatch(1)
     private val writeGate = Semaphore(0)
+    private val descGate = Semaphore(0)
 
     /** Подключиться и подготовить канал (блокирует до готовности или таймаута). */
     fun connect(timeoutMs: Long = 20000): Boolean {
@@ -138,6 +140,7 @@ class Elm327Ble(
 
             log("BLE: найден профиль $profileName (MTU payload $mtuPayload).")
             writeChar = writeC
+            notifyChar = notifyC
             g.setCharacteristicNotification(notifyC, true)
             val cccd = notifyC.getDescriptor(CCCD)
             if (cccd != null) {
@@ -156,6 +159,7 @@ class Elm327Ble(
             connected = status == BluetoothGatt.GATT_SUCCESS
             if (!connected) failReason = "CCCD status=$status"
             readyLatch.countDown()
+            descGate.release()
         }
 
         override fun onCharacteristicWrite(
@@ -178,6 +182,26 @@ class Elm327Ble(
             g: BluetoothGatt, ch: BluetoothGattCharacteristic, value: ByteArray
         ) {
             for (b in value) rx.add(b)
+        }
+    }
+
+    /**
+     * Переподписаться на уведомления. Нужна после команд, перезапускающих
+     * BLE-часть клона (например ATZ): линк GATT остаётся, а notify-подписка
+     * слетает и ответы перестают приходить.
+     */
+    fun resubscribeNotifications(): Boolean {
+        val g = gatt ?: return false
+        val n = notifyChar ?: return false
+        return try {
+            g.setCharacteristicNotification(n, true)
+            val cccd = n.getDescriptor(CCCD) ?: return true
+            cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+            descGate.drainPermits()
+            if (!g.writeDescriptor(cccd)) return false
+            descGate.tryAcquire(3, TimeUnit.SECONDS)
+        } catch (_: Exception) {
+            false
         }
     }
 
