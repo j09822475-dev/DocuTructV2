@@ -6,7 +6,10 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -41,7 +44,11 @@ class MainActivity : AppCompatActivity() {
     private var btAdapter: BluetoothAdapter? = null
     private var socket: BluetoothSocket? = null
     @Volatile private var elm: Elm327? = null
+
+    /** Единый список устройств: сопряжённые + найденные поиском (ключ — MAC). */
+    private val deviceMap = LinkedHashMap<String, BluetoothDevice>()
     private var devices: List<BluetoothDevice> = emptyList()
+    private var discoveryReceiverRegistered = false
 
     // Одна шина — один запрос: все команды через один последовательный поток
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -67,13 +74,18 @@ class MainActivity : AppCompatActivity() {
         btAdapter = (getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
         setContentView(buildUi())
         log("Порядок работы: 1) Подключиться → 2) Проверить адаптер → 3) Работа с блоками.")
-        log("Сопрягите ELM327 в настройках Bluetooth (PIN 1234 или 0000), затем «Обновить список».")
+        log("Сопряжение не требуется: вставьте адаптер в OBD (питание!), нажмите «Поиск устройств», " +
+            "выберите его в списке и нажмите «Подключиться».")
         startKeepAliveLoop()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cancelled.set(true)
+        if (discoveryReceiverRegistered) {
+            try { unregisterReceiver(discoveryReceiver) } catch (_: Exception) { }
+            discoveryReceiverRegistered = false
+        }
         disconnectInternal()
         executor.shutdownNow()
     }
@@ -90,10 +102,17 @@ class MainActivity : AppCompatActivity() {
 
         // --- 1. Подключение ---
         controls.addView(header("1. Подключение"))
+        controls.addView(small(
+            "Сопряжение НЕ обязательно: «Поиск устройств» найдёт адаптер в эфире, " +
+            "подключение идёт напрямую (insecure SPP)."
+        ))
         deviceSpinner = Spinner(this)
         controls.addView(deviceSpinner)
         controls.addView(buttonRow(
-            "Обновить список" to { refreshDevices() },
+            "Поиск устройств" to { startDiscovery() },
+            "Сопряжённые" to { refreshDevices() }
+        ))
+        controls.addView(buttonRow(
             "Подключиться" to { connect() },
             "Отключиться" to { disconnect() }
         ))
@@ -269,10 +288,15 @@ class MainActivity : AppCompatActivity() {
             PackageManager.PERMISSION_GRANTED
 
     private fun requestBtPermission() {
-        if (Build.VERSION.SDK_INT >= 31) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.BLUETOOTH_SCAN), REQ_BT)
+        when {
+            Build.VERSION.SDK_INT >= 31 ->
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_SCAN), REQ_BT)
+            Build.VERSION.SDK_INT >= 23 ->
+                // На Android 6–11 поиск устройств требует геолокацию
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_BT)
         }
     }
 
@@ -291,6 +315,48 @@ class MainActivity : AppCompatActivity() {
 
     // ================= Подключение =================
 
+    /** Приём результатов поиска устройств (работает без сопряжения). */
+    private val discoveryReceiver = object : BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    @Suppress("DEPRECATION")
+                    val dev: BluetoothDevice? =
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    if (dev != null && !deviceMap.containsKey(dev.address)) {
+                        deviceMap[dev.address] = dev
+                        val name = try { dev.name } catch (_: SecurityException) { null }
+                        log("Найдено: ${name ?: "без имени"} (${dev.address})")
+                        updateSpinner()
+                    }
+                }
+                BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                    log("Поиск завершён. Устройств в списке: ${deviceMap.size}. " +
+                        "Выберите адаптер (обычно OBDII / OBD2 / V-LINK / ELM327) и нажмите «Подключиться».")
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun updateSpinner() {
+        devices = deviceMap.values.toList()
+        val bonded = try {
+            btAdapter?.bondedDevices?.map { it.address }?.toSet() ?: emptySet()
+        } catch (_: SecurityException) { emptySet<String>() }
+        val labels = devices.map {
+            val name = try { it.name } catch (_: SecurityException) { null }
+            val mark = if (it.address in bonded) " · сопряжён" else ""
+            "${name ?: "без имени"} (${it.address})$mark"
+        }
+        val sel = deviceSpinner.selectedItemPosition
+        deviceSpinner.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_dropdown_item, labels)
+        if (sel in labels.indices) deviceSpinner.setSelection(sel)
+    }
+
+    /** Сопряжённые устройства (если есть) — добавляются в общий список. */
     @SuppressLint("MissingPermission")
     private fun refreshDevices() {
         val adapter = btAdapter
@@ -298,18 +364,49 @@ class MainActivity : AppCompatActivity() {
         if (!adapter.isEnabled) { log("Bluetooth выключен — включите его в настройках."); return }
         if (!hasBtPermission()) { requestBtPermission(); return }
         try {
-            devices = adapter.bondedDevices.toList()
+            for (d in adapter.bondedDevices) deviceMap[d.address] = d
         } catch (e: SecurityException) {
             log("SecurityException: ${e.message}"); return
         }
-        if (devices.isEmpty()) {
-            log("Список сопряжённых устройств пуст. Сопрягите ELM327 в настройках Bluetooth (PIN 1234/0000).")
+        updateSpinner()
+        log("Сопряжённых устройств: ${devices.size}. " +
+            "Сопряжение НЕ обязательно — можно нажать «Поиск устройств» и подключиться напрямую.")
+    }
+
+    /** Поиск устройств в эфире — сопряжение не требуется. */
+    @SuppressLint("MissingPermission")
+    private fun startDiscovery() {
+        val adapter = btAdapter
+        if (adapter == null) { log("Bluetooth не поддерживается этим устройством."); return }
+        if (!adapter.isEnabled) { log("Bluetooth выключен — включите его в настройках."); return }
+        if (!hasBtPermission()) { requestBtPermission(); return }
+        if (Build.VERSION.SDK_INT in 23..30 &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            log("Для поиска Bluetooth-устройств Android требует разрешение геолокации.")
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQ_BT)
+            return
         }
-        deviceSpinner.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item,
-            devices.map { "${it.name ?: "?"} (${it.address})" }
-        )
-        log("Найдено сопряжённых устройств: ${devices.size}")
+        if (!discoveryReceiverRegistered) {
+            registerReceiver(discoveryReceiver, IntentFilter().apply {
+                addAction(BluetoothDevice.ACTION_FOUND)
+                addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+            })
+            discoveryReceiverRegistered = true
+        }
+        refreshDevices()
+        try {
+            if (adapter.isDiscovering) adapter.cancelDiscovery()
+            if (adapter.startDiscovery()) {
+                log("Поиск устройств (~12 сек)… Адаптер должен быть воткнут в OBD и мигать.")
+            } else {
+                log("Не удалось запустить поиск. На Android 6–11 включите геолокацию на телефоне.")
+            }
+        } catch (e: SecurityException) {
+            log("SecurityException: ${e.message}")
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -318,16 +415,27 @@ class MainActivity : AppCompatActivity() {
         if (!adapter.isEnabled) { log("Bluetooth выключен."); return }
         if (!hasBtPermission()) { requestBtPermission(); return }
         val idx = deviceSpinner.selectedItemPosition
-        if (idx < 0 || idx >= devices.size) { log("Выберите устройство из списка."); return }
+        if (idx < 0 || idx >= devices.size) {
+            log("Список пуст — нажмите «Поиск устройств» или «Сопряжённые»."); return
+        }
         if (elm != null) { log("Уже подключено — сначала отключитесь."); return }
         val dev = devices[idx]
-        log("Подключение к ${dev.name} (${dev.address})…")
+        val devName = try { dev.name } catch (_: SecurityException) { null } ?: dev.address
+        if (dev.type == BluetoothDevice.DEVICE_TYPE_LE) {
+            log("⚠ ${devName}: это BLE-устройство (Bluetooth Low Energy). " +
+                "Классический SPP-канал у него отсутствует — подключение, скорее всего, не удастся. " +
+                "Для BLE-адаптеров нужен адаптер Bluetooth Classic.")
+        }
+        log("Подключение к $devName (${dev.address})…")
         executor.execute {
             busy.set(true)
             try {
-                val s = dev.createRfcommSocketToServiceRecord(SPP_UUID)
                 try { adapter.cancelDiscovery() } catch (_: SecurityException) { }
-                s.connect()
+                val s = openSocketWithFallbacks(dev) ?: run {
+                    log("Не удалось открыть канал ни одним способом. Проверьте: адаптер воткнут " +
+                        "в OBD и питается (светодиод), не занят другим приложением/телефоном.")
+                    return@execute
+                }
                 socket = s
                 val e = Elm327(s)
                 elm = e
@@ -336,10 +444,10 @@ class MainActivity : AppCompatActivity() {
                     val r = e.send(c, if (c == "ATZ") 8000 else 3000)
                     log("$c → $r")
                 }
-                setStatus(true, dev.name ?: dev.address)
+                setStatus(true, devName)
                 log("Готово. Рекомендуется сначала «Проверить адаптер».")
             } catch (e: IOException) {
-                log("Ошибка подключения: ${e.message}. Проверьте, что адаптер включён и в зоне действия.")
+                log("Обрыв при инициализации: ${e.message}")
                 closeSocket()
             } catch (e: SecurityException) {
                 log("SecurityException: ${e.message}")
@@ -348,6 +456,42 @@ class MainActivity : AppCompatActivity() {
                 busy.set(false)
             }
         }
+    }
+
+    /**
+     * Открыть RFCOMM-канал с фолбэками:
+     * 1) insecure SPP — БЕЗ сопряжения (основной путь для ELM327);
+     * 2) secure SPP — если адаптер требует сопряжения (появится запрос PIN 1234/0000);
+     * 3) канал 1 через рефлексию — для клонов без SDP-записи.
+     */
+    @SuppressLint("MissingPermission")
+    private fun openSocketWithFallbacks(dev: BluetoothDevice): BluetoothSocket? {
+        val attempts: List<Pair<String, () -> BluetoothSocket>> = listOf(
+            "insecure SPP (без сопряжения)" to {
+                dev.createInsecureRfcommSocketToServiceRecord(SPP_UUID)
+            },
+            "secure SPP (может запросить PIN)" to {
+                dev.createRfcommSocketToServiceRecord(SPP_UUID)
+            },
+            "RFCOMM канал 1 (fallback для клонов)" to {
+                dev.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
+                    .invoke(dev, 1) as BluetoothSocket
+            }
+        )
+        for ((label, open) in attempts) {
+            var s: BluetoothSocket? = null
+            try {
+                log("Попытка: $label…")
+                s = open()
+                s.connect()
+                log("✔ Подключено ($label).")
+                return s
+            } catch (e: Exception) {
+                log("✘ $label: ${e.message ?: e.javaClass.simpleName}")
+                try { s?.close() } catch (_: IOException) { }
+            }
+        }
+        return null
     }
 
     private fun disconnect() {

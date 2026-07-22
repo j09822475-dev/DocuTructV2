@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation"
         tools:targetApi="s" />
+    <!-- Android 6–11: поиск Bluetooth-устройств требует геолокацию -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="30" />
 
     <uses-feature
         android:name="android.hardware.bluetooth"
