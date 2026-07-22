@@ -104,7 +104,8 @@ class MainActivity : AppCompatActivity() {
         controls.addView(header("1. Подключение"))
         controls.addView(small(
             "Сопряжение НЕ обязательно: «Поиск устройств» найдёт адаптер в эфире, " +
-            "подключение идёт напрямую (insecure SPP)."
+            "подключение идёт напрямую. Поддерживаются и классические (SPP), " +
+            "и BLE-адаптеры (KONNWEI/Viecar «4.0»)."
         ))
         deviceSpinner = Spinner(this)
         controls.addView(deviceSpinner)
@@ -421,25 +422,35 @@ class MainActivity : AppCompatActivity() {
         if (elm != null) { log("Уже подключено — сначала отключитесь."); return }
         val dev = devices[idx]
         val devName = try { dev.name } catch (_: SecurityException) { null } ?: dev.address
-        if (dev.type == BluetoothDevice.DEVICE_TYPE_LE) {
-            log("⚠ ${devName}: это BLE-устройство (Bluetooth Low Energy). " +
-                "Классический SPP-канал у него отсутствует — подключение, скорее всего, не удастся. " +
-                "Для BLE-адаптеров нужен адаптер Bluetooth Classic.")
-        }
+        val isLe = dev.type == BluetoothDevice.DEVICE_TYPE_LE
         log("Подключение к $devName (${dev.address})…")
         executor.execute {
             busy.set(true)
             try {
                 try { adapter.cancelDiscovery() } catch (_: SecurityException) { }
-                val s = openSocketWithFallbacks(dev) ?: run {
-                    log("Не удалось открыть канал ни одним способом. Проверьте: адаптер воткнут " +
+                var e: Elm327? = null
+
+                if (isLe) {
+                    log("$devName — BLE-устройство: классического SPP у него нет, подключаюсь по BLE (GATT).")
+                } else {
+                    val s = openSocketWithFallbacks(dev)
+                    if (s != null) {
+                        socket = s
+                        e = Elm327Classic(s)
+                    }
+                }
+                if (e == null) {
+                    if (!isLe) log("SPP не удался — пробую BLE (GATT)…")
+                    val ble = Elm327Ble(this@MainActivity, dev, ::log)
+                    if (ble.connect()) e = ble
+                }
+                if (e == null) {
+                    log("Не удалось подключиться ни по SPP, ни по BLE. Проверьте: адаптер воткнут " +
                         "в OBD и питается (светодиод), не занят другим приложением/телефоном.")
                     return@execute
                 }
-                socket = s
-                val e = Elm327(s)
                 elm = e
-                log("Сокет открыт. Инициализация ELM327…")
+                log("Канал открыт. Инициализация ELM327…")
                 for (c in listOf("ATZ", "ATE0", "ATL0", "ATS0", "ATH1", "ATSP0")) {
                     val r = e.send(c, if (c == "ATZ") 8000 else 3000)
                     log("$c → $r")
@@ -448,10 +459,10 @@ class MainActivity : AppCompatActivity() {
                 log("Готово. Рекомендуется сначала «Проверить адаптер».")
             } catch (e: IOException) {
                 log("Обрыв при инициализации: ${e.message}")
-                closeSocket()
+                disconnectInternal()
             } catch (e: SecurityException) {
                 log("SecurityException: ${e.message}")
-                closeSocket()
+                disconnectInternal()
             } finally {
                 busy.set(false)
             }
