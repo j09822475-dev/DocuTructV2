@@ -157,125 +157,269 @@ class _WordsTabState extends State<_WordsTab> {
 
 // ============================ ТЕКСТЫ ============================
 
-class _TextsTab extends StatefulWidget {
+class _TextsTab extends StatelessWidget {
   final LearnViewModel vm;
   final Lesson lesson;
   const _TextsTab({required this.vm, required this.lesson});
 
   @override
-  State<_TextsTab> createState() => _TextsTabState();
-}
-
-class _TextsTabState extends State<_TextsTab> {
-  final Set<String> openAnswers = {};
-
-  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final vm = widget.vm;
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        for (final text in widget.lesson.texts) ...[
-          Text(text.title,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: scheme.onSurface)),
-          const SizedBox(height: 8),
-          for (final p in text.paras)
-            Card(
-              elevation: 0,
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              color: scheme.surface,
+        Text('Тексты урока — читайте и слушайте целиком или по абзацам.',
+            style: TextStyle(
+                fontSize: 13, color: scheme.onSurface.withOpacity(0.65))),
+        const SizedBox(height: 10),
+        for (final t in lesson.texts)
+          Card(
+            elevation: 1,
+            margin: const EdgeInsets.symmetric(vertical: 5),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: scheme.surface,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => TextReaderScreen(vm: vm, text: t))),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text('📖', style: TextStyle(fontSize: 22)),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(p.et,
+                          Text(t.title,
                               style: TextStyle(
+                                  fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  height: 1.35,
                                   color: scheme.onSurface)),
-                          if (p.tr.isNotEmpty && !vm.hideTr)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(p.tr,
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color:
-                                          scheme.onSurface.withOpacity(0.6))),
-                            ),
+                          Text(
+                              '${t.paras.length} абзацев'
+                              '${t.questions.isNotEmpty ? ' · ${t.questions.length} вопросов' : ''}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurface.withOpacity(0.6))),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    SpeakButton(onPressed: () => vm.speakWord(p.et)),
+                    Icon(Icons.headphones, color: scheme.primary, size: 28),
                   ],
                 ),
               ),
             ),
-          if (text.questions.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text('❓ Вопросы к тексту',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: scheme.onSurface)),
-            const SizedBox(height: 4),
-            for (var qi = 0; qi < text.questions.length; qi++)
-              Builder(builder: (context) {
-                final key = '${text.title}#$qi';
-                final qa = text.questions[qi];
-                final open = openAnswers.contains(key);
-                return Card(
-                  elevation: 0,
-                  margin: const EdgeInsets.symmetric(vertical: 3),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  color: open
-                      ? scheme.primaryContainer.withOpacity(0.5)
-                      : scheme.surface,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => setState(() =>
-                        open ? openAnswers.remove(key) : openAnswers.add(key)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(qa.q,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: scheme.onSurface)),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 3),
-                            child: Text(open ? qa.a : 'Показать ответ…',
+          ),
+      ],
+    );
+  }
+}
+
+/// Читалка текста: чтение + прослушивание целиком (с подсветкой абзаца).
+class TextReaderScreen extends StatefulWidget {
+  final LearnViewModel vm;
+  final LessonText text;
+  const TextReaderScreen({super.key, required this.vm, required this.text});
+
+  @override
+  State<TextReaderScreen> createState() => _TextReaderScreenState();
+}
+
+class _TextReaderScreenState extends State<TextReaderScreen> {
+  bool playing = false;
+  int currentPara = -1;
+  int _gen = 0;
+  final Set<int> openAnswers = {};
+  late final List<GlobalKey> _paraKeys =
+      List.generate(widget.text.paras.length, (_) => GlobalKey());
+
+  LearnViewModel get vm => widget.vm;
+
+  @override
+  void dispose() {
+    _gen++;
+    vm.tts.shutdown();
+    super.dispose();
+  }
+
+  Future<void> _playAll({int from = 0}) async {
+    final gen = ++_gen;
+    setState(() => playing = true);
+    for (var i = from; i < widget.text.paras.length; i++) {
+      if (!mounted || gen != _gen) return;
+      setState(() => currentPara = i);
+      final ctx = _paraKeys[i].currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 300), alignment: 0.2);
+      }
+      await vm.tts.speakAwait(widget.text.paras[i].et);
+      if (!mounted || gen != _gen) return;
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+    if (!mounted || gen != _gen) return;
+    setState(() {
+      playing = false;
+      currentPara = -1;
+    });
+  }
+
+  void _stop() {
+    _gen++;
+    vm.tts.shutdown();
+    setState(() {
+      playing = false;
+      currentPara = -1;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = widget.text;
+    return Scaffold(
+      backgroundColor: scheme.surfaceContainerLowest,
+      appBar: AppBar(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        title: Text('📖 ${text.title}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        actions: [
+          ListenableBuilder(
+            listenable: vm,
+            builder: (context, _) => IconButton(
+              tooltip: 'Скрыть/показать переводы',
+              onPressed: vm.toggleHideTr,
+              icon: Icon(vm.hideTr ? Icons.visibility_off : Icons.visibility,
+                  color: scheme.onPrimary),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: playing ? _stop : () => _playAll(),
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        icon: Icon(playing ? Icons.stop : Icons.play_arrow),
+        label: Text(playing ? 'Стоп' : 'Слушать весь текст'),
+      ),
+      body: ListenableBuilder(
+        listenable: vm,
+        builder: (context, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+          children: [
+            for (var i = 0; i < text.paras.length; i++)
+              Card(
+                key: _paraKeys[i],
+                elevation: 0,
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: currentPara == i
+                      ? BorderSide(color: scheme.primary, width: 2)
+                      : BorderSide.none,
+                ),
+                color: currentPara == i
+                    ? scheme.primaryContainer.withOpacity(0.45)
+                    : scheme.surface,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(text.paras[i].et,
                                 style: TextStyle(
-                                    fontSize: 13,
-                                    color: open
-                                        ? scheme.primary
-                                        : scheme.onSurface.withOpacity(0.5))),
-                          ),
-                        ],
+                                    fontSize: 16,
+                                    height: 1.4,
+                                    color: scheme.onSurface)),
+                            if (text.paras[i].tr.isNotEmpty && !vm.hideTr)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child: Text(text.paras[i].tr,
+                                    style: TextStyle(
+                                        fontSize: 13.5,
+                                        height: 1.35,
+                                        color: scheme.onSurface
+                                            .withOpacity(0.6))),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      SpeakButton(
+                          onPressed: () {
+                            _gen++;
+                            setState(() {
+                              playing = false;
+                              currentPara = -1;
+                            });
+                            vm.speakWord(text.paras[i].et);
+                          }),
+                    ],
+                  ),
+                ),
+              ),
+            if (text.questions.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text('❓ Проверьте себя',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: scheme.onSurface)),
+              const SizedBox(height: 4),
+              for (var qi = 0; qi < text.questions.length; qi++)
+                Builder(builder: (context) {
+                  final qa = text.questions[qi];
+                  final open = openAnswers.contains(qi);
+                  return Card(
+                    elevation: 0,
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    color: open
+                        ? scheme.primaryContainer.withOpacity(0.5)
+                        : scheme.surface,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => setState(() =>
+                          open ? openAnswers.remove(qi) : openAnswers.add(qi)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(qa.q,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: scheme.onSurface)),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(open ? qa.a : 'Показать ответ…',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: open
+                                          ? scheme.primary
+                                          : scheme.onSurface
+                                              .withOpacity(0.5))),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+            ],
           ],
-          const SizedBox(height: 20),
-        ],
-      ],
+        ),
+      ),
     );
   }
 }
