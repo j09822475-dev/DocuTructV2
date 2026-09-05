@@ -1,0 +1,15 @@
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+# Платформенные папки генерируются в CI командой `flutter create .`
+android/
+ios/
+linux/
+macos/
+windows/
+web/
+test/
+pubspec.lock

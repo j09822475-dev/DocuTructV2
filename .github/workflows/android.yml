@@ -1,9 +1,9 @@
-name: Build Getz ABS Scanner APK
+name: Build Kuller (Flutter)
 
 on:
   push:
     paths:
-      - "getz-abs-scanner/**"
+      - "kuller_flutter/**"
       - ".github/workflows/android.yml"
   workflow_dispatch:
 
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: getz-abs-scanner
+        working-directory: kuller_flutter
     steps:
       - uses: actions/checkout@v4
 
@@ -25,36 +25,90 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Scaffold Android platform folder
+        run: flutter create . --platforms=android --org ee.kuller --project-name kuller
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - name: Set app label
+        run: sed -i 's/android:label="kuller"/android:label="Kuller"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/getz-abs-scanner.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/kuller.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: getz-abs-scanner-apk
-          path: getz-abs-scanner/app/build/outputs/apk/debug/getz-abs-scanner.apk
+          name: kuller-apk
+          path: kuller_flutter/build/kuller.apk
           if-no-files-found: error
 
       - name: Publish APK to a public Release
         if: github.ref == 'refs/heads/claude/estonian-learning-simulator-eXkAJ'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: getz-latest
-          name: "Getz ABS Scanner — последняя сборка APK"
+          tag_name: kuller-flutter-latest
+          name: "Kuller (Flutter) — последняя сборка"
           body: |
-            **getz-abs-scanner.apk** — установить на телефон (разрешите неизвестные источники).
-            Диагностика Hyundai Getz через ELM327 Bluetooth: проверка адаптера,
-            OBD-II двигатель, автоскан модулей (ABS), ручной KWP-режим.
+            **kuller.apk** — Android: установить на телефон (разрешите неизвестные источники).
+            **kuller-ios-unsigned.ipa** — iOS: неподписанная сборка, ставится через Sideloadly/AltStore
+            (появляется в релизе после окончания iOS-джобы).
             Собрано из коммита ${{ github.sha }}.
           files: |
-            getz-abs-scanner/app/build/outputs/apk/debug/getz-abs-scanner.apk
+            kuller_flutter/build/kuller.apk
           make_latest: true
+
+  ios:
+    runs-on: macos-latest
+    needs: android
+    defaults:
+      run:
+        working-directory: kuller_flutter
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Scaffold iOS platform folder
+        run: flutter create . --platforms=ios --org ee.kuller --project-name kuller
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build iOS (unsigned)
+        run: flutter build ios --release --no-codesign
+
+      - name: Pack unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/ios/iphoneos/Runner.app build/Payload/
+          cd build && zip -qr kuller-ios-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kuller-ios-unsigned-ipa
+          path: kuller_flutter/build/kuller-ios-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Attach IPA to the Release
+        if: github.ref == 'refs/heads/claude/estonian-learning-simulator-eXkAJ'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kuller-flutter-latest
+          files: |
+            kuller_flutter/build/kuller-ios-unsigned.ipa
