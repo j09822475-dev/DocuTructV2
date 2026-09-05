@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Маленькая «таблетка» со статистикой курьера.
+/// Маленькая «таблетка» со статистикой.
 class StatPill extends StatelessWidget {
   final String emoji;
   final String value;
@@ -36,7 +36,7 @@ class StatPill extends StatelessWidget {
   }
 }
 
-/// Кнопка-динамик для озвучки эстонского слова.
+/// Кнопка-динамик для озвучки эстонского текста.
 class SpeakButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color? tint;
@@ -55,76 +55,6 @@ class SpeakButton extends StatelessWidget {
         icon: Icon(Icons.volume_up, color: color, size: 22),
         tooltip: 'Озвучить',
         onPressed: onPressed,
-      ),
-    );
-  }
-}
-
-/// Заголовок секции.
-class SectionTitle extends StatelessWidget {
-  final String text;
-  const SectionTitle(this.text, {super.key});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Theme.of(context).colorScheme.onSurface)),
-      );
-}
-
-/// Строка «эстонский — русский» с озвучкой.
-class WordRow extends StatelessWidget {
-  final String et;
-  final String ru;
-  final String example;
-  final VoidCallback onSpeak;
-  const WordRow({
-    super.key,
-    required this.et,
-    required this.ru,
-    required this.example,
-    required this.onSpeak,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: scheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(12).copyWith(left: 16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(et,
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 17,
-                          color: scheme.onSurface)),
-                  Text(ru,
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: scheme.onSurface.withOpacity(0.7))),
-                  if (example.isNotEmpty)
-                    Text('„$example“',
-                        style: TextStyle(fontSize: 12, color: scheme.primary)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            SpeakButton(onPressed: onSpeak),
-          ],
-        ),
       ),
     );
   }

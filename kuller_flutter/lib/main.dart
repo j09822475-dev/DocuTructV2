@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'game_state.dart';
-import 'game_vm.dart';
-import 'screens/home_screen.dart';
-import 'screens/order_screen.dart';
-import 'screens/phrasebook_screen.dart';
+import 'learn_state.dart';
+import 'learn_vm.dart';
+import 'screens/lessons_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/vocab_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final repo = await GameRepository.create();
-  runApp(KullerApp(vm: GameViewModel(repo)));
+  final repo = await LearnRepository.create();
+  runApp(EestiKeelApp(vm: LearnViewModel(repo)));
 }
 
 const _brandGreen = Color(0xFF0B7A4B);
@@ -22,9 +19,9 @@ const _coral = Color(0xFFE5484D);
 const _ink = Color(0xFF1A1C1A);
 const _cloud = Color(0xFFF3F5F4);
 
-class KullerApp extends StatelessWidget {
-  final GameViewModel vm;
-  const KullerApp({super.key, required this.vm});
+class EestiKeelApp extends StatelessWidget {
+  final LearnViewModel vm;
+  const EestiKeelApp({super.key, required this.vm});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +53,7 @@ class KullerApp extends StatelessWidget {
       surfaceContainerLowest: Color(0xFF101411),
     );
     return MaterialApp(
-      title: 'Kuller',
+      title: 'Eesti keel A2',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorScheme: lightScheme, useMaterial3: true),
       darkTheme: ThemeData(colorScheme: darkScheme, useMaterial3: true),
@@ -65,36 +62,8 @@ class KullerApp extends StatelessWidget {
   }
 }
 
-/// Верхняя панель с брендом и переключателем перевода — общая для всех экранов.
-PreferredSizeWidget kullerAppBar(GameViewModel vm, BuildContext context) {
-  final scheme = Theme.of(context).colorScheme;
-  return AppBar(
-    backgroundColor: scheme.primary,
-    foregroundColor: scheme.onPrimary,
-    title: const Text('🛵 Kuller',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-    actions: [
-      Icon(Icons.translate, size: 18, color: scheme.onPrimary.withOpacity(0.85)),
-      Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Center(
-          child: Text(vm.hideRu ? 'перевод скрыт' : 'перевод виден',
-              style: TextStyle(
-                  fontSize: 12, color: scheme.onPrimary.withOpacity(0.85))),
-        ),
-      ),
-      IconButton(
-        tooltip: 'Скрыть/показать русский перевод',
-        onPressed: vm.toggleHideRu,
-        icon: Icon(vm.hideRu ? Icons.visibility_off : Icons.visibility,
-            color: scheme.onPrimary),
-      ),
-    ],
-  );
-}
-
 class RootShell extends StatefulWidget {
-  final GameViewModel vm;
+  final LearnViewModel vm;
   const RootShell({super.key, required this.vm});
 
   @override
@@ -104,13 +73,7 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int tab = 0;
 
-  GameViewModel get vm => widget.vm;
-
-  void _openOrder() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => OrderScreen(vm: vm)),
-    );
-  }
+  LearnViewModel get vm => widget.vm;
 
   @override
   Widget build(BuildContext context) {
@@ -120,19 +83,36 @@ class _RootShellState extends State<RootShell> {
         final scheme = Theme.of(context).colorScheme;
         return Scaffold(
           backgroundColor: scheme.surfaceContainerLowest,
-          appBar: kullerAppBar(vm, context),
+          appBar: AppBar(
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
+            title: const Text('🇪🇪 Eesti keel',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            actions: [
+              Icon(Icons.translate,
+                  size: 18, color: scheme.onPrimary.withOpacity(0.85)),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Center(
+                  child: Text(vm.hideTr ? 'перевод скрыт' : 'перевод виден',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onPrimary.withOpacity(0.85))),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Скрыть/показать переводы',
+                onPressed: vm.toggleHideTr,
+                icon: Icon(
+                    vm.hideTr ? Icons.visibility_off : Icons.visibility,
+                    color: scheme.onPrimary),
+              ),
+            ],
+          ),
           body: IndexedStack(
             index: tab,
             children: [
-              HomeScreen(
-                vm: vm,
-                onAccept: (order) {
-                  vm.startOrder(order);
-                  _openOrder();
-                },
-              ),
-              VocabularyScreen(vm: vm),
-              PhrasebookScreen(vm: vm),
+              LessonsScreen(vm: vm),
               ProfileScreen(vm: vm),
             ],
           ),
@@ -141,12 +121,9 @@ class _RootShellState extends State<RootShell> {
             onDestinationSelected: (i) => setState(() => tab = i),
             destinations: const [
               NavigationDestination(
-                  icon: Icon(Icons.two_wheeler), label: 'Смена'),
+                  icon: Icon(Icons.menu_book), label: 'Уроки'),
               NavigationDestination(
-                  icon: Icon(Icons.storefront), label: 'Слова'),
-              NavigationDestination(
-                  icon: Icon(Icons.menu_book), label: 'Разговорник'),
-              NavigationDestination(icon: Icon(Icons.person), label: 'Профиль'),
+                  icon: Icon(Icons.person), label: 'Прогресс'),
             ],
           ),
         );

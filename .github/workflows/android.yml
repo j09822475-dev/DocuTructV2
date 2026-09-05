@@ -35,7 +35,7 @@ jobs:
         run: flutter create . --platforms=android --org ee.kuller --project-name kuller
 
       - name: Set app label
-        run: sed -i 's/android:label="kuller"/android:label="Kuller"/' android/app/src/main/AndroidManifest.xml
+        run: sed -i 's/android:label="kuller"/android:label="Eesti keel"/' android/app/src/main/AndroidManifest.xml
 
       - name: Get dependencies
         run: flutter pub get
@@ -58,8 +58,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: kuller-flutter-latest
-          name: "Kuller (Flutter) — последняя сборка"
+          name: "Eesti keel A2 — последняя сборка"
           body: |
+            Приложение для изучения эстонского языка: уроки по конспекту курса —
+            слова, тексты, диалоги и тесты.
             **kuller.apk** — Android: установить на телефон (разрешите неизвестные источники).
             **kuller-ios-unsigned.ipa** — iOS: неподписанная сборка, ставится через Sideloadly/AltStore
             (появляется в релизе после окончания iOS-джобы).
