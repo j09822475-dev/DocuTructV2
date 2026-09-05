@@ -293,27 +293,355 @@ class _DialoguesTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        for (final d in lesson.dialogues) ...[
-          Text('💬 ${d.title}',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: scheme.onSurface)),
-          const SizedBox(height: 8),
-          for (final line in d.lines) _bubble(context, line),
-          const SizedBox(height: 20),
+        Text('Диалог строится по ходу: собеседник пишет — вы выбираете ответ, '
+            'и разговор развивается дальше.',
+            style: TextStyle(
+                fontSize: 13, color: scheme.onSurface.withOpacity(0.65))),
+        const SizedBox(height: 10),
+        for (final d in lesson.dialogues)
+          Card(
+            elevation: 1,
+            margin: const EdgeInsets.symmetric(vertical: 5),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: scheme.surface,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DialoguePlayerScreen(vm: vm, dialogue: d))),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    const Text('💬', style: TextStyle(fontSize: 22)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(d.title,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: scheme.onSurface)),
+                          Text(
+                              '${d.turns.whereType<DAsk>().length} выборов реплик',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurface.withOpacity(0.6))),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.play_circle_fill,
+                        color: scheme.primary, size: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _Bubble {
+  final bool fromUser;
+  final String et;
+  final String tr;
+  _Bubble(this.fromUser, this.et, this.tr);
+}
+
+class DialoguePlayerScreen extends StatefulWidget {
+  final LearnViewModel vm;
+  final Dialogue dialogue;
+  const DialoguePlayerScreen(
+      {super.key, required this.vm, required this.dialogue});
+
+  @override
+  State<DialoguePlayerScreen> createState() => _DialoguePlayerScreenState();
+}
+
+class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
+  final List<_Bubble> bubbles = [];
+  late List<DTurn> queue;
+  DAsk? currentAsk;
+  bool isRetry = false; // это повтор вопроса после ошибки?
+  final Set<DAsk> _retries = {};
+  bool typing = false;
+  bool finished = false;
+  int asks = 0; // сколько вопросов встретили
+  int firstTryCorrect = 0;
+  int _gen = 0;
+  final _scroll = ScrollController();
+
+  LearnViewModel get vm => widget.vm;
+
+  @override
+  void initState() {
+    super.initState();
+    queue = List.of(widget.dialogue.turns);
+    _advance();
+  }
+
+  @override
+  void dispose() {
+    _gen++;
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _autoScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      _scroll.animateTo(_scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    });
+  }
+
+  Future<void> _advance() async {
+    final gen = ++_gen;
+    while (queue.isNotEmpty) {
+      final turn = queue.removeAt(0);
+      if (turn is DSay) {
+        setState(() => typing = true);
+        _autoScroll();
+        await Future.delayed(const Duration(milliseconds: 900));
+        if (!mounted || gen != _gen) return;
+        setState(() {
+          typing = false;
+          bubbles.add(_Bubble(false, turn.et, turn.tr));
+        });
+        vm.speak(turn.et, speaker: 'A');
+        _autoScroll();
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (!mounted || gen != _gen) return;
+      } else if (turn is DAsk) {
+        setState(() {
+          currentAsk = turn;
+          isRetry = _retries.remove(turn);
+          if (!isRetry) asks++;
+        });
+        _autoScroll();
+        return;
+      }
+    }
+    setState(() => finished = true);
+    _autoScroll();
+  }
+
+  void _choose(DChoice choice) {
+    final ask = currentAsk;
+    if (ask == null) return;
+    setState(() {
+      bubbles.add(_Bubble(true, choice.et, choice.tr));
+      currentAsk = null;
+    });
+    vm.speak(choice.et, speaker: 'B');
+    if (choice.correct) {
+      if (!isRetry) firstTryCorrect++;
+      queue.insertAll(0, choice.followUp);
+    } else {
+      // Реакция собеседника + тот же вопрос ещё раз (без выбранного варианта)
+      final remaining = ask.options.where((o) => o != choice).toList();
+      final retry = DAsk(ask.prompt, remaining);
+      _retries.add(retry);
+      queue.insertAll(0, [...choice.followUp, retry]);
+    }
+    _advance();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final ask = currentAsk;
+    return Scaffold(
+      backgroundColor: scheme.surfaceContainerLowest,
+      appBar: AppBar(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        title: Text('💬 ${widget.dialogue.title}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        actions: [
+          ListenableBuilder(
+            listenable: vm,
+            builder: (context, _) => IconButton(
+              tooltip: 'Скрыть/показать переводы',
+              onPressed: vm.toggleHideTr,
+              icon: Icon(vm.hideTr ? Icons.visibility_off : Icons.visibility,
+                  color: scheme.onPrimary),
+            ),
+          ),
         ],
+      ),
+      body: ListenableBuilder(
+        listenable: vm,
+        builder: (context, _) => Column(
+          children: [
+            Expanded(
+              child: ListView(
+                controller: _scroll,
+                padding: const EdgeInsets.all(12),
+                children: [
+                  for (final b in bubbles) _bubbleWidget(context, b),
+                  if (typing) _typingWidget(context),
+                ],
+              ),
+            ),
+            Material(
+              color: scheme.surface,
+              elevation: 8,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: finished
+                    ? _finishPanel(context)
+                    : (ask != null
+                        ? _askPanel(context, ask)
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text('💬 …',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    color:
+                                        scheme.onSurface.withOpacity(0.5))),
+                          )),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _askPanel(BuildContext context, DAsk ask) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(ask.prompt,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: scheme.onSurface)),
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 260),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                for (final o in ask.options)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Material(
+                      color: scheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => _choose(o),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: scheme.onSurface.withOpacity(0.15),
+                                width: 2),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(o.et,
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: scheme.onSurface)),
+                                    if (!vm.hideTr && o.tr.isNotEmpty)
+                                      Text(o.tr,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: scheme.onSurface
+                                                  .withOpacity(0.65))),
+                                  ],
+                                ),
+                              ),
+                              SpeakButton(
+                                  onPressed: () => vm.speakWord(o.et)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _bubble(BuildContext context, DialogueLine line) {
+  Widget _finishPanel(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isA = line.speaker == 'A';
-    final bubbleColor = isA ? scheme.surfaceContainerHighest : scheme.primary;
-    final onBubble = isA ? scheme.onSurface : scheme.onPrimary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          asks > 0
+              ? 'Диалог пройден! С первой попытки: $firstTryCorrect из $asks 🎉'
+              : 'Диалог пройден! 🎉',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: scheme.onSurface),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    bubbles.clear();
+                    queue = List.of(widget.dialogue.turns);
+                    currentAsk = null;
+                    finished = false;
+                    typing = false;
+                    asks = 0;
+                    firstTryCorrect = 0;
+                    isRetry = false;
+                    _retries.clear();
+                  });
+                  _advance();
+                },
+                child: const Text('Ещё раз'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Готово'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _bubbleWidget(BuildContext context, _Bubble b) {
+    final scheme = Theme.of(context).colorScheme;
+    final bubbleColor =
+        b.fromUser ? scheme.primary : scheme.surfaceContainerHighest;
+    final onBubble = b.fromUser ? scheme.onPrimary : scheme.onSurface;
     return Row(
-      mainAxisAlignment: isA ? MainAxisAlignment.start : MainAxisAlignment.end,
+      mainAxisAlignment:
+          b.fromUser ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
@@ -324,12 +652,12 @@ class _DialoguesTab extends StatelessWidget {
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isA ? 4 : 16),
-                bottomRight: Radius.circular(isA ? 16 : 4),
+                bottomLeft: Radius.circular(b.fromUser ? 16 : 4),
+                bottomRight: Radius.circular(b.fromUser ? 4 : 16),
               ),
               child: Padding(
-                padding:
-                    const EdgeInsets.only(left: 12, right: 4, top: 8, bottom: 8),
+                padding: const EdgeInsets.only(
+                    left: 12, right: 4, top: 8, bottom: 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -337,13 +665,13 @@ class _DialoguesTab extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(line.et,
+                          Text(b.et,
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                   color: onBubble)),
-                          if (line.tr.isNotEmpty && !vm.hideTr)
-                            Text(line.tr,
+                          if (b.tr.isNotEmpty && !vm.hideTr)
+                            Text(b.tr,
                                 style: TextStyle(
                                     fontSize: 12.5,
                                     color: onBubble.withOpacity(0.75))),
@@ -352,13 +680,38 @@ class _DialoguesTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     SpeakButton(
-                      onPressed: () => vm.speak(line.et, speaker: line.speaker),
-                      tint: isA ? scheme.primary : scheme.onPrimary,
+                      onPressed: () =>
+                          vm.speak(b.et, speaker: b.fromUser ? 'B' : 'A'),
+                      tint: b.fromUser ? scheme.onPrimary : scheme.primary,
                     ),
                   ],
                 ),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _typingWidget(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Material(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(16),
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Text('печатает •••',
+                style: TextStyle(
+                    fontSize: 14, color: scheme.onSurface.withOpacity(0.6))),
           ),
         ),
       ],
