@@ -48,128 +48,89 @@ const List<Lesson> lessonsPart1 = [
       Dialogue('Tervitus', [
         DSay('Tere hommikust! Minu nimi on Anton, ma elan Narvas.',
             'Доброго ранку! Мене звати Антон, я живу в Нарві.'),
-        DAsk('Поздоровайтесь и представьтесь:', [
-          DChoice('Tere! Mina olen Olena ja mina elan Keilas.',
-              'Привіт! Я Олена, я живу в Кейла.'),
-          DChoice('Head aega, nägemist!', 'До побачення!', correct: false,
-              followUp: [
-                DSay('Oot, me alles alustasime! Öelge oma nimi.',
-                    'Стривай, ми тільки почали! Скажіть своє ім’я.'),
-              ]),
-          DChoice('Kaks kohvi, palun.', 'Дві кави, будь ласка.', correct: false,
-              followUp: [
-                DSay('See pole kohvik. Mis on teie nimi?',
-                    'Це не кафе. Як вас звати?'),
-              ]),
+        DAsk('Представьтесь и скажите, где живёте:', [
+          DChoice('Tere, mina olen Petro ja mina elan Keilas.',
+              'Привіт, я Петро, і я живу в Кейла.'),
+          DChoice('Mina olen pärit Eestist.', 'Я родом з Естонії.',
+              correct: false),
+          DChoice('Head ööd!', 'Надобраніч!', correct: false),
         ]),
-        DSay('Väga meeldiv! Kust sa pärit oled?',
-            'Дуже приємно! Звідки ти родом?'),
-        DAsk('Скажите, откуда вы родом, и спросите в ответ:', [
-          DChoice('Ma olen pärit Ukrainast. Aga sina?',
-              'Я родом з України. А ти?'),
-          DChoice('Ma söön putru.', 'Я їм кашу.', correct: false, followUp: [
-            DSay('Mm… ma küsisin, kust sa pärit oled.',
-                'Мм… я спитав, звідки ти родом.'),
-          ]),
-          DChoice('Jah, muidugi.', 'Так, звичайно.', correct: false, followUp: [
-            DSay('See ei ole vastus. Kust sa pärit oled?',
-                'Це не відповідь. Звідки ти родом?'),
-          ]),
+        DSay('Kust sa pärit oled?', 'Звідки ти родом?'),
+        DAsk('Ответьте и спросите в ответ:', [
+          DChoice('Ma olen pärit Ukrainast, aga sina?',
+              'Я родом з України, а ти?'),
+          DChoice('Ma söön putru.', 'Я їм кашу.', correct: false),
+          DChoice('Ma töötan koolis.', 'Я працюю в школі.', correct: false),
         ]),
-        DSay('Mina olen pärit Eestist. Tore tuttavaks saada!',
-            'Я родом з Естонії. Приємно познайомитися!'),
+        DSay('Mina olen pärit Eestist.', 'Я родом з Естонії.'),
       ]),
       Dialogue('Kus sa töötad?', [
         DSay('Kus sa töötad?', 'Де ти працюєш?'),
-        DAsk('Ответьте, где вы работаете:', [
+        DAsk('Ответьте, где работаете:', [
           DChoice('Ma töötan koolis.', 'Я працюю в школі.'),
-          DChoice('Tere hommikust!', 'Доброго ранку!', correct: false,
-              followUp: [
-                DSay('Tere-tere! Aga kus sa töötad?',
-                    'Привіт-привіт! Але де ти працюєш?'),
-              ]),
-          DChoice('Ma elan Narvas.', 'Я живу в Нарві.', correct: false,
-              followUp: [
-                DSay('Elad Narvas, selge. Aga kus sa töötad?',
-                    'Живеш у Нарві, ясно. А працюєш де?'),
-              ]),
+          DChoice('Ma olen pärit Ukrainast.', 'Я родом з України.',
+              correct: false),
+          DChoice('Palun mulle kaks kohvi piimaga!',
+              'Дві кави з молоком, будь ласка!', correct: false),
         ]),
         DSay('Kellena sa töötad?', 'Ким ти працюєш?'),
-        DAsk('Скажите, кем вы работаете (-na):', [
+        DAsk('Скажите, кем работаете:', [
           DChoice('Ma töötan õpetajana.', 'Я працюю вчителем.'),
-          DChoice('Ma töötan õpetaja.', 'Я працюю вчитель (без -na).',
-              correct: false,
-              followUp: [
-                DSay('Peaaegu! Õige on: õpetajaNA.',
-                    'Майже! Правильно: õpetajaNA.'),
-              ]),
-          DChoice('Ei, aitäh.', 'Ні, дякую.', correct: false, followUp: [
-            DSay('See polnud pakkumine. Kellena sa töötad?',
-                'Це не була пропозиція. Ким ти працюєш?'),
-          ]),
+          DChoice('Kohv piimaga.', 'Кава з молоком.', correct: false),
+          DChoice('Tere hommikust!', 'Доброго ранку!', correct: false),
         ]),
-        DSay('Väga hea! Aga mina olen taksojuht.', 'Дуже добре! А я таксист.'),
+        DSay('Aga mina olen taksojuht.', 'А я таксист.'),
       ]),
       Dialogue('Kohvikus', [
-        DSay('Tere! Mida te soovite?', 'Добрий день! Що бажаєте?'),
         DAsk('Закажите два кофе с молоком:', [
           DChoice('Palun mulle kaks kohvi piimaga!',
-              'Будь ласка, дві кави з молоком!'),
-          DChoice('Head ööd!', 'Надобраніч!', correct: false, followUp: [
-            DSay('Praegu on päev! Mida te juua soovite?',
-                'Зараз день! Що будете пити?'),
-          ]),
-          DChoice('Kus sa elad?', 'Де ти живеш?', correct: false, followUp: [
-            DSay('Mina? Kohvikus ma töötan. Mida te tellite?',
-                'Я? Я тут працюю. Що замовите?'),
-          ]),
+              'Дві кави з молоком, будь ласка!'),
+          DChoice('Ma söön putru.', 'Я їм кашу.', correct: false),
+          DChoice('Ma töötan kokana.', 'Я працюю кухарем.', correct: false),
         ]),
         DSay('Kas suhkruga?', 'З цукром?'),
         DAsk('Откажитесь от сахара:', [
-          DChoice('Ei, ilma suhkruta.', 'Ні, без цукру.'),
-          DChoice('Jah, ilma suhkruta.', 'Так, без цукру (протиріччя).',
-              correct: false,
-              followUp: [
-                DSay('Kuidas siis — suhkruga või ilma?',
-                    'То як — з цукром чи без?'),
-              ]),
-          DChoice('Kolm teed veel.', 'Ще три чаї.', correct: false, followUp: [
-            DSay('Ohoo! Aga kõigepealt — kas suhkruga?',
-                'Ого! Але спершу — з цукром?'),
-          ]),
+          DChoice('Ei, ilma suhkruta!', 'Ні, без цукру!'),
+          DChoice('Palun mulle kaks kohvi piimaga!',
+              'Дві кави з молоком, будь ласка! (повтор)', correct: false),
+          DChoice('Head ööd!', 'Надобраніч!', correct: false),
         ]),
-        DSay('Selge, kohe toon. Head isu!', 'Зрозуміло, зараз принесу. Смачного!'),
       ]),
       Dialogue('Mis on sinu nimi?', [
         DSay('Mis on sinu nimi? Kus sa elad?', 'Як тебе звати? Де ти живеш?'),
-        DAsk('Представьтесь и скажите, где живёте:', [
-          DChoice('Minu nimi on Olena, ma elan Pärnus.',
-              'Мене звати Олена, я живу в Пярну.'),
-          DChoice('Minu nimi on Pärnu.', 'Мене звати Пярну.', correct: false,
-              followUp: [
-                DSay('Pärnu on linn! Mis on sinu nimi?',
-                    'Пярну — це місто! Як тебе звати?'),
-              ]),
-          DChoice('Aitäh, väga hea.', 'Дякую, дуже добре.', correct: false,
-              followUp: [
-                DSay('Tore, aga öelge palun oma nimi.',
-                    'Чудово, але скажіть, будь ласка, своє ім’я.'),
-              ]),
+        DAsk('Представьтесь:', [
+          DChoice('Tere, minu nimi on Olena, ma elan Pärnus.',
+              'Привіт, мене звати Олена, я живу в Пярну.'),
+          DChoice('Jah, väga suur linn.', 'Так, дуже велике місто.',
+              correct: false),
+          DChoice('Ma töötan ja õpin.', 'Я працюю і навчаюся.',
+              correct: false),
+        ]),
+        DSay('Kust sa pärit oled?', 'Звідки ти родом?'),
+        DAsk('Скажите, что из Одессы:', [
+          DChoice('Ma olen pärit Ukrainast Odessast.',
+              'Я родом з України, з Одеси.'),
+          DChoice('Ma elan Ida-Virumaal.', 'Я живу в Іда-Вірумаа.',
+              correct: false),
         ]),
         DSay('Kas sa töötad või õpid?', 'Ти працюєш чи навчаєшся?'),
-        DAsk('Скажите, что и работаете, и учитесь:', [
-          DChoice('Ma töötan ja õpin. Ma töötan IT-firmas programmeerijana.',
-              'Я працюю і навчаюся. Я працюю в IT-фірмі програмістом.'),
-          DChoice('Ma magan.', 'Я сплю.', correct: false, followUp: [
-            DSay('Praegu? Aga tööl või koolis ka käid?',
-                'Зараз? А на роботу чи навчання ходиш?'),
-          ]),
-          DChoice('Ei tea.', 'Не знаю.', correct: false, followUp: [
-            DSay('Kuidas ei tea? Töötad või õpid?',
-                'Як не знаєш? Працюєш чи вчишся?'),
-          ]),
+        DAsk('Ответьте:', [
+          DChoice('Ma töötan ja õpin.', 'Я працюю і навчаюся.'),
+          DChoice('Mina olen pärit Eestist.', 'Я родом з Естонії.',
+              correct: false),
         ]),
-        DSay('Väga tubli!', 'Молодець!'),
+        DSay('Kus sa töötad?', 'Де ти працюєш?'),
+        DAsk('Ответьте про IT-фирму:', [
+          DChoice('Ma töötan IT-firmas.', 'Я працюю в IT-фірмі.'),
+          DChoice('Ma joon 3 klaasi vett.', 'Я п’ю три склянки води.',
+              correct: false),
+        ]),
+        DSay('Aga kellena sa töötad?', 'А ким ти працюєш?'),
+        DAsk('Ответьте про профессию:', [
+          DChoice('Ma töötan programmeerijana.', 'Я працюю програмістом.'),
+          DChoice('Ma töötan IT-firmas.',
+              'Я працюю в IT-фірмі. (це вже сказано)', correct: false),
+        ]),
       ]),
     ],
   ),
@@ -231,134 +192,105 @@ const List<Lesson> lessonsPart1 = [
     dialogues: [
       Dialogue('Koolis', [
         DSay('Kus sa praegu oled?', 'Де ти зараз?'),
-        DAsk('Скажите, что вы в школе:', [
+        DAsk('Ответьте:', [
           DChoice('Ma olen koolis.', 'Я в школі.'),
-          DChoice('Ma olen kool.', 'Я — школа.', correct: false, followUp: [
-            DSay('Sina oled kool? Õige on: ma olen kooliS.',
-                'Ти — школа? Правильно: ma olen kooliS.'),
-          ]),
-          DChoice('Homme.', 'Завтра.', correct: false, followUp: [
-            DSay('Ma küsisin, KUS sa oled, mitte millal.',
-                'Я спитав, ДЕ ти, а не коли.'),
-          ]),
+          DChoice('Ma kolisin eelmisel aastal.', 'Я переїхав минулого року.',
+              correct: false),
+          DChoice('Ma töötan väikeses restoranis.',
+              'Я працюю в маленькому ресторані.', correct: false),
         ]),
         DSay('Mida sa koolis teed?', 'Що ти робиш у школі?'),
         DAsk('Скажите, что учите эстонский:', [
-          DChoice('Ma õpin koolis eesti keelt.', 'Я вчу естонську мову в школі.'),
-          DChoice('Ma õpetan koolis eesti keelt.',
-              'Я викладаю естонську в школі.', correct: false,
-              followUp: [
-                DSay('Sina õpetad? Vist ikka õpid alles!',
-                    'Ти викладаєш? Мабуть, усе ж навчаєшся!'),
-              ]),
-          DChoice('Ma söön koolis putru.', 'Я їм у школі кашу.', correct: false,
-              followUp: [
-                DSay('Maitsev! Aga keelt ka õpid?',
-                    'Смачно! Але мову теж вчиш?'),
-              ]),
+          DChoice('Ma õpin koolis eesti keelt.',
+              'Я вчу естонську мову в школі.'),
+          DChoice('Ma helistan Eestist.', 'Я телефоную з Естонії.',
+              correct: false),
         ]),
         DSay('Kas sa töötad ka koolis?', 'Ти також працюєш у школі?'),
         DAsk('Ответьте отрицательно:', [
           DChoice('Ei, ma ei tööta koolis.', 'Ні, я не працюю в школі.'),
-          DChoice('Jah, ma ei tööta koolis.', 'Так, я не працюю (протиріччя).',
-              correct: false,
-              followUp: [
-                DSay('«Jah» või «ei»? Vali üks!', '«Так» чи «ні»? Обери одне!'),
-              ]),
+          DChoice('Jah, täna ma teen suppi ja salatit.',
+              'Так, сьогодні я готую суп і салат.', correct: false),
         ]),
-        DSay('Selge! Edu õppimisel!', 'Ясно! Успіхів у навчанні!'),
+        DSay('Kas sa tahaksid kunagi koolis õpetada?',
+            'Ти хотів би колись викладати в школі?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, võib-olla tulevikus ma õpetan koolis.',
+              'Так, можливо, в майбутньому я буду викладати.'),
+          DChoice('Ei, ma ei tööta koolis.',
+              'Ні, я не працюю в школі. (це вже сказано)', correct: false),
+        ]),
       ]),
       Dialogue('Töötan kokana', [
         DSay('Mis tööd sa teed?', 'Яку роботу ти робиш?'),
-        DAsk('Скажите, что работаете поваром:', [
+        DAsk('Ответьте:', [
           DChoice('Ma töötan kokana.', 'Я працюю кухарем.'),
-          DChoice('Ma töötan kokk.', 'Я працюю кухар (без -na).',
-              correct: false,
-              followUp: [
-                DSay('Peaaegu! Õige on: kokaNA.', 'Майже! Правильно: kokaNA.'),
-              ]),
-          DChoice('Ma olen näljane.', 'Я голодний.', correct: false, followUp: [
-            DSay('Kokk ja näljane? Aga mis on sinu töö?',
-                'Кухар і голодний? То яка твоя робота?'),
-          ]),
+          DChoice('Ma olen koolis.', 'Я в школі.', correct: false),
         ]),
         DSay('Kus sa töötad kokana?', 'Де ти працюєш кухарем?'),
-        DAsk('Скажите, что в маленьком ресторане:', [
+        DAsk('Ответьте:', [
           DChoice('Ma töötan väikeses restoranis.',
               'Я працюю в маленькому ресторані.'),
-          DChoice('Ma töötan suur restoran.',
-              'Я працюю великий ресторан (без відмінка).', correct: false,
-              followUp: [
-                DSay('Õige on: suureS restoraniS.',
-                    'Правильно: suureS restoraniS.'),
-              ]),
+          DChoice('Ma töötan Maardus salongis.',
+              'Я працюю в салоні в Маарду.', correct: false),
         ]),
         DSay('Kas sa teed täna süüa?', 'Ти сьогодні готуєш їжу?'),
-        DAsk('Скажите, что готовите суп и салат:', [
+        DAsk('Ответьте:', [
           DChoice('Jah, täna ma teen suppi ja salatit.',
               'Так, сьогодні я готую суп і салат.'),
-          DChoice('Ei, ma söön ainult.', 'Ні, я тільки їм.', correct: false,
-              followUp: [
-                DSay('Kokk, kes ainult sööb? Naljakas!',
-                    'Кухар, який тільки їсть? Смішно!'),
-              ]),
+          DChoice('Jah, täna on kolm klienti.', 'Так, сьогодні три клієнти.',
+              correct: false),
         ]),
-        DSay('Head isu sinu klientidele!', 'Смачного твоїм клієнтам!'),
       ]),
       Dialogue('Kodulinn', [
         DSay('Mis on sinu kodulinn?', 'Яке твоє рідне місто?'),
-        DAsk('Назовите родной город:', [
-          DChoice('Minu kodulinn on Berdjansk.', 'Моє рідне місто — Бердянськ.'),
-          DChoice('Minu kodulinn on soe.', 'Моє рідне місто — тепле.',
-              correct: false,
-              followUp: [
-                DSay('Soe — see on ilm. Aga mis linn?',
-                    'Тепле — це погода. А яке місто?'),
-              ]),
+        DAsk('Ответьте:', [
+          DChoice('Minu kodulinn on Berdjansk.',
+              'Моє рідне місто — Бердянськ.'),
+          DChoice('Ma kolisin Eestisse.', 'Я переїхав до Естонії.',
+              correct: false),
         ]),
         DSay('Kas sa igatsed seda linna?', 'Ти сумуєш за цим містом?'),
-        DAsk('Ответьте искренне:', [
+        DAsk('Ответьте:', [
           DChoice('Jah, mõnikord ma mõtlen Berdjanskile.',
               'Так, іноді я думаю про Бердянськ.'),
-          DChoice('Mis linn?', 'Яке місто?', correct: false, followUp: [
-            DSay('Sinu kodulinn! Sa just rääkisid sellest.',
-                'Твоє рідне місто! Ти щойно про нього казав.'),
-          ]),
+          DChoice('Jah, ema ja õde elavad seal.',
+              'Так, мама і сестра живуть там.', correct: false),
         ]),
-        DSay('Ma mõistan sind. Kodulinn jääb alati südamesse.',
-            'Я тебе розумію. Рідне місто завжди в серці.'),
       ]),
-      Dialogue('Pood ja tarne', [
-        DSay('Tere! Teie tellimus on valmis.', 'Добрий день! Ваше замовлення готове.'),
-        DAsk('Спросите, сколько это стоит:', [
-          DChoice('Kui palju see maksab?', 'Скільки це коштує?'),
-          DChoice('Millal te tulete?', 'Коли ви приїдете?', correct: false,
-              followUp: [
-                DSay('Meie ei tule — kaup on siin. Küsige hinda!',
-                    'Ми не приїдемо — товар тут. Спитайте ціну!'),
-              ]),
+      Dialogue('Ma kolisin Eestisse', [
+        DSay('Kuhu sa kolisid?', 'Куди ти переїхав?'),
+        DAsk('Ответьте:', [
+          DChoice('Ma kolisin Eestisse.', 'Я переїхав до Естонії.'),
+          DChoice('Ma elan Eestis.', 'Я живу в Естонії.', correct: false),
         ]),
-        DSay('See maksab kakskümmend eurot.', 'Це коштує двадцять євро.'),
-        DAsk('Спросите про оплату картой:', [
-          DChoice('Kas ma saan maksta kaardiga?', 'Чи можу я заплатити карткою?'),
-          DChoice('Kas te maksate mulle?', 'Ви мені заплатите?', correct: false,
-              followUp: [
-                DSay('Ei-ei, teie maksate meile!', 'Ні-ні, це ви платите нам!'),
-              ]),
+        DSay('Millal sa kolisid?', 'Коли ти переїхав?'),
+        DAsk('Ответьте:', [
+          DChoice('Ma kolisin eelmisel aastal.', 'Я переїхав минулого року.'),
+          DChoice('Ma helistan Eestist.', 'Я телефоную з Естонії.',
+              correct: false),
         ]),
-        DSay('Jah, muidugi. Kas soovite arvet?',
-            'Так, звісно. Бажаєте рахунок?'),
-        DAsk('Попросите чек и доставку:', [
-          DChoice('Jah, palun. Ja kas tarne on tasuta?',
-              'Так, будь ласка. І чи доставка безкоштовна?'),
-          DChoice('Ei mingit arvet!', 'Жодного рахунку!', correct: false,
-              followUp: [
-                DSay('Nagu soovite. Aga tarne kohta — see on tasuta.',
-                    'Як бажаєте. А доставка — безкоштовна.'),
-              ]),
+      ]),
+      Dialogue('Eesti — Eestisse, Eestis, Eestist', [
+        DSay('Kus sa elad?', 'Де ти живеш?'),
+        DAsk('Ответьте (Kus? → -s):', [
+          DChoice('Ma elan Eestis.', 'Я живу в Естонії.'),
+          DChoice('Ma kolin Eestisse.', 'Я переїжджаю до Естонії.',
+              correct: false),
+          DChoice('Ma helistan Eestist.', 'Я телефоную з Естонії.',
+              correct: false),
         ]),
-        DSay('Tarne on tasuta. Pakk jõuab homme kohale!',
-            'Доставка безкоштовна. Посилка прибуде завтра!'),
+        DSay('Kust sa helistad?', 'Звідки ти телефонуєш?'),
+        DAsk('Ответьте (Kust? → -st):', [
+          DChoice('Ma helistan Eestist.', 'Я телефоную з Естонії.'),
+          DChoice('Ma elan Eestis.', 'Я живу в Естонії.', correct: false),
+        ]),
+        DSay('Kas sa kolid siia päriselt?', 'Ти переїжджаєш сюди назавжди?'),
+        DAsk('Ответьте (Kuhu? → -sse):', [
+          DChoice('Jah, ma kolin Eestisse.', 'Так, я переїжджаю до Естонії.'),
+          DChoice('Jah, mõnikord ma käin Ukrainas.',
+              'Так, інколи я їжджу до України.', correct: false),
+        ]),
       ]),
     ],
   ),
@@ -432,92 +364,83 @@ const List<Lesson> lessonsPart1 = [
       ]),
     ],
     dialogues: [
-      Dialogue('Rahamõistatus', [
+      Dialogue('Kaks eurot pluss viis eurot', [
         DSay('Tere! Mul on väike rahamõistatus.',
             'Привіт! У мене маленька грошова загадка.'),
-        DAsk('Попросите загадку:', [
+        DAsk('Ваша реплика:', [
           DChoice('Ohoo, räägi!', 'Ого, кажи!'),
-          DChoice('Ei taha.', 'Не хочу.', correct: false, followUp: [
-            DSay('Noo, see on lihtne ja lõbus. Proovi!',
-                'Ну, вона проста і весела. Спробуй!'),
-          ]),
+          DChoice('See on seitse eurot.', 'Це сім євро. (зарано!)',
+              correct: false),
         ]),
         DSay('Kui palju on kaks eurot pluss viis eurot?',
             'Скільки буде два євро плюс п’ять євро?'),
         DAsk('Посчитайте:', [
           DChoice('See on seitse eurot.', 'Це сім євро.'),
-          DChoice('See on kuus eurot.', 'Це шість євро.', correct: false,
-              followUp: [
-                DSay('Loe uuesti: kaks pluss viis on seitse!',
-                    'Порахуй ще раз: два плюс п’ять — сім!'),
-              ]),
-          DChoice('See on üheksa eurot.', 'Це дев’ять євро.', correct: false,
-              followUp: [
-                DSay('Liiga palju! Kaks pluss viis on seitse.',
-                    'Забагато! Два плюс п’ять — сім.'),
-              ]),
+          DChoice('See on neli.', 'Це чотири.', correct: false),
+          DChoice('See on kolmteist.', 'Це тринадцять.', correct: false),
         ]),
-        DSay('Just! Siis ma saan jäätise osta. Jäätis maksab kaks eurot.',
-            'Точно! Тоді я куплю морозиво. Воно коштує два євро.'),
-        DAsk('Сколько останется?', [
-          DChoice('Siis jääb veel viis eurot alles!',
-              'Тоді залишиться ще п’ять євро!'),
-          DChoice('Siis ei jää midagi alles.', 'Тоді нічого не залишиться.',
-              correct: false,
-              followUp: [
-                DSay('Kuidas? Seitse miinus kaks on viis!',
-                    'Як це? Сім мінус два — п’ять!'),
-              ]),
+        DSay('Seitse eurot? Kas oled kindel?', 'Сім євро? Ти впевнений?'),
+        DAsk('Подтвердите:', [
+          DChoice('Jah, täiesti kindel.', 'Так, абсолютно впевнений.'),
+          DChoice('See on neli.', 'Це чотири.', correct: false),
         ]),
-        DSay('Tubli! Sa oskad hästi arvutada.', 'Молодець! Ти добре рахуєш.'),
+        DSay('Hea, siis ma saan jäätise osta.',
+            'Добре, тоді я можу купити морозиво.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Jäätis maksab ju ainult kaks eurot.',
+              'Морозиво коштує лише два євро.'),
+          DChoice('Kaks pluss kaks on neli.', 'Два плюс два — чотири.',
+              correct: false),
+        ]),
+        DSay('Siis jääb veel viis eurot alles!',
+            'Тоді залишиться ще п’ять євро!'),
       ]),
-      Dialogue('Liftis', [
-        DSay('Lift ütleb: «See on esimene korrus. Uksed avanevad.»',
-            'Ліфт каже: «Це перший поверх. Двері відчиняються.»'),
-        DAsk('Спросите, кто живёт на первом этаже:', [
-          DChoice('Kes elab esimesel korrusel?', 'Хто живе на першому поверсі?'),
-          DChoice('Kes elab esimene korrus?',
-              'Хто живе перший поверх (без відмінка)?', correct: false,
-              followUp: [
-                DSay('Õige on: esimeseL korruseL.',
-                    'Правильно: esimeseL korruseL.'),
-              ]),
+      Dialogue('Kaks pluss kaks', [
+        DSay('Teeme natuke matemaatikat.', 'Давай трохи математики.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Hästi, alusta.', 'Добре, починай.'),
+          DChoice('See on neli.', 'Це чотири. (зарано!)', correct: false),
         ]),
-        DSay('Siin elab Toomas. Sõidame edasi — teine korrus!',
-            'Тут живе Тоомас. Їдемо далі — другий поверх!'),
-        DAsk('Спросите про второй этаж:', [
-          DChoice('Kes elab teisel korrusel?', 'Хто живе на другому поверсі?'),
-          DChoice('Mis kell on?', 'Котра година?', correct: false, followUp: [
-            DSay('Kell? Me räägime korrustest!',
-                'Година? Ми говоримо про поверхи!'),
-          ]),
+        DSay('Kui palju on kaks pluss kaks?', 'Скільки буде два плюс два?'),
+        DAsk('Посчитайте:', [
+          DChoice('See on neli.', 'Це чотири.'),
+          DChoice('See on kolmteist.', 'Це тринадцять.', correct: false),
+          DChoice('See on seitse eurot.', 'Це сім євро.', correct: false),
         ]),
-        DSay('Teisel korrusel elab Mari. Tal on väike koer. Ja üheteistkümnendal korrusel elame meie!',
-            'На другому поверсі живе Марі. У неї маленький пес. А на одинадцятому живемо ми!'),
+        DSay('Neli on lihtne number.', 'Чотири — просте число.'),
+        DAsk('Предложите посложнее:', [
+          DChoice('Kas tahad raskemat?', 'Хочеш складніше?'),
+          DChoice('Hästi, alusta.', 'Добре, починай. (це вже сказано)',
+              correct: false),
+        ]),
+        DSay('Jah, näiteks neli pluss üheksa.',
+            'Так, наприклад, чотири плюс дев’ять.'),
+        DAsk('Посчитайте:', [
+          DChoice('See on kolmteist.', 'Це тринадцять.'),
+          DChoice('See on neli.', 'Це чотири.', correct: false),
+        ]),
       ]),
-      Dialogue('Kus on kolmas klass?', [
-        DSay('Tere! Kas ma saan aidata?', 'Привіт! Можу допомогти?'),
-        DAsk('Спросите, где первая школа:', [
-          DChoice('Kus on esimene kool?', 'Де перша школа?'),
-          DChoice('Kus on üks kool?', 'Де один школа?', correct: false,
-              followUp: [
-                DSay('Järjekorranumber on «esimene», mitte «üks».',
-                    'Порядковий — «esimene», а не «üks».'),
-              ]),
+      Dialogue('Kolmkümmend grivnat', [
+        DSay('Mul on järgmine arvutus.', 'У мене наступний розрахунок.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Noh, mis see on?', 'Ну, що там?'),
+          DChoice('Päris suur summa.', 'Досить велика сума. (зарано!)',
+              correct: false),
         ]),
-        DSay('Esimene kool on siin. Ja seal on teine kool — kool number kaks.',
-            'Перша школа тут. А там друга школа — школа номер два.'),
-        DAsk('Спросите, где третий класс:', [
-          DChoice('Kus on kolmas klass?', 'Де третій клас?'),
-          DChoice('Kus on klass kolm-neli-viis?', 'Де клас три-чотири-п’ять?',
-              correct: false,
-              followUp: [
-                DSay('Üks klass korraga! Kolmas klass on sööklas.',
-                    'По одному класу! Третій клас у їдальні.'),
-              ]),
+        DSay('Kui palju on kolmkümmend grivnat pluss kolmsada kolmkümmend grivnat?',
+            'Скільки буде тридцять гривень плюс триста тридцять гривень?'),
+        DAsk('Посчитайте:', [
+          DChoice('See on kolmsada kuuskümmend grivnat.',
+              'Це триста шістдесят гривень.'),
+          DChoice('See on seitse eurot.', 'Це сім євро.', correct: false),
         ]),
-        DSay('Kolmas klass on sööklas, koridori lõpus.',
-            'Третій клас у їдальні, в кінці коридору.'),
+        DSay('Päris suur summa.', 'Досить велика сума.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Jah, selle eest saab juba kingad osta.',
+              'Так, за це вже можна купити взуття.'),
+          DChoice('See on neli.', 'Це чотири.', correct: false),
+        ]),
+        DSay('Või kaks suurt pitsat!', 'Або дві великі піци!'),
       ]),
     ],
   ),
@@ -587,72 +510,7 @@ const List<Lesson> lessonsPart1 = [
         ],
       ),
     ],
-    dialogues: [
-      Dialogue('Registratuuris', [
-        DSay('Tere! Kuidas saan aidata?', 'Добрий день! Чим можу допомогти?'),
-        DAsk('Скажите, что у вас время к семейному врачу:', [
-          DChoice('Tere! Mul on täna perearsti aeg.',
-              'Добрий день! У мене сьогодні час до сімейного лікаря.'),
-          DChoice('Tere! Ma tahan süüa.', 'Добрий день! Я хочу їсти.',
-              correct: false,
-              followUp: [
-                DSay('See on polikliinik, mitte kohvik!',
-                    'Це поліклініка, а не кафе!'),
-              ]),
-          DChoice('Head aega!', 'До побачення!', correct: false, followUp: [
-            DSay('Juba lähete? Aga arsti aeg?', 'Вже йдете? А час до лікаря?'),
-          ]),
-        ]),
-        DSay('Võtke palun järjekorranumber.',
-            'Візьміть, будь ласка, номер черги.'),
-        DAsk('Спросите, во сколько приём:', [
-          DChoice('Mis kell on vastuvõtt?', 'О котрій прийом?'),
-          DChoice('Mis kell on lõuna?', 'О котрій обід?', correct: false,
-              followUp: [
-                DSay('Lõuna? Teie vastuvõtt on kell kümme!',
-                    'Обід? Ваш прийом о десятій!'),
-              ]),
-        ]),
-        DSay('Kell kümme. Perearst on teisel korrusel.',
-            'О десятій. Сімейний лікар на другому поверсі.'),
-        DAsk('Уточните, где рентген:', [
-          DChoice('Aga kus tehakse röntgenit?', 'А де роблять рентген?'),
-          DChoice('Kus on psühholoog magab?', 'Де психолог спить?',
-              correct: false,
-              followUp: [
-                DSay('Psühholoog töötab viiendal! Röntgen on neljandal korrusel.',
-                    'Психолог працює на п’ятому! Рентген на четвертому.'),
-              ]),
-        ]),
-        DSay('Röntgen on neljandal korrusel. Head päeva!',
-            'Рентген на четвертому поверсі. Гарного дня!'),
-      ]),
-      Dialogue('Arsti juures', [
-        DSay('Tere, tulge sisse! Mis teid vaevab?',
-            'Добрий день, заходьте! Що вас турбує?'),
-        DAsk('Скажите, что болит горло:', [
-          DChoice('Tere! Mul on kurk haige.', 'Добрий день! У мене болить горло.'),
-          DChoice('Tere! Mul on kõik hästi.', 'Добрий день! У мене все добре.',
-              correct: false,
-              followUp: [
-                DSay('Kõik hästi? Miks te siis arsti juures olete?',
-                    'Все добре? Чому ж ви тоді у лікаря?'),
-              ]),
-        ]),
-        DSay('Vaatame… Teil on vaja kõrva-nina-kurguarsti. Ta võtab vastu kolmapäeval.',
-            'Подивимось… Вам потрібен ЛОР. Він приймає в середу.'),
-        DAsk('Переспросите день:', [
-          DChoice('Kas kolmapäeval? Mis kell?', 'У середу? О котрій годині?'),
-          DChoice('Kas pühapäeval öösel?', 'У неділю вночі?', correct: false,
-              followUp: [
-                DSay('Öösel polikliinik ei tööta! Kolmapäeval kell kaksteist.',
-                    'Вночі поліклініка не працює! У середу о дванадцятій.'),
-              ]),
-        ]),
-        DSay('Kolmapäeval kell kaksteist. Terveks saamiseni!',
-            'У середу о дванадцятій. Одужуйте!'),
-      ]),
-    ],
+    dialogues: [],
   ),
 
   // ---------------------------------------------------------------- L5
@@ -690,42 +548,7 @@ const List<Lesson> lessonsPart1 = [
         Sent('Peeglis on viis mind.', 'У дзеркалі п’ять «мене» (відображень).'),
       ]),
     ],
-    dialogues: [
-      Dialogue('Kus sa oled?', [
-        DSay('Halloo! Kus sa oled? Ma helistan juba kolmandat korda!',
-            'Алло! Де ти? Я дзвоню вже втретє!'),
-        DAsk('Скажите, что вас нет дома:', [
-          DChoice('Vabandust! Mind ei ole kodus.', 'Вибач! Мене немає вдома.'),
-          DChoice('Mina ei ole kodus.', 'Я не є вдома (невірна форма).',
-              correct: false,
-              followUp: [
-                DSay('Eituses on õige: MIND ei ole kodus.',
-                    'У запереченні правильно: MIND ei ole kodus.'),
-              ]),
-        ]),
-        DSay('Aga kust sa tuled?', 'А звідки ти йдеш?'),
-        DAsk('Скажите, что выходите из комнаты (учебной):', [
-          DChoice('Ma tulen toast, meil oli tund.',
-              'Я виходжу з кімнати, у нас був урок.'),
-          DChoice('Ma tulen tuba.', 'Я виходжу кімната (без відмінка).',
-              correct: false,
-              followUp: [
-                DSay('Kust? — toaST! Sina tuled toast.',
-                    'Звідки? — toaST! Ти виходиш з кімнати.'),
-              ]),
-        ]),
-        DSay('Selge! Kas su uus tuba on hea?', 'Ясно! Твоя нова кімната хороша?'),
-        DAsk('Скажите, что довольны комнатой:', [
-          DChoice('Jah, ma olen toaga rahul.', 'Так, я задоволений кімнатою.'),
-          DChoice('Jah, ma olen tuba rahul.',
-              'Так, я задоволений кімната (без відмінка).', correct: false,
-              followUp: [
-                DSay('Millega rahul? — toaGA!', 'Чим задоволений? — toaGA!'),
-              ]),
-        ]),
-        DSay('Suurepärane! Näeme õhtul.', 'Чудово! Побачимось увечері.'),
-      ]),
-    ],
+    dialogues: [],
   ),
 
   // ---------------------------------------------------------------- L6
@@ -781,61 +604,112 @@ const List<Lesson> lessonsPart1 = [
       ),
     ],
     dialogues: [
-      Dialogue('Naabrid trepikojas', [
-        DSay('Tere! Kuidas teil täna läheb?', 'Привіт! Як у вас сьогодні справи?'),
-        DAsk('Ответьте и расскажите про кота:', [
-          DChoice('Tere! Meil läheb hästi. Miisu magas terve hommiku.',
-              'Привіт! У нас все добре. Міісу спала весь ранок.'),
-          DChoice('Kes te olete?', 'Хто ви такі?', correct: false, followUp: [
-            DSay('Mina olen Helmi, teie naaber esimeselt korruselt!',
-                'Я Гельмі, ваша сусідка з першого поверху!'),
-          ]),
-          DChoice('Halvasti. Head aega.', 'Погано. До побачення.',
-              correct: false,
-              followUp: [
-                DSay('Oi… Kas ma saan kuidagi aidata?',
-                    'Ой… Можу якось допомогти?'),
-              ]),
+      Dialogue('Helmi ja Anna (1. ja 2. korrus)', [
+        DSay('Tere, Anna! Kuidas teil täna läheb?',
+            'Привіт, Анно! Як у вас сьогодні справи?'),
+        DAsk('Ответьте за Анну:', [
+          DChoice('Tere, Helmi! Meil läheb hästi. Miisu magas terve hommiku.',
+              'Привіт, Гельмі! У нас все добре. Міісу спала весь ранок.'),
+          DChoice('Tere! Jah, ta mängis hommikul Markusega.',
+              'Привіт! Так, він грався з Маркусом вранці.', correct: false),
         ]),
         DSay('Lumi ka magas. Ta istus aknal ja vaatas linde.',
             'Лумі теж спала. Вона сиділа на підвіконні й дивилася на птахів.'),
-        DAsk('Спросите, пойдёт ли соседка гулять:', [
+        DAsk('Ваша реплика:', [
           DChoice('Väga armas. Kas te täna õue lähete?',
               'Дуже мило. Ви сьогодні підете надвір?'),
-          DChoice('Kas kass oskab lennata?', 'Кіт вміє літати?', correct: false,
-              followUp: [
-                DSay('Lennata? Ei! Aga jalutama me läheme.',
-                    'Літати? Ні! Але гуляти ми підемо.'),
-              ]),
+          DChoice('Siis näeme aias!', 'Тоді побачимося в саду! (зарано)',
+              correct: false),
         ]),
-        DSay('Jah, natuke jalutan. Lumi tuleb ka kaasa. Siis näeme aias!',
-            'Так, трохи прогуляюся. Лумі піде зі мною. Побачимося в саду!'),
+        DSay('Jah, natuke jalutan. Lumi tuleb ka kaasa.',
+            'Так, трохи прогуляюся. Лумі піде зі мною.'),
+        DAsk('Попрощайтесь:', [
+          DChoice('Siis näeme aias!', 'Тоді побачимося в саду!'),
+          DChoice('Kuidas teil täna läheb?', 'Як у вас справи? (це вже було)',
+              correct: false),
+        ]),
       ]),
-      Dialogue('Koer ja kass', [
-        DSay('Tere, naaber! Kas Bruno on täna rahulik?',
-            'Привіт, сусіде! Бруно сьогодні спокійний?'),
-        DAsk('Ответьте про собаку:', [
+      Dialogue('Toomas ja Marko (2. ja 3. korrus)', [
+        DSay('Tere, Marko! Kas Bruno on täna rahulik?',
+            'Привіт, Марко! Бруно сьогодні спокійний?'),
+        DAsk('Ответьте за Марко:', [
           DChoice('Tere! Jah, ta mängis hommikul Markusega.',
               'Привіт! Так, він грався з Маркусом вранці.'),
-          DChoice('Bruno on kass.', 'Бруно — кіт.', correct: false, followUp: [
-            DSay('Bruno on ju suur pruun koer!',
-                'Бруно ж великий коричневий пес!'),
-          ]),
+          DChoice('Tere, Peeter! Jah, ta sai väikese tüki.',
+              'Привіт, Пеетере! Так, вона отримала шматочок.',
+              correct: false),
         ]),
-        DSay('Väga hea. Meie Miisu natuke kardab Bruno häält.',
-            'Дуже добре. Наша Міісу трохи боїться голосу Бруно.'),
-        DAsk('Успокойте соседа:', [
-          DChoice('Bruno lihtsalt tahab sõbrustada. Võime nad rahulikult kokku viia.',
-              'Бруно просто хоче дружити. Можемо їх спокійно познайомити.'),
-          DChoice('Teie kass on liiga arg!', 'Ваша кішка занадто боязка!',
-              correct: false,
-              followUp: [
-                DSay('Palun ärge öelge nii… Aga proovime neid kokku viia.',
-                    'Не кажіть так, будь ласка… Але спробуймо їх познайомити.'),
-              ]),
+        DSay('Väga hea. Miisu natuke kardab Bruno häält.',
+            'Дуже добре. Міісу трохи боїться голосу Бруно.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Bruno lihtsalt tahab sõbrustada.',
+              'Бруно просто хоче дружити.'),
+          DChoice('Hea mõte!', 'Гарна ідея! (зарано)', correct: false),
         ]),
-        DSay('Hea mõte! Teeme seda laupäeval aias.',
-            'Гарна ідея! Зробимо це в суботу в саду.'),
+        DSay('Ma tean. Võime proovida neid rahulikult kokku viia.',
+            'Я знаю. Можемо спробувати познайомити їх спокійно.'),
+        DAsk('Согласитесь:', [
+          DChoice('Hea mõte!', 'Гарна ідея!'),
+          DChoice('Bruno lihtsalt tahab sõbrustada.',
+              'Бруно просто хоче дружити. (це вже сказано)', correct: false),
+        ]),
+      ]),
+      Dialogue('Peeter ja Helmi (6. ja 1. korrus)', [
+        DSay('Tere, Helmi! Kas Lumi sai täna maiustuse?',
+            'Привіт, Гельмі! Лумі сьогодні отримала ласощі?'),
+        DAsk('Ответьте за Хельми:', [
+          DChoice('Tere, Peeter! Jah, ta sai väikese tüki.',
+              'Привіт, Пеетере! Так, вона отримала маленький шматочок.'),
+          DChoice('Meil läheb hästi. Miisu magas terve hommiku.',
+              'У нас все добре. Міісу спала весь ранок.', correct: false),
+        ]),
+        DSay('Väga hea. Ta on nii armas kass.',
+            'Дуже добре. Вона така мила кішка.'),
+        DAsk('Поблагодарите:', [
+          DChoice('Aitäh! Te olete alati lahke loomadega.',
+              'Дякую! Ви завжди добрі до тварин.'),
+          DChoice('Täiesti nõus.', 'Повністю згодна. (зарано)',
+              correct: false),
+        ]),
+        DSay('Loomad teevad maja rõõmsaks.',
+            'Тварини роблять будинок радісним.'),
+        DAsk('Согласитесь:', [
+          DChoice('Täiesti nõus.', 'Повністю згодна.'),
+          DChoice('Aitäh! Te olete alati lahke loomadega.',
+              'Дякую! (це вже сказано)', correct: false),
+        ]),
+      ]),
+      Dialogue('Korrused ja aknad', [
+        DSay('Mitmendal korrusel on sinu korter?',
+            'На якому поверсі твоя квартира?'),
+        DAsk('Ответьте за Карла:', [
+          DChoice('Minu korter on teisel korrusel.',
+              'Моя квартира на другому поверсі.'),
+          DChoice('Jah, minu toas on kaks suurt akent.',
+              'Так, у моїй кімнаті два великі вікна.', correct: false),
+        ]),
+        DSay('Kas sul on suured aknad?', 'У тебе великі вікна?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, minu toas on kaks suurt akent.',
+              'Так, у моїй кімнаті два великі вікна.'),
+          DChoice('Jah, mulle meeldib minu tuba.',
+              'Так, мені подобається моя кімната.', correct: false),
+        ]),
+        DSay('Kas sa näed õue hästi?', 'Тобі добре видно двір?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, ma näen aeda ja mänguväljakut.',
+              'Так, я бачу сад і майданчик.'),
+          DChoice('Minu korter on teisel korrusel.',
+              'Моя квартира на другому поверсі. (це вже сказано)',
+              correct: false),
+        ]),
+        DSay('See on tore.', 'Це чудово.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Jah, mulle meeldib minu tuba.',
+              'Так, мені подобається моя кімната.'),
+          DChoice('Kas sa näed õue hästi?', 'Тобі добре видно двір?',
+              correct: false),
+        ]),
       ]),
     ],
   ),
@@ -897,43 +771,107 @@ const List<Lesson> lessonsPart1 = [
       ]),
     ],
     dialogues: [
-      Dialogue('Külaline vaatab korterit', [
-        DSay('Ohoo, kui ilus korter! Mitu tuba sul on?',
-            'Ого, яка гарна квартира! Скільки в тебе кімнат?'),
-        DAsk('Скажите про три комнаты и балкон:', [
-          DChoice('Minul on kolmetoaline korter rõduga.',
-              'У мене трикімнатна квартира з балконом.'),
-          DChoice('Minul on kolm rõdu toaga.',
-              'У мене три балкони з кімнатою.', correct: false,
-              followUp: [
-                DSay('Kolm rõdu? Vist ikka kolm tuba ja üks rõdu!',
-                    'Три балкони? Мабуть, все ж три кімнати і один балкон!'),
-              ]),
+      Dialogue('Mitu tuba?', [
+        DSay('Mitu tuba sul kodus on?', 'Скільки кімнат у тебе вдома?'),
+        DAsk('Ответьте за Расмуса:', [
+          DChoice('Meil on viis tuba.', 'У нас п’ять кімнат.'),
+          DChoice('Jah, mul on oma tuba.', 'Так, у мене є своя кімната.',
+              correct: false),
         ]),
-        DSay('Mis on sinu lemmiktuba?', 'Яка твоя улюблена кімната?'),
-        DAsk('Расскажите про гостиную:', [
-          DChoice('Elutuba! Seal on suur diivan, vaip ja rohelised kardinad.',
-              'Вітальня! Там великий диван, килим і зелені штори.'),
-          DChoice('Kelder. Seal on pime ja külm.',
-              'Підвал. Там темно і холодно.', correct: false,
-              followUp: [
-                DSay('Kelder?! No igaühel oma maitse…',
-                    'Підвал?! Ну, у кожного свій смак…'),
-              ]),
+        DSay('Mis toad teil on?', 'Які кімнати у вас є?'),
+        DAsk('Перечислите:', [
+          DChoice('Köök, WC, vannituba, elutuba ja kolm magamistuba.',
+              'Кухня, туалет, ванна, вітальня і три спальні.'),
+          DChoice('Meil on viis tuba.',
+              'У нас п’ять кімнат. (це вже сказано)', correct: false),
         ]),
-        DSay('Aga mida sa rõdul teed?', 'А що ти робиш на балконі?'),
-        DAsk('Скажите, что там хорошо пить кофе и читать:', [
-          DChoice('Seal on hea kohvi juua ja raamatut lugeda.',
-              'Там добре пити каву і читати книгу.'),
-          DChoice('Seal on hea kohvi lugeda ja raamatut juua.',
-              'Там добре читати каву і пити книгу.', correct: false,
-              followUp: [
-                DSay('Raamatut juua? Vastupidi: kohvi juua, raamatut lugeda!',
-                    'Пити книгу? Навпаки: каву пити, книгу читати!'),
-              ]),
+        DSay('Kas sul on oma tuba?', 'У тебе є своя кімната?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, mul on oma tuba.', 'Так, у мене є своя кімната.'),
+          DChoice('Jah, seal ma teen kodutöid.',
+              'Так, там я роблю домашні завдання.', correct: false),
         ]),
-        DSay('Kõlab suurepäraselt! Kutsud mind kohvile?',
-            'Звучить чудово! Запросиш мене на каву?'),
+        DSay('Kas see on suur?', 'Вона велика?'),
+        DAsk('Ответьте:', [
+          DChoice('Ei, see on väike, aga hubane.',
+              'Ні, вона маленька, але затишна.'),
+          DChoice('Jah, sinna mahub kuus inimest.',
+              'Так, туди вміщається шість людей.', correct: false),
+        ]),
+        DSay('Kas sul on kirjutuslaud?', 'У тебе є письмовий стіл?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, seal ma teen kodutöid.',
+              'Так, там я роблю домашні завдання.'),
+          DChoice('Ei, see on väike, aga hubane.',
+              'Ні, вона маленька, але затишна.', correct: false),
+        ]),
+      ]),
+      Dialogue('Korter ja rõdu', [
+        DSay('Kas sa elad majas või korteris?',
+            'Ти живеш у будинку чи в квартирі?'),
+        DAsk('Ответьте за Марка:', [
+          DChoice('Ma elan korteris.', 'Я живу в квартирі.'),
+          DChoice('Jah, meil on väike rõdu.', 'Так, у нас маленький балкон.',
+              correct: false),
+        ]),
+        DSay('Mitmendal korrusel teie korter on?',
+            'На якому поверсі ваша квартира?'),
+        DAsk('Ответьте:', [
+          DChoice('Meie korter on kolmandal korrusel.',
+              'Наша квартира на третьому поверсі.'),
+          DChoice('Ma elan korteris.',
+              'Я живу в квартирі. (це вже сказано)', correct: false),
+        ]),
+        DSay('Kas teil on rõdu?', 'У вас є балкон?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, meil on väike rõdu.', 'Так, у нас маленький балкон.'),
+          DChoice('Jah, ma joon seal limonaadi.',
+              'Так, я п’ю там лимонад.', correct: false),
+        ]),
+        DSay('Kas sa istud seal suvel?', 'Ти сидиш там влітку?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, ma joon seal limonaadi.', 'Так, я п’ю там лимонад.'),
+          DChoice('Meie korter on kolmandal korrusel.',
+              'Наша квартира на третьому поверсі.', correct: false),
+        ]),
+        DSay('See kõlab hästi.', 'Звучить добре.'),
+        DAsk('Ваша реплика:', [
+          DChoice('Jah, mulle meeldib rõdu.',
+              'Так, мені подобається балкон.'),
+          DChoice('Kas teil on rõdu?', 'У вас є балкон?', correct: false),
+        ]),
+      ]),
+      Dialogue('Elutuba', [
+        DSay('Kus te tavaliselt istute?', 'Де ви зазвичай сидите?'),
+        DAsk('Ответьте за Эмму:', [
+          DChoice('Me istume elutoas.', 'Ми сидимо у вітальні.'),
+          DChoice('Jah, suur hall diivan.', 'Так, великий сірий диван.',
+              correct: false),
+        ]),
+        DSay('Kas teil on diivan?', 'У вас є диван?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, suur hall diivan.', 'Так, великий сірий диван.'),
+          DChoice('Jah, iga õhtu.', 'Так, щовечора.', correct: false),
+        ]),
+        DSay('Kas te vaatate seal televiisorit?',
+            'Ви дивитесь там телевізор?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, iga õhtu.', 'Так, щовечора.'),
+          DChoice('Jah, nurgas.', 'Так, у кутку.', correct: false),
+        ]),
+        DSay('Kas sul on oma koht diivanil?',
+            'У тебе є своє місце на дивані?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, nurgas.', 'Так, у кутку.'),
+          DChoice('Me istume elutoas.',
+              'Ми сидимо у вітальні. (це вже сказано)', correct: false),
+        ]),
+        DSay('Kas su kass istub ka seal?', 'Твій кіт теж там сидить?'),
+        DAsk('Ответьте:', [
+          DChoice('Jah, ta magab minu kõrval.', 'Так, він спить поруч зі мною.'),
+          DChoice('Jah, iga õhtu.', 'Так, щовечора. (це вже сказано)',
+              correct: false),
+        ]),
       ]),
     ],
   ),
