@@ -41,7 +41,27 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }}
+
+      # Подпись ПОСТОЯННЫМ ключом: каждый новый APK ставится поверх старого
+      # как обновление. Если в Secrets задан KULLER_KEYSTORE_BASE64 (+ _PASSWORD),
+      # используется он; иначе — ключ из репозитория (signing/upload.jks).
+      - name: Sign APK with persistent key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KULLER_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KULLER_KEYSTORE_PASSWORD }}
+        run: |
+          KS=signing/upload.jks
+          PASS=eestikeel2026
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            KS="$RUNNER_TEMP/upload.jks"
+            PASS="$KEYSTORE_PASSWORD"
+          fi
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          "$BT/apksigner" sign --ks "$KS" --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            build/app/outputs/flutter-apk/app-release.apk
+          "$BT/apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | head -4
 
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk build/kuller.apk
