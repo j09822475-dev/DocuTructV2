@@ -294,7 +294,8 @@ class _DialoguesTab extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       children: [
         Text('Диалог строится по ходу: собеседник пишет — вы выбираете ответ, '
-            'и разговор развивается дальше.',
+            'и разговор развивается дальше. Каждый диалог проходится в два '
+            'этапа: сначала за одну роль, потом за другую.',
             style: TextStyle(
                 fontSize: 13, color: scheme.onSurface.withOpacity(0.65))),
         const SizedBox(height: 10),
@@ -325,7 +326,7 @@ class _DialoguesTab extends StatelessWidget {
                                   fontSize: 15,
                                   color: scheme.onSurface)),
                           Text(
-                              '${d.turns.whereType<DAsk>().length} выборов реплик',
+                              '2 этапа · ${d.turns.whereType<DAsk>().length} выборов реплик',
                               style: TextStyle(
                                   fontSize: 12,
                                   color: scheme.onSurface.withOpacity(0.6))),
@@ -369,18 +370,76 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
   final Set<DAsk> _retries = {};
   bool typing = false;
   bool finished = false;
+  int stage = 1; // 1 — вы отвечаете; 2 — вы за первого собеседника
   int asks = 0; // сколько вопросов встретили
   int firstTryCorrect = 0;
   int _gen = 0;
   final _scroll = ScrollController();
+  final _rnd = Random();
 
   LearnViewModel get vm => widget.vm;
 
   @override
   void initState() {
     super.initState();
-    queue = List.of(widget.dialogue.turns);
+    _start(1);
+  }
+
+  void _start(int newStage) {
+    _gen++;
+    setState(() {
+      stage = newStage;
+      bubbles.clear();
+      currentAsk = null;
+      finished = false;
+      typing = false;
+      asks = 0;
+      firstTryCorrect = 0;
+      isRetry = false;
+      _retries.clear();
+      queue = newStage == 1
+          ? List.of(widget.dialogue.turns)
+          : _swapRoles(widget.dialogue.turns);
+    });
     _advance();
+  }
+
+  /// Этап 2: роли меняются местами. Реплики первого собеседника становятся
+  /// выбором ученика (неверные варианты — другие его реплики из этого же
+  /// диалога), а верные ответы ученика озвучивает собеседник.
+  List<DTurn> _swapRoles(List<DTurn> orig) {
+    final pool = <DSay>[
+      for (final t in orig)
+        if (t is DSay) t,
+      for (final t in orig)
+        if (t is DAsk)
+          for (final o in t.options)
+            if (o.correct) ...o.followUp,
+    ];
+    final result = <DTurn>[];
+    void addAsk(DSay line) {
+      final distractors = pool.where((p) => p.et != line.et).toList()
+        ..shuffle(_rnd);
+      final opts = <DChoice>[
+        DChoice(line.et, line.tr),
+        for (final d in distractors.take(2))
+          DChoice(d.et, d.tr, correct: false),
+      ]..shuffle(_rnd);
+      result.add(DAsk('Теперь вы — первый собеседник. Выберите реплику:', opts));
+    }
+
+    for (final t in orig) {
+      if (t is DSay) addAsk(t);
+      if (t is DAsk) {
+        final correct = t.options.firstWhere((o) => o.correct,
+            orElse: () => t.options.first);
+        result.add(DSay(correct.et, correct.tr));
+        for (final f in correct.followUp) {
+          addAsk(f);
+        }
+      }
+    }
+    return result;
   }
 
   @override
@@ -405,15 +464,17 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
       if (turn is DSay) {
         setState(() => typing = true);
         _autoScroll();
-        await Future.delayed(const Duration(milliseconds: 900));
+        await Future.delayed(const Duration(milliseconds: 700));
         if (!mounted || gen != _gen) return;
         setState(() {
           typing = false;
           bubbles.add(_Bubble(false, turn.et, turn.tr));
         });
-        vm.speak(turn.et, speaker: 'A');
         _autoScroll();
-        await Future.delayed(const Duration(milliseconds: 350));
+        // Ждём, пока фраза прозвучит целиком, и лишь потом идём дальше
+        await vm.speakAwait(turn.et, speaker: 'A');
+        if (!mounted || gen != _gen) return;
+        await Future.delayed(const Duration(milliseconds: 250));
         if (!mounted || gen != _gen) return;
       } else if (turn is DAsk) {
         setState(() {
@@ -429,14 +490,14 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
     _autoScroll();
   }
 
-  void _choose(DChoice choice) {
+  Future<void> _choose(DChoice choice) async {
     final ask = currentAsk;
     if (ask == null) return;
     setState(() {
       bubbles.add(_Bubble(true, choice.et, choice.tr));
       currentAsk = null;
     });
-    vm.speak(choice.et, speaker: 'B');
+    _autoScroll();
     if (choice.correct) {
       if (!isRetry) firstTryCorrect++;
       queue.insertAll(0, choice.followUp);
@@ -447,6 +508,10 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
       _retries.add(retry);
       queue.insertAll(0, [...choice.followUp, retry]);
     }
+    // Ваша реплика договаривается до конца, потом отвечает собеседник
+    final gen = _gen;
+    await vm.speakAwait(choice.et, speaker: 'B');
+    if (!mounted || gen != _gen) return;
     _advance();
   }
 
@@ -459,8 +524,8 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
       appBar: AppBar(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
-        title: Text('💬 ${widget.dialogue.title}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        title: Text('💬 ${widget.dialogue.title} · этап $stage/2',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         actions: [
           ListenableBuilder(
             listenable: vm,
@@ -591,45 +656,54 @@ class _DialoguePlayerScreenState extends State<DialoguePlayerScreen> {
       children: [
         Text(
           asks > 0
-              ? 'Диалог пройден! С первой попытки: $firstTryCorrect из $asks 🎉'
-              : 'Диалог пройден! 🎉',
+              ? 'Этап $stage пройден! С первой попытки: $firstTryCorrect из $asks 🎉'
+              : 'Этап $stage пройден! 🎉',
           textAlign: TextAlign.center,
           style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: scheme.onSurface),
         ),
+        if (stage == 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('Теперь пройдите диалог за другую роль!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13, color: scheme.onSurface.withOpacity(0.7))),
+          ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () {
-                  setState(() {
-                    bubbles.clear();
-                    queue = List.of(widget.dialogue.turns);
-                    currentAsk = null;
-                    finished = false;
-                    typing = false;
-                    asks = 0;
-                    firstTryCorrect = 0;
-                    isRetry = false;
-                    _retries.clear();
-                  });
-                  _advance();
-                },
+                onPressed: () => _start(stage),
                 child: const Text('Ещё раз'),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Готово'),
-              ),
+              child: stage == 1
+                  ? FilledButton(
+                      onPressed: () => _start(2),
+                      child: const Text('Этап 2 ▶',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    )
+                  : FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Готово'),
+                    ),
             ),
           ],
         ),
+        if (stage == 2)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: OutlinedButton(
+              onPressed: () => _start(1),
+              child: const Text('Назад к этапу 1'),
+            ),
+          ),
       ],
     );
   }

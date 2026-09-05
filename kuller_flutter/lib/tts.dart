@@ -1,8 +1,7 @@
 import 'package:flutter_tts/flutter_tts.dart';
 
 /// Озвучка эстонского текста (системный TTS).
-/// Тон голоса задаётся per-фраза: курьер — базовый, клиент — выше,
-/// ресторан — ниже, поддержка — средне.
+/// Тон голоса задаётся per-фраза: собеседник — ниже, ученик — выше.
 class Speaker {
   final FlutterTts _tts = FlutterTts();
   bool _ready = false;
@@ -13,16 +12,30 @@ class Speaker {
     try {
       await _tts.setLanguage('et-EE');
       await _tts.setSpeechRate(0.5);
+      // speak() завершается только когда фраза ДОГОВОРЕНА —
+      // это позволяет диалогу ждать конца озвучки.
+      await _tts.awaitSpeakCompletion(true);
     } catch (_) {
       // Нет эстонского голоса — говорим голосом по умолчанию.
     }
   }
 
-  Future<void> speak(String text, {double pitch = 1.0}) async {
+  /// Озвучить, не дожидаясь конца (кнопки 🔊, карточки).
+  void speak(String text, {double pitch = 1.0}) {
+    speakAwait(text, pitch: pitch);
+  }
+
+  /// Озвучить и дождаться, пока фраза прозвучит целиком
+  /// (используется в диалогах, чтобы реплики не перебивали друг друга).
+  Future<void> speakAwait(String text, {double pitch = 1.0}) async {
     await _init();
     try {
       await _tts.setPitch(pitch);
-      await _tts.speak(text);
+      // Таймаут-страховка: если TTS-движок не отчитался о завершении,
+      // не подвешиваем диалог навсегда.
+      await _tts
+          .speak(text)
+          .timeout(Duration(milliseconds: 1500 + text.length * 120));
     } catch (_) {}
   }
 

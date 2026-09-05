@@ -23,11 +23,16 @@ class LearnViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  double _pitchOf(String speaker) => speaker == 'A' ? 0.9 : 1.2;
+
   /// Озвучка: собеседник A — базовый тон, B — выше (разные голоса в диалоге).
   void speak(String text, {String speaker = 'A'}) {
-    final pitch = speaker == 'A' ? 0.9 : 1.2;
-    tts.speak(text, pitch: pitch);
+    tts.speak(text, pitch: _pitchOf(speaker));
   }
+
+  /// Озвучить и дождаться конца фразы (для последовательных реплик диалога).
+  Future<void> speakAwait(String text, {String speaker = 'A'}) =>
+      tts.speakAwait(text, pitch: _pitchOf(speaker));
 
   void speakWord(String text) => tts.speak(text, pitch: 1.0);
 
