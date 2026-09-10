@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../grammar/analyzer.dart';
 import '../learn_vm.dart';
 import '../models.dart';
 import '../widgets.dart';
@@ -218,7 +219,8 @@ class _TextsTab extends StatelessWidget {
   }
 }
 
-/// Читалка текста: чтение + прослушивание целиком (с подсветкой абзаца).
+/// Читалка текста: чтение + прослушивание оригинала и перевода,
+/// нажатие на слово — разбор форм.
 class TextReaderScreen extends StatefulWidget {
   final LearnViewModel vm;
   final LessonText text;
@@ -230,6 +232,7 @@ class TextReaderScreen extends StatefulWidget {
 
 class _TextReaderScreenState extends State<TextReaderScreen> {
   bool playing = false;
+  bool playingTr = false; // играет перевод?
   int currentPara = -1;
   int _gen = 0;
   final Set<int> openAnswers = {};
@@ -245,10 +248,16 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
     super.dispose();
   }
 
-  Future<void> _playAll({int from = 0}) async {
+  Future<void> _playAll({required bool tr}) async {
     final gen = ++_gen;
-    setState(() => playing = true);
-    for (var i = from; i < widget.text.paras.length; i++) {
+    setState(() {
+      playing = true;
+      playingTr = tr;
+    });
+    for (var i = 0; i < widget.text.paras.length; i++) {
+      final p = widget.text.paras[i];
+      final phrase = tr ? p.tr : p.et;
+      if (phrase.trim().isEmpty) continue;
       if (!mounted || gen != _gen) return;
       setState(() => currentPara = i);
       final ctx = _paraKeys[i].currentContext;
@@ -256,7 +265,8 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
         Scrollable.ensureVisible(ctx,
             duration: const Duration(milliseconds: 300), alignment: 0.2);
       }
-      await vm.tts.speakAwait(widget.text.paras[i].et);
+      await vm.tts
+          .speakAwait(phrase, lang: tr ? 'uk-UA' : 'et-EE');
       if (!mounted || gen != _gen) return;
       await Future.delayed(const Duration(milliseconds: 250));
     }
@@ -276,10 +286,139 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
     });
   }
 
+  void _onWordTap(String raw) {
+    final token = raw.replaceAll(
+        RegExp(r'''[.,!?:;„“"«»()\[\]…—–]'''), '');
+    if (token.trim().isEmpty) return;
+    vm.speakWord(token);
+    final analysis = analyze(token);
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(token,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 26,
+                              color: scheme.onSurface)),
+                    ),
+                    SpeakButton(onPressed: () => vm.speakWord(token)),
+                  ],
+                ),
+                if (analysis != null) ...[
+                  Text(analysis.kindName,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurface.withOpacity(0.55))),
+                  const SizedBox(height: 10),
+                  Text('Перевод: ${analysis.lex.tr}',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface)),
+                  const SizedBox(height: 10),
+                  if (analysis.lex.kind == 'n' ||
+                      analysis.lex.kind == 'a' ||
+                      analysis.lex.kind == 'v') ...[
+                    Text('Три основные формы:',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withOpacity(0.55))),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(analysis.formsLine,
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: scheme.primary)),
+                        ),
+                        SpeakButton(
+                            onPressed: () => vm.speakWord(
+                                analysis.lex.kind == 'v'
+                                    ? '${analysis.lex.f1}. ${analysis.lex.f2}.'
+                                    : '${analysis.lex.f1}. ${analysis.lex.f2}. ${analysis.lex.f3}.')),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Форма: ${analysis.formName}',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: scheme.onSurface)),
+                        const SizedBox(height: 4),
+                        Text(analysis.rule,
+                            style: TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                                color: scheme.onSurface.withOpacity(0.85))),
+                      ],
+                    ),
+                  ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                        'Этого слова пока нет в словаре форм. '
+                        'Нажмите 🔊, чтобы услышать произношение.',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: scheme.onSurface.withOpacity(0.6))),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Абзац как набор кликабельных слов.
+  Widget _tappableParagraph(String text, Color color) {
+    final words = text.split(' ');
+    return Wrap(
+      children: [
+        for (final w in words)
+          InkWell(
+            borderRadius: BorderRadius.circular(4),
+            onTap: () => _onWordTap(w),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: Text('$w ',
+                  style: TextStyle(fontSize: 16, height: 1.4, color: color)),
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = widget.text;
+    final hasTr = text.paras.any((p) => p.tr.trim().isNotEmpty);
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
       appBar: AppBar(
@@ -299,18 +438,53 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: playing ? _stop : () => _playAll(),
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
-        icon: Icon(playing ? Icons.stop : Icons.play_arrow),
-        label: Text(playing ? 'Стоп' : 'Слушать весь текст'),
+      bottomNavigationBar: Material(
+        color: scheme.surface,
+        elevation: 8,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: playing
+                ? FilledButton.icon(
+                    onPressed: _stop,
+                    icon: const Icon(Icons.stop),
+                    label: Text(playingTr
+                        ? 'Стоп (играет перевод)'
+                        : 'Стоп (играет оригинал)'),
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => _playAll(tr: false),
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Оригинал'),
+                        ),
+                      ),
+                      if (hasTr) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _playAll(tr: true),
+                            icon: const Icon(Icons.translate),
+                            label: const Text('Перевод'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+        ),
       ),
       body: ListenableBuilder(
         listenable: vm,
         builder: (context, _) => ListView(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
           children: [
+            Text('Нажмите на любое слово, чтобы увидеть его формы и правило.',
+                style: TextStyle(
+                    fontSize: 12, color: scheme.onSurface.withOpacity(0.55))),
+            const SizedBox(height: 6),
             for (var i = 0; i < text.paras.length; i++)
               Card(
                 key: _paraKeys[i],
@@ -334,11 +508,8 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(text.paras[i].et,
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    height: 1.4,
-                                    color: scheme.onSurface)),
+                            _tappableParagraph(
+                                text.paras[i].et, scheme.onSurface),
                             if (text.paras[i].tr.isNotEmpty && !vm.hideTr)
                               Padding(
                                 padding: const EdgeInsets.only(top: 5),

@@ -265,11 +265,16 @@ const List<Lesson> lessonsPart2 = [
       LessonText(
         'Minu unistuste kodu',
         [
-          Sent('Minu unistuste kodu on väike ja hubane maja. Maja asub vaikses kohas, kus on palju rohelust ja linnulaulu. Ma tahan, et minu kodu oleks valgusküllane ja soe.'),
-          Sent('Majas on kolm tuba: elutuba, magamistuba ja väike töötuba. Elutoas on suur diivan, raamatukapp ja teler. Seal ma puhkan ja vaatan filme.'),
-          Sent('Magamistoas on pehme voodi ja kummut. Töötuba on väike, kuid seal on kirjutuslaud ja arvuti, kus ma saan rahulikult töötada.'),
-          Sent('Minu maja juures on ka rõdu ja väike terrass. Seal kasvavad lilled ja maitsetaimed. Õhtuti ma istun terrassil, joon teed ja kuulan loodust.'),
-          Sent('Maja kõrval on aed, kus kasvavad lilled, marjad ja mõned viljapuud. See kodu oleks minu jaoks ideaalne koht, kus puhata ja elada rahulikku elu.'),
+          Sent('Minu unistuste kodu on väike ja hubane maja. Maja asub vaikses kohas, kus on palju rohelust ja linnulaulu. Ma tahan, et minu kodu oleks valgusküllane ja soe.',
+            'Дім моєї мрії — маленький затишний будинок. Він у тихому місці, де багато зелені та співу птахів. Я хочу, щоб мій дім був світлим і теплим.'),
+          Sent('Majas on kolm tuba: elutuba, magamistuba ja väike töötuba. Elutoas on suur diivan, raamatukapp ja teler. Seal ma puhkan ja vaatan filme.',
+            'У будинку три кімнати: вітальня, спальня і маленька робоча кімната. У вітальні великий диван, книжкова шафа і телевізор. Там я відпочиваю і дивлюся фільми.'),
+          Sent('Magamistoas on pehme voodi ja kummut. Töötuba on väike, kuid seal on kirjutuslaud ja arvuti, kus ma saan rahulikult töötada.',
+            'У спальні м\'яке ліжко і комод. Робоча кімната маленька, але там є письмовий стіл і комп\'ютер, де я можу спокійно працювати.'),
+          Sent('Minu maja juures on ka rõdu ja väike terrass. Seal kasvavad lilled ja maitsetaimed. Õhtuti ma istun terrassil, joon teed ja kuulan loodust.',
+            'Біля мого будинку є балкон і маленька тераса. Там ростуть квіти і пряні трави. Вечорами я сиджу на терасі, п\'ю чай і слухаю природу.'),
+          Sent('Maja kõrval on aed, kus kasvavad lilled, marjad ja mõned viljapuud. See kodu oleks minu jaoks ideaalne koht, kus puhata ja elada rahulikku elu.',
+            'Поруч із будинком сад, де ростуть квіти, ягоди і кілька фруктових дерев. Такий дім був би для мене ідеальним місцем для відпочинку і спокійного життя.'),
         ],
         questions: [
           QA('Kus asub unistuste kodu?', 'See asub vaikses ja rohelises kohas.'),
@@ -805,9 +810,12 @@ const List<Lesson> lessonsPart2 = [
       LessonText(
         'Minu uus sõber Karl',
         [
-          Sent('Minul on uus sõber, tema nimi on Karl ja tema perekonnanimi on Tamm. Ta on 29 aastat vana ja elab Narva-Jõesuus Mere tänaval.'),
-          Sent('Karl on väga rahulik ja viisakas inimene. Ta töötab päästjana Narva päästekomandos.'),
-          Sent('Tema hobid on jooksmine ja fotograafia. Mõnikord me jalutame rannas ja teeme koos pilte.'),
+          Sent('Minul on uus sõber, tema nimi on Karl ja tema perekonnanimi on Tamm. Ta on 29 aastat vana ja elab Narva-Jõesuus Mere tänaval.',
+            'У мене новий друг, його звати Карл, а прізвище — Тамм. Йому 29 років, він живе в Нарва-Йиесуу на вулиці Мере.'),
+          Sent('Karl on väga rahulik ja viisakas inimene. Ta töötab päästjana Narva päästekomandos.',
+            'Карл дуже спокійна і ввічлива людина. Він працює рятувальником у нарвській рятувальній команді.'),
+          Sent('Tema hobid on jooksmine ja fotograafia. Mõnikord me jalutame rannas ja teeme koos pilte.',
+            'Його хобі — біг і фотографія. Іноді ми гуляємо пляжем і разом фотографуємо.'),
         ],
         questions: [
           QA('Mis on Karli perekonnanimi?', 'Tema perekonnanimi on Tamm.'),
@@ -818,9 +826,12 @@ const List<Lesson> lessonsPart2 = [
       LessonText(
         'Minu uus sõbranna Helena',
         [
-          Sent('Minul on uus sõbranna, tema nimi on Helena ja perekonnanimi on Kask. Ta on 31 aastat vana ja elab Jõhvis Pargi tänaval.'),
-          Sent('Helena on rõõmsameelne ja väga abivalmis inimene. Ta töötab raamatukogus raamatukoguhoidjana.'),
-          Sent('Tema hobid on lugemine ja kudumine. Mõnikord me istume kohvikus, joome teed ja räägime raamatutest.'),
+          Sent('Minul on uus sõbranna, tema nimi on Helena ja perekonnanimi on Kask. Ta on 31 aastat vana ja elab Jõhvis Pargi tänaval.',
+            'У мене нова подруга, її звати Гелена, прізвище — Каск. Їй 31 рік, вона живе в Йихві на вулиці Паргі.'),
+          Sent('Helena on rõõmsameelne ja väga abivalmis inimene. Ta töötab raamatukogus raamatukoguhoidjana.',
+            'Гелена весела і дуже чуйна людина. Вона працює в бібліотеці бібліотекаркою.'),
+          Sent('Tema hobid on lugemine ja kudumine. Mõnikord me istume kohvikus, joome teed ja räägime raamatutest.',
+            'Її хобі — читання і в\'язання. Іноді ми сидимо в кафе, п\'ємо чай і говоримо про книги.'),
         ],
         questions: [
           QA('Kus Helena elab?', 'Ta elab Jõhvis Pargi tänaval.'),
