@@ -377,7 +377,21 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
                       ],
                     ),
                   ),
-                ] else
+                ] else if (token.isNotEmpty &&
+                    token[0] == token[0].toUpperCase() &&
+                    token[0] != token[0].toLowerCase())
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                        'Похоже, это имя собственное (имя или название). '
+                        'К нему тоже добавляются обычные падежные окончания: '
+                        'Markusega = Markus + -ga («с Маркусом»).',
+                        style: TextStyle(
+                            fontSize: 13,
+                            height: 1.35,
+                            color: scheme.onSurface.withOpacity(0.6))),
+                  )
+                else
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(

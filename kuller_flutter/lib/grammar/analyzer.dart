@@ -43,10 +43,6 @@ const _caseEndings = <String, (String, String)>{
   'ni': ('Rajav (milleni?)', 'до чего? Образуется: omastav + -ni'),
   'na': ('Olev (kellena?)',
       'кем? в роли кого? Образуется: omastav + -na (Ma töötan õpetajaNA)'),
-  'd': ('Mitmuse nimetav (кто? что? мн.ч.)',
-      'множественное число: omastav + -d'),
-  'de': ('Mitmuse omastav (кого? чего? мн.ч.)',
-      'родительный мн.ч.: omastav + -de'),
 };
 
 /// Личные окончания глагола в настоящем времени.
@@ -61,64 +57,277 @@ const _verbEndings = <String, (String, String)>{
       'настоящее время, 3 л. мн.ч. (они): основа + -vad'),
 };
 
+/// Окончания условного наклонения (tingiv kõneviis), добавляются к основе.
+const _condEndings = <String, (String, String)>{
+  'ksin': ('Tingiv kõneviis, mina-vorm',
+      'условное наклонение (я бы …): основа + -ksin'),
+  'ksid': ('Tingiv kõneviis, sina/nemad-vorm',
+      'условное наклонение (ты бы / они бы): основа + -ksid'),
+  'ksime': ('Tingiv kõneviis, meie-vorm',
+      'условное наклонение (мы бы): основа + -ksime'),
+  'ksite': ('Tingiv kõneviis, teie-vorm',
+      'условное наклонение (вы бы): основа + -ksite'),
+  'ks': ('Tingiv kõneviis (…бы)',
+      'условное наклонение: основа + -ks (ta oleks — «він би був»)'),
+};
+
+/// Окончания прошедшего времени (lihtminevik), добавляются к основе.
+const _pastEndings = <String, (String, String)>{
+  'sin': ('Lihtminevik, mina-vorm',
+      'прошедшее время, 1 л. ед.ч. (я): основа + -sin'),
+  'sid': ('Lihtminevik, sina/nemad-vorm',
+      'прошедшее время: основа + -sid (ты / они)'),
+  'sime': ('Lihtminevik, meie-vorm',
+      'прошедшее время, 1 л. мн.ч. (мы): основа + -sime'),
+  'site': ('Lihtminevik, teie-vorm',
+      'прошедшее время, 2 л. мн.ч. (вы): основа + -site'),
+  's': ('Lihtminevik, tema-vorm',
+      'прошедшее время, 3 л. ед.ч. (он/она): основа + -s'),
+};
+
+/// Неправильные и особые формы: слово → (лемма-f1, название формы, правило).
+const _irregular = <String, (String, String, String)>{
+  'on': ('olema', 'Olevik, tema/nemad-vorm',
+      'глагол olema: ta on / nad on — «він є / вони є» (наст. время)'),
+  'oli': ('olema', 'Lihtminevik, tema-vorm',
+      'глагол olema в прошедшем времени: ta oli — «він був»'),
+  'olid': ('olema', 'Lihtminevik, sina/nemad-vorm',
+      'глагол olema в прошедшем: sa olid / nad olid'),
+  'olin': ('olema', 'Lihtminevik, mina-vorm',
+      'глагол olema в прошедшем: ma olin — «я був»'),
+  'olnud': ('olema', 'nud-partitsiip',
+      'причастие прошедшего: ma olen olnud — «я був/бував»'),
+  'pole': ('olema', 'Eitus (краткая форма)',
+      'pole = ei ole — «нема, не є». После pole — osastav!'),
+  'sain': ('saama', 'Lihtminevik, mina-vorm',
+      'неправильная форма: saama → ma sain — «я отримав»'),
+  'sai': ('saama', 'Lihtminevik, tema-vorm',
+      'неправильная форма: saama → ta sai — «він отримав»'),
+  'läks': ('minema', 'Lihtminevik, tema-vorm',
+      'неправильная форма: minema → ta läks — «він пішов»'),
+  'läksin': ('minema', 'Lihtminevik, mina-vorm',
+      'неправильная форма: minema → ma läksin — «я пішов»'),
+  'lähme': ('minema', 'Olevik, meie-vorm',
+      'разговорная форма: läheme/lähme — «ходімо!»'),
+  'tegin': ('tegema', 'Lihtminevik, mina-vorm',
+      'неправильная форма: tegema → ma tegin — «я зробив»'),
+  'tegi': ('tegema', 'Lihtminevik, tema-vorm',
+      'неправильная форма: tegema → ta tegi — «він зробив»'),
+  'tuppa': ('tuba', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: tuba → tuppa — «в комнату» (вместо toasse)'),
+  'vannituppa': ('vannituba', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: vannituba → vannituppa — «в ванную»'),
+  'koju': ('kodu', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: kodu → koju — «домой» (вместо kodusse)'),
+  'kodus': ('kodu', 'Seesütlev (kus?)', 'kodu + -s — «дома»'),
+  'poodi': ('pood', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: pood → poodi — «в магазин»'),
+  'linna': ('linn', 'Lühike sisseütlev / osastav',
+      'linna — «в город» (короткий иллатив) или винительный (osastav)'),
+  'kooli': ('kool', 'Lühike sisseütlev / omastav',
+      'kooli — «в школу» (короткий иллатив): Ma lähen kooli'),
+  'vette': ('vesi', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: vesi → vette — «в воду»'),
+  'mehe': ('mees', 'Omastav', 'mees → mehe → meest'),
+  'aastane': ('aasta', 'Liide -ne (…-летний)',
+      'aasta + -ne: kolmekümneaastane — «тридцятирічний»'),
+  'sööb': ('sööma', 'Olevik, tema-vorm', 'sööma → ta sööb — «він їсть»'),
+  'sõi': ('sööma', 'Lihtminevik, tema-vorm', 'sööma → ta sõi — «він з’їв»'),
+  'jõin': ('jooma', 'Lihtminevik, mina-vorm', 'jooma → ma jõin — «я випив»'),
+  'jõi': ('jooma', 'Lihtminevik, tema-vorm', 'jooma → ta jõi — «він випив»'),
+  'käin': ('käima', 'Olevik, mina-vorm', 'käima → ma käin — «я ходжу»'),
+  'käib': ('käima', 'Olevik, tema-vorm', 'käima → ta käib — «він ходить»'),
+  'viin': ('viima', 'Olevik, mina-vorm', 'viima → ma viin — «я несу/веду»'),
+  'toon': ('tooma', 'Olevik, mina-vorm', 'tooma → ma toon — «я приношу»'),
+  'toob': ('tooma', 'Olevik, tema-vorm', 'tooma → ta toob — «він приносить»'),
+  'tehakse': ('tegema', 'Umbisikuline (пассив)',
+      'безличная форма: tehakse — «роблять» (röntgenit tehakse — рентген роблять)'),
+  'süüa': ('sööma', 'da-infinitiiv',
+      'da-инфинитив: teen süüa — «готую їжу»; tahan süüa — «хочу їсти»'),
+  'juua': ('jooma', 'da-infinitiiv', 'da-инфинитив: tahan juua — «хочу пити»'),
+  'teha': ('tegema', 'da-infinitiiv', 'da-инфинитив: oskan süüa teha'),
+  'näha': ('nägema', 'da-infinitiiv', 'da-инфинитив: tahan näha — «хочу бачити»'),
+  'ust': ('uks', 'Osastav', 'uks → ukse → ust (частичный падеж)'),
+  'vett': ('vesi', 'Osastav', 'vesi → vee → vett: joon vett — «п’ю воду»'),
+  'putru': ('puder', 'Osastav', 'puder → pudru → putru: söön putru'),
+  'merd': ('meri', 'Osastav', 'meri → mere → merd'),
+  'kätt': ('käsi', 'Osastav', 'käsi → käe → kätt'),
+  'käsi': ('käsi', 'Nimetav / mitmuse osastav',
+      'käsi — рука (ед.ч.) или «руки» (мн. osastav): pesen käsi'),
+  'last': ('laps', 'Osastav', 'laps → lapse → last'),
+  'meest': ('mees', 'Osastav', 'mees → mehe → meest'),
+  'üht': ('üks', 'Osastav', 'üks → ühe → üht'),
+  'kaht': ('kaks', 'Osastav', 'kaks → kahe → kaht'),
+  'viit': ('viis', 'Osastav', 'viis → viie → viit'),
+  'kuut': ('kuus', 'Osastav', 'kuus → kuue → kuut'),
+  'peal': ('peal', 'Послелог', 'laua peal — «на столі» (kus?)'),
+  'mööda': ('mööda', 'Предлог/послелог', 'mööda koridori — «уздовж коридору»'),
+  'head': ('hea', 'Osastav', 'hea → hea → head: Head isu! Head aega!'),
+  'uut': ('uus', 'Osastav', 'uus → uue → uut: otsin uut tööd'),
+  'suurt': ('suur', 'Osastav', 'suur → suure → suurt'),
+  'kõike': ('kõik', 'Osastav', 'kõik → kõige → kõike — «все» (вин.)'),
+  'kõigile': ('kõik', 'Alaleütlev', 'kõik → kõigile — «всім»'),
+  'kõiki': ('kõik', 'Mitmuse osastav', 'kõik → kõiki — «всіх»'),
+  'pikem': ('pikk', 'Keskvõrre (сравнительная)',
+      'сравнительная степень (нерегулярная): pikk → pikem — «довший»'),
+  'vanem': ('vana', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: vana → vanem — «старший»'),
+  'noorem': ('noor', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: noor → noorem — «молодший»'),
+  'parem': ('hea', 'Keskvõrre (сравнительная)',
+      'сравнительная степень (нерегулярная): hea → parem — «кращий»'),
+  'paremaks': ('hea', 'Keskvõrre + saav',
+      'parem (кращий) + -ks: teeb päeva paremaks — «робить день кращим»'),
+  'raskemat': ('raske', 'Keskvõrre + osastav',
+      'raske → raskem (складніший) + -t: tahad raskemat? — «хочеш складніше?»'),
+  'suurem': ('suur', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: suur → suurem — «більший»'),
+  'ilusam': ('ilus', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: ilus → ilusam — «гарніший»'),
+  'esimesse': ('esimene', 'Lühike sisseütlev (kuhu?)',
+      'короткий иллатив: esimene → esimesse (klassi) — «у перший (клас)»'),
+  'inimeste': ('inimene', 'Mitmuse omastav',
+      'родительный мн.ч. (нерегулярный): inimene → inimeste'),
+  'sõbrad': ('sõber', 'Mitmuse nimetav',
+      'множественное число: sõber → sõbrad — «друзі»'),
+  'sõpradele': ('sõber', 'Alaleütlev (мн.ч.)',
+      'sõprade (мн. omastav) + -le: kirjutan sõpradele — «пишу друзям»'),
+  'sõpradega': ('sõber', 'Kaasaütlev (мн.ч.)',
+      'sõprade + -ga: mängin sõpradega — «граю з друзями»'),
+  'toad': ('tuba', 'Mitmuse nimetav',
+      'множественное число: tuba → toad — «кімнати»'),
+  'oma': ('oma', 'Omadussõna', 'oma — «свій», не изменяется перед словом'),
+};
+
 String _norm(String raw) {
   var t = raw.toLowerCase().trim();
   t = t.replaceAll(RegExp(r'''[.,!?:;„“"«»()\[\]…—–]'''), '');
   return t.trim();
 }
 
+WordAnalysis? _matchNominal(Lexeme lx, String t) {
+  if (t == lx.f1) {
+    return WordAnalysis(lx, 'Nimetav (kes? mis?)',
+        'Начальная форма — именительный падеж (algvorm). Три формы: ${lx.f1} — ${lx.f2} — ${lx.f3}.');
+  }
+  if (t == lx.f2 && lx.f2 != lx.f1) {
+    return WordAnalysis(lx, 'Omastav (kelle? mille?)',
+        'Родительный падеж — базовая форма, от которой образуются остальные падежи (${lx.f2} + окончание).');
+  }
+  if (t == lx.f3 && lx.f3 != lx.f1) {
+    return WordAnalysis(lx, 'Osastav (keda? mida?)',
+        'Частичный падеж (3-я форма). Употребляется после чисел и при отрицании: ei ole ${lx.f3}.');
+  }
+  if (lx.pl.isNotEmpty && t == lx.pl) {
+    return WordAnalysis(lx, 'Mitmuse osastav (keda? mida? мн.ч.)',
+        'Частичный падеж множественного числа: palju ${lx.pl}. Три формы: ${lx.f1} — ${lx.f2} — ${lx.f3}.');
+  }
+  // множественное число: omastav + d
+  if (t == '${lx.f2}d') {
+    return WordAnalysis(lx, 'Mitmuse nimetav (мн.ч.)',
+        'Множественное число: ${lx.f2} (omastav) + -d = ${lx.f2}d.');
+  }
+  if (t == '${lx.f2}de' ||
+      t == '${lx.f2}te' ||
+      t == '${lx.f1}de' ||
+      t == '${lx.f1}te') {
+    return WordAnalysis(lx, 'Mitmuse omastav (кого? чего? мн.ч.)',
+        'Родительный мн.ч.: основа + -de/-te (akende, unistuste).');
+  }
+  // наречие на -sti от прилагательного: kiire + -sti = kiiresti
+  if (lx.kind == 'a' && t == '${lx.f2}sti') {
+    return WordAnalysis(lx, 'Määrsõna (kuidas? — наречие)',
+        'Наречие: ${lx.f2} (omastav) + -sti = ${lx.f2}sti («как? — ${lx.tr}»).');
+  }
+  // omastav + падежное окончание (сначала длинные окончания)
+  final endings = _caseEndings.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  for (final e in endings) {
+    if (t == lx.f2 + e) {
+      final info = _caseEndings[e]!;
+      var name = info.$1;
+      var extra = '';
+      if (lx.kind == 'a' && e == 'lt') {
+        name = 'Määrsõna (kuidas? — наречие)';
+        extra = ' Часто это наречие: ${lx.f2}lt — «как? каким образом».';
+      }
+      return WordAnalysis(lx, name,
+          '${lx.f2} (omastav) + -$e. ${info.$2}.$extra Три формы: ${lx.f1} — ${lx.f2} — ${lx.f3}.');
+    }
+    // падеж во множественном числе: omastav + de/te + окончание
+    if (t == '${lx.f2}de$e' || t == '${lx.f2}te$e') {
+      final info = _caseEndings[e]!;
+      return WordAnalysis(lx, '${info.$1} (мн.ч.)',
+          'Множественное число: ${lx.f2} + -de/-te + -$e. ${info.$2}.');
+    }
+  }
+  // сравнительная степень прилагательных: omastav + m
+  if (lx.kind == 'a' && (t == '${lx.f2}m' || t == '${lx.f2}mad')) {
+    return WordAnalysis(lx, 'Keskvõrre (сравнительная степень)',
+        'Сравнительная степень: ${lx.f2} (omastav) + -m = ${lx.f2}m («более ${lx.tr}»).');
+  }
+  return null;
+}
+
+WordAnalysis? _matchVerb(Lexeme lx, String t) {
+  if (t == lx.f1) {
+    return WordAnalysis(lx, 'ma-infinitiiv',
+        'ma-инфинитив. Употребляется после pean, hakkan, lähen: Ma lähen ${lx.f1}.');
+  }
+  if (t == lx.f2) {
+    return WordAnalysis(lx, 'da-infinitiiv',
+        'da-инфинитив. Употребляется после tahan, armastan, oskan, meeldib: Ma tahan ${lx.f2}.');
+  }
+  if (t == lx.f3) {
+    return WordAnalysis(lx, 'Tüvi: käskiv kõneviis / eitus',
+        'Чистая основа наст. времени: повелительное «${lx.f3}!» и отрицание «ma ei ${lx.f3}».');
+  }
+  final maStem = lx.f1.endsWith('ma') ? lx.f1.substring(0, lx.f1.length - 2) : lx.f1;
+  // настоящее время: основа + личное окончание
+  final vEndings = _verbEndings.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  for (final e in vEndings) {
+    if (t == lx.f3 + e) {
+      final info = _verbEndings[e]!;
+      return WordAnalysis(lx, info.$1,
+          '${lx.f3}- + -$e. ${info.$2}. Формы глагола: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
+    }
+  }
+  // условное наклонение: основа + -ks-окончание
+  final cEndings = _condEndings.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  for (final e in cEndings) {
+    if (t == lx.f3 + e) {
+      final info = _condEndings[e]!;
+      return WordAnalysis(lx, info.$1,
+          '${lx.f3}- + -$e. ${info.$2}. Формы глагола: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
+    }
+  }
+  // прошедшее время: основа (наст. или ma-основа) + -si-окончание
+  final pEndings = _pastEndings.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  for (final e in pEndings) {
+    if (t == lx.f3 + e || t == maStem + e) {
+      final info = _pastEndings[e]!;
+      return WordAnalysis(lx, info.$1,
+          '${info.$2}: ${lx.f1} → $t. Формы глагола: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
+    }
+  }
+  // nud-причастие: ma-основа + nud
+  if (t == '${maStem}nud') {
+    return WordAnalysis(lx, 'nud-partitsiip (прошедшее причастие)',
+        'ma-основа + -nud: ma olen ${maStem}nud — «я (уже) …». Формы: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
+  }
+  return null;
+}
+
 WordAnalysis? _match(Lexeme lx, String t) {
   switch (lx.kind) {
     case 'n':
     case 'a':
-      if (t == lx.f1) {
-        return WordAnalysis(lx, 'Nimetav (kes? mis?)',
-            'Начальная форма — именительный падеж (algvorm). Три формы: ${lx.f1} — ${lx.f2} — ${lx.f3}.');
-      }
-      if (t == lx.f2 && lx.f2 != lx.f1) {
-        return WordAnalysis(lx, 'Omastav (kelle? mille?)',
-            'Родительный падеж — базовая форма, от которой образуются остальные падежи (${lx.f2} + окончание).');
-      }
-      if (t == lx.f3 && lx.f3 != lx.f1) {
-        return WordAnalysis(lx, 'Osastav (keda? mida?)',
-            'Частичный падеж (3-я форма). Употребляется после чисел и при отрицании: ei ole ${lx.f3}.');
-      }
-      // omastav + падежное окончание (сначала длинные окончания)
-      final endings = _caseEndings.keys.toList()
-        ..sort((a, b) => b.length.compareTo(a.length));
-      for (final e in endings) {
-        if (t == lx.f2 + e) {
-          final info = _caseEndings[e]!;
-          return WordAnalysis(lx, info.$1,
-              '${lx.f2} (omastav) + -$e. ${info.$2}. Три формы: ${lx.f1} — ${lx.f2} — ${lx.f3}.');
-        }
-        // мн. число: omastav + de + окончание (напр. riiulitele упрощённо не разбираем)
-      }
-      // короткий illatiiv (tuppa, koju и т.п.) не разбираем — не найдено
-      return null;
+      return _matchNominal(lx, t);
     case 'v':
-      if (t == lx.f1) {
-        return WordAnalysis(lx, 'ma-infinitiiv',
-            'ma-инфинитив. Употребляется после pean, hakkan, lähen: Ma lähen ${lx.f1}.');
-      }
-      if (t == lx.f2) {
-        return WordAnalysis(lx, 'da-infinitiiv',
-            'da-инфинитив. Употребляется после tahan, armastan, oskan, meeldib: Ma tahan ${lx.f2}.');
-      }
-      if (t == lx.f3) {
-        return WordAnalysis(lx, 'Käskiv kõneviis (sina!)',
-            'Повелительное наклонение ед.ч. — чистая основа настоящего времени: ${lx.f3}!');
-      }
-      final vEndings = _verbEndings.keys.toList()
-        ..sort((a, b) => b.length.compareTo(a.length));
-      for (final e in vEndings) {
-        if (t == lx.f3 + e) {
-          final info = _verbEndings[e]!;
-          return WordAnalysis(lx, info.$1,
-              '${lx.f3}- + -$e. ${info.$2}. Формы глагола: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
-        }
-      }
-      return null;
+      return _matchVerb(lx, t);
     case 'p':
       if (t == lx.f1) {
         return WordAnalysis(lx, 'Послелог места',
@@ -126,9 +335,12 @@ WordAnalysis? _match(Lexeme lx, String t) {
       }
       return null;
     default: // 'x'
-      if (t == lx.f1 || (lx.f2.isNotEmpty && t == lx.f2) ||
+      if (t == lx.f1 ||
+          (lx.f2.isNotEmpty && t == lx.f2) ||
           (lx.f3.isNotEmpty && t == lx.f3)) {
-        return WordAnalysis(lx, 'Служебное слово',
+        return WordAnalysis(
+            lx,
+            'Служебное слово',
             lx.f2.isNotEmpty && lx.f2 != lx.f1
                 ? 'Полная форма — ${lx.f1}, краткая — ${lx.f2}.'
                 : 'Не изменяется по падежам.');
@@ -137,10 +349,23 @@ WordAnalysis? _match(Lexeme lx, String t) {
   }
 }
 
+Lexeme? _byLemma(String f1) {
+  for (final lx in lexicon) {
+    if (lx.f1 == f1) return lx;
+  }
+  return null;
+}
+
 /// Разбор слова: ищем лемму, форму которой представляет собой [raw].
 WordAnalysis? analyze(String raw) {
   final t = _norm(raw);
   if (t.isEmpty) return null;
+  // 0) неправильные/особые формы
+  final irr = _irregular[t];
+  if (irr != null) {
+    final lx = _byLemma(irr.$1);
+    if (lx != null) return WordAnalysis(lx, irr.$2, irr.$3);
+  }
   // 1) точное совпадение с одной из форм
   for (final lx in lexicon) {
     final r = _match(lx, t);
@@ -151,7 +376,7 @@ WordAnalysis? analyze(String raw) {
   WordAnalysis? best;
   var bestLen = 0;
   for (final lx in lexicon) {
-    if (lx.kind != 'n' && lx.kind != 'a') continue;
+    if (lx.kind != 'n' && lx.kind != 'a' && lx.kind != 'v') continue;
     for (var cut = 1; cut <= t.length - 3; cut++) {
       final tail = t.substring(cut);
       if (tail.length <= bestLen) break; // дальше хвосты только короче
