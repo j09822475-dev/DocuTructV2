@@ -79,8 +79,6 @@ class _WordsTab extends StatefulWidget {
 }
 
 class _WordsTabState extends State<_WordsTab> {
-  final Set<int> revealed = {};
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -91,7 +89,7 @@ class _WordsTabState extends State<_WordsTab> {
       itemBuilder: (context, i) {
         final w = widget.lesson.words[i];
         final learned = vm.state.learnedWords.contains(w.et);
-        final showTr = !vm.hideTr || revealed.contains(i);
+        final showTr = !vm.hideTr;
         return Card(
           elevation: 1,
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -100,10 +98,7 @@ class _WordsTabState extends State<_WordsTab> {
           color: scheme.surface,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: vm.hideTr
-                ? () => setState(() =>
-                    revealed.contains(i) ? revealed.remove(i) : revealed.add(i))
-                : null,
+            onTap: () => showWordCardSheet(context, vm, w),
             child: Padding(
               padding: const EdgeInsets.all(12).copyWith(left: 14),
               child: Row(
@@ -133,7 +128,7 @@ class _WordsTabState extends State<_WordsTab> {
                               ),
                           ],
                         ),
-                        Text(showTr ? w.tr : '••• (нажмите, чтобы открыть)',
+                        Text(showTr ? w.tr : '••• (нажмите: формы и перевод)',
                             style: TextStyle(
                                 fontSize: 13,
                                 color: scheme.onSurface
@@ -291,122 +286,7 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
         RegExp(r'''[.,!?:;„“"«»()\[\]…—–]'''), '');
     if (token.trim().isEmpty) return;
     vm.speakWord(token);
-    final analysis = analyze(token);
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        final scheme = Theme.of(context).colorScheme;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(token,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 26,
-                              color: scheme.onSurface)),
-                    ),
-                    SpeakButton(onPressed: () => vm.speakWord(token)),
-                  ],
-                ),
-                if (analysis != null) ...[
-                  Text(analysis.kindName,
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withOpacity(0.55))),
-                  const SizedBox(height: 10),
-                  Text('Перевод: ${analysis.lex.tr}',
-                      style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface)),
-                  const SizedBox(height: 10),
-                  if (analysis.lex.kind == 'n' ||
-                      analysis.lex.kind == 'a' ||
-                      analysis.lex.kind == 'v') ...[
-                    Text('Три основные формы:',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: scheme.onSurface.withOpacity(0.55))),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(analysis.formsLine,
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: scheme.primary)),
-                        ),
-                        SpeakButton(
-                            onPressed: () => vm.speakWord(
-                                analysis.lex.kind == 'v'
-                                    ? '${analysis.lex.f1}. ${analysis.lex.f2}.'
-                                    : '${analysis.lex.f1}. ${analysis.lex.f2}. ${analysis.lex.f3}.')),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: scheme.primaryContainer.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Форма: ${analysis.formName}',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: scheme.onSurface)),
-                        const SizedBox(height: 4),
-                        Text(analysis.rule,
-                            style: TextStyle(
-                                fontSize: 13,
-                                height: 1.35,
-                                color: scheme.onSurface.withOpacity(0.85))),
-                      ],
-                    ),
-                  ),
-                ] else if (token.isNotEmpty &&
-                    token[0] == token[0].toUpperCase() &&
-                    token[0] != token[0].toLowerCase())
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                        'Похоже, это имя собственное (имя или название). '
-                        'К нему тоже добавляются обычные падежные окончания: '
-                        'Markusega = Markus + -ga («с Маркусом»).',
-                        style: TextStyle(
-                            fontSize: 13,
-                            height: 1.35,
-                            color: scheme.onSurface.withOpacity(0.6))),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                        'Этого слова пока нет в словаре форм. '
-                        'Нажмите 🔊, чтобы услышать произношение.',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: scheme.onSurface.withOpacity(0.6))),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    showWordInfo(context, vm, token);
   }
 
   /// Абзац как набор кликабельных слов.
@@ -605,6 +485,292 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ============== ПАНЕЛЬ СЛОВА: формы и правила употребления ==============
+
+String _stripWord(String raw) =>
+    raw.replaceAll(RegExp(r'''[.,!?:;„“"«»()\[\]…—–]'''), '').trim();
+
+/// Панель разбора одного слова (из текста или из фразы карточки).
+void showWordInfo(BuildContext context, LearnViewModel vm, String rawToken) {
+  final token = _stripWord(rawToken);
+  if (token.isEmpty) return;
+  final analysis = analyze(token);
+  showModalBottomSheet(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.65,
+      maxChildSize: 0.95,
+      builder: (context, controller) {
+        final scheme = Theme.of(context).colorScheme;
+        return ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(token,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 26,
+                          color: scheme.onSurface)),
+                ),
+                SpeakButton(onPressed: () => vm.speakWord(token)),
+              ],
+            ),
+            WordAnalysisSection(vm: vm, token: token, analysis: analysis),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+/// Панель для карточки слова из вкладки «Слова»: перевод, пример,
+/// основные формы и правила их употребления.
+void showWordCardSheet(BuildContext context, LearnViewModel vm, WordCard w) {
+  vm.speakWord(w.et);
+  final tokens = w.et
+      .split(RegExp(r'\s+'))
+      .map(_stripWord)
+      .where((t) => t.length >= 2)
+      .toList();
+  final single = tokens.length == 1;
+  showModalBottomSheet(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.7,
+      maxChildSize: 0.95,
+      builder: (context, controller) {
+        final scheme = Theme.of(context).colorScheme;
+        return ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: [
+            Row(
+              children: [
+                if (w.emoji.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child:
+                        Text(w.emoji, style: const TextStyle(fontSize: 28)),
+                  ),
+                Expanded(
+                  child: Text(w.et,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                          color: scheme.onSurface)),
+                ),
+                SpeakButton(onPressed: () => vm.speakWord(w.et)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text('Перевод: ${w.tr}',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface)),
+            if (w.example.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('„${w.example}“',
+                          style: TextStyle(
+                              fontSize: 13, color: scheme.primary)),
+                    ),
+                    SpeakButton(onPressed: () => vm.speakWord(w.example)),
+                  ],
+                ),
+              ),
+            if (single)
+              WordAnalysisSection(
+                  vm: vm, token: tokens.first, analysis: analyze(tokens.first))
+            else ...[
+              const SizedBox(height: 12),
+              Text('Нажмите слово фразы, чтобы увидеть его формы:',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: scheme.onSurface.withOpacity(0.6))),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final t in tokens)
+                    ActionChip(
+                      label: Text(t),
+                      onPressed: () {
+                        vm.speakWord(t);
+                        showWordInfo(context, vm, t);
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    ),
+  );
+}
+
+/// Секция разбора: вид слова, перевод, три формы, найденная форма
+/// и правила, когда какая форма используется.
+class WordAnalysisSection extends StatelessWidget {
+  final LearnViewModel vm;
+  final String token;
+  final WordAnalysis? analysis;
+  const WordAnalysisSection(
+      {super.key, required this.vm, required this.token, this.analysis});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final a = analysis;
+    if (a == null) {
+      final isName = token.isNotEmpty &&
+          token[0] == token[0].toUpperCase() &&
+          token[0] != token[0].toLowerCase();
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Text(
+            isName
+                ? 'Похоже, это имя собственное (имя или название). '
+                    'К нему тоже добавляются обычные падежные окончания: '
+                    'Markusega = Markus + -ga («с Маркусом»).'
+                : 'Этого слова пока нет в словаре форм. '
+                    'Нажмите 🔊, чтобы услышать произношение.',
+            style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: scheme.onSurface.withOpacity(0.6))),
+      );
+    }
+    final usage = formUsage(a.lex);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(a.kindName,
+            style: TextStyle(
+                fontSize: 12, color: scheme.onSurface.withOpacity(0.55))),
+        const SizedBox(height: 6),
+        Text('Словарное значение: ${a.lex.tr}',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface)),
+        if (a.lex.kind == 'n' || a.lex.kind == 'a' || a.lex.kind == 'v') ...[
+          const SizedBox(height: 10),
+          Text('Три основные формы:',
+              style: TextStyle(
+                  fontSize: 12, color: scheme.onSurface.withOpacity(0.55))),
+          Row(
+            children: [
+              Expanded(
+                child: Text(a.formsLine,
+                    style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary)),
+              ),
+              SpeakButton(
+                  onPressed: () => vm.speakWord(a.lex.kind == 'v'
+                      ? '${a.lex.f1}. ${a.lex.f2}. ${a.lex.f3}n.'
+                      : '${a.lex.f1}. ${a.lex.f2}. ${a.lex.f3}.')),
+            ],
+          ),
+        ],
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Эта форма: ${a.formName}',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: scheme.onSurface)),
+              const SizedBox(height: 4),
+              Text(a.rule,
+                  style: TextStyle(
+                      fontSize: 13,
+                      height: 1.35,
+                      color: scheme.onSurface.withOpacity(0.85))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text('Когда какая форма используется:',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: scheme.onSurface)),
+        const SizedBox(height: 4),
+        for (final u in usage)
+          Card(
+            elevation: 0,
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: scheme.surfaceContainerHighest.withOpacity(0.55),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(TextSpan(children: [
+                          TextSpan(
+                              text: u.$1,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: scheme.primary)),
+                          TextSpan(
+                              text: '   ${u.$2}',
+                              style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface.withOpacity(0.8))),
+                        ])),
+                        const SizedBox(height: 3),
+                        Text(u.$3,
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.35,
+                                color: scheme.onSurface.withOpacity(0.8))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  SpeakButton(onPressed: () => vm.speakWord(u.$1)),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

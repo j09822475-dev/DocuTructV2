@@ -391,3 +391,84 @@ WordAnalysis? analyze(String raw) {
   }
   return best;
 }
+
+/// Основные формы леммы и правила, КОГДА каждая используется (для панели слова).
+List<(String, String, String)> formUsage(Lexeme lx) {
+  switch (lx.kind) {
+    case 'n':
+    case 'a':
+      final u = <(String, String, String)>[
+        (
+          lx.f1,
+          '1. Nimetav — kes? mis? (хто? що?)',
+          'Словарная форма — называет предмет. Подлежащее в предложении: '
+              '«${lx.f1} on siin» — «${lx.tr} тут».'
+        ),
+        (
+          lx.f2,
+          '2. Omastav — kelle? mille? (чий? чого?)',
+          'Принадлежность («${lx.f2} + что-то» = «чей?») и ОСНОВА для всех '
+              'падежей: ${lx.f2}+s «в», ${lx.f2}+st «из», ${lx.f2}+sse «в (куда)», '
+              '${lx.f2}+l «на/у», ${lx.f2}+le «на/к», ${lx.f2}+lt «с/от», '
+              '${lx.f2}+ga «с», ${lx.f2}+ta «без», ${lx.f2}+na «в роли». '
+              'Мн. число: ${lx.f2}+d.'
+        ),
+        (
+          lx.f3,
+          '3. Osastav — keda? mida? (кого? що?)',
+          'Частичный падеж: после чисел (kaks ${lx.f3}, viis ${lx.f3}), '
+              'при отрицании (ei ole ${lx.f3} — «нет …») и как частичный '
+              'объект действия.'
+        ),
+      ];
+      if (lx.kind == 'a') {
+        u.add((
+          '${lx.f2}m',
+          'Keskvõrre — сравнительная степень',
+          'omastav + -m: ${lx.f2}m — «более ${lx.tr}». '
+              'Например: see on ${lx.f2}m.'
+        ));
+      }
+      return u;
+    case 'v':
+      return [
+        (
+          lx.f1,
+          '1. ma-infinitiiv',
+          'Употребляется после pean (должен), hakkan (начну), lähen (иду): '
+              '«Ma pean ${lx.f1}», «Ma lähen ${lx.f1}».'
+        ),
+        (
+          lx.f2,
+          '2. da-infinitiiv',
+          'Употребляется после tahan (хочу), oskan (умею), armastan (люблю), '
+              'mulle meeldib (мне нравится): «Ma tahan ${lx.f2}».'
+        ),
+        (
+          '${lx.f3}n',
+          '3. Olevik — настоящее время (основа ${lx.f3}-)',
+          'Основа + личные окончания: ma ${lx.f3}n, sa ${lx.f3}d, '
+              'ta ${lx.f3}b, me ${lx.f3}me, te ${lx.f3}te, nad ${lx.f3}vad. '
+              'Отрицание: ma ei ${lx.f3}. Повеление: ${lx.f3}! '
+              'Прошедшее: ${lx.f3}sin (я), ${lx.f3}s (он).'
+        ),
+      ];
+    case 'p':
+      return [
+        (
+          lx.f1,
+          'Послелог места',
+          'Ставится ПОСЛЕ слова в omastav: maja ${lx.f1} — «${lx.tr}». '
+              'Например: laua ${lx.f1}, kapi ${lx.f1}.'
+        ),
+      ];
+    default:
+      return [
+        (
+          lx.f1,
+          'Служебное слово',
+          'Не изменяется по падежам. Значение: ${lx.tr}.'
+        ),
+      ];
+  }
+}
