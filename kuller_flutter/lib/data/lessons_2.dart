@@ -578,7 +578,6 @@ const List<Lesson> lessonsPart2 = [
     title: 'Возраст и числа до 100',
     subtitle: 'Kui vana sa oled? Kumb?',
     words: [
-      WordCard('Kui vana sa oled?', 'Скільки тобі років?', emoji: '🎂'),
       WordCard('Ma olen kolmekümneaastane', 'Мені тридцять років', emoji: '🙂'),
       WordCard('sünnipäev', 'день народження', emoji: '🎉',
           example: 'Millal sul sünnipäev on?'),
@@ -599,6 +598,9 @@ const List<Lesson> lessonsPart2 = [
       WordCard('kiirem', 'швидший', emoji: '🏎'),
       WordCard('odavam', 'дешевший', emoji: '💸'),
       WordCard('vahe', 'різниця', emoji: '↔️', example: 'Ainult üks aasta vahet.'),
+    ],
+    questions: [
+      WordCard('Kui vana sa oled?', 'Скільки тобі років?', emoji: '🎂'),
     ],
     texts: [
       LessonText('Kumb? — küsimused', [

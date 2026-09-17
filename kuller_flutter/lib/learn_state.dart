@@ -4,22 +4,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LearnState {
   final Map<String, int> bestScores; // lessonId -> лучший результат теста, %
   final Set<String> learnedWords; // эстонские слова, отвеченные верно в тестах
+  final Map<String, int> wordReps; // слово -> сколько раз повторено
   final int testsTaken;
 
   const LearnState({
     this.bestScores = const {},
     this.learnedWords = const {},
+    this.wordReps = const {},
     this.testsTaken = 0,
   });
 
   LearnState copyWith({
     Map<String, int>? bestScores,
     Set<String>? learnedWords,
+    Map<String, int>? wordReps,
     int? testsTaken,
   }) =>
       LearnState(
         bestScores: bestScores ?? this.bestScores,
         learnedWords: learnedWords ?? this.learnedWords,
+        wordReps: wordReps ?? this.wordReps,
         testsTaken: testsTaken ?? this.testsTaken,
       );
 }
@@ -38,9 +42,15 @@ class LearnRepository {
       final p = e.split(':');
       if (p.length == 2) scores[p[0]] = int.tryParse(p[1]) ?? 0;
     }
+    final reps = <String, int>{};
+    for (final e in _prefs.getStringList('wordReps') ?? <String>[]) {
+      final i = e.lastIndexOf('\t');
+      if (i > 0) reps[e.substring(0, i)] = int.tryParse(e.substring(i + 1)) ?? 0;
+    }
     return LearnState(
       bestScores: scores,
       learnedWords: (_prefs.getStringList('learnedWords') ?? []).toSet(),
+      wordReps: reps,
       testsTaken: _prefs.getInt('testsTaken') ?? 0,
     );
   }
@@ -49,6 +59,8 @@ class LearnRepository {
     await _prefs.setString('scores',
         s.bestScores.entries.map((e) => '${e.key}:${e.value}').join(';'));
     await _prefs.setStringList('learnedWords', s.learnedWords.toList());
+    await _prefs.setStringList('wordReps',
+        s.wordReps.entries.map((e) => '${e.key}\t${e.value}').toList());
     await _prefs.setInt('testsTaken', s.testsTaken);
   }
 

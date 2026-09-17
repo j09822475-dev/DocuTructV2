@@ -12,12 +12,7 @@ const List<Lesson> lessonsPart1 = [
       WordCard('Tere!', 'Привіт! / Добрий день!', emoji: '👋'),
       WordCard('Tere hommikust!', 'Доброго ранку!', emoji: '🌅'),
       WordCard('Head ööd!', 'Надобраніч!', emoji: '🌙'),
-      WordCard('Mis on sinu nimi?', 'Як тебе звати?', emoji: '❓'),
-      WordCard('Kust sa pärit oled?', 'Звідки ти родом?', emoji: '🌍'),
       WordCard('Ma olen pärit Ukrainast', 'Я родом з України', emoji: '🇺🇦'),
-      WordCard('Kus sa elad?', 'Де ти живеш?', emoji: '🏠'),
-      WordCard('Kus sa töötad?', 'Де ти працюєш?', emoji: '🏢'),
-      WordCard('Kellena sa töötad?', 'Ким ти працюєш?', emoji: '💼'),
       WordCard('õpetaja', 'вчитель', emoji: '🧑‍🏫', example: 'Ma töötan õpetajana.'),
       WordCard('kokk', 'кухар', emoji: '👨‍🍳', example: 'Ma töötan kokana.'),
       WordCard('küünetehnik', 'майстер манікюру', emoji: '💅',
@@ -31,6 +26,13 @@ const List<Lesson> lessonsPart1 = [
       WordCard('õun', 'яблуко', emoji: '🍎'),
       WordCard('päike', 'сонце', emoji: '☀️', example: 'Väike päike.'),
       WordCard('öö', 'ніч', emoji: '🌃', example: 'Öö on pikk.'),
+    ],
+    questions: [
+      WordCard('Mis on sinu nimi?', 'Як тебе звати?', emoji: '❓'),
+      WordCard('Kust sa pärit oled?', 'Звідки ти родом?', emoji: '🌍'),
+      WordCard('Kus sa elad?', 'Де ти живеш?', emoji: '🏠'),
+      WordCard('Kus sa töötad?', 'Де ти працюєш?', emoji: '🏢'),
+      WordCard('Kellena sa töötad?', 'Ким ти працюєш?', emoji: '💼'),
     ],
     texts: [
       LessonText('Erilised tähed: Õ, Ä, Ö, Ü', [
@@ -152,6 +154,8 @@ const List<Lesson> lessonsPart1 = [
       WordCard('klient', 'клієнт', emoji: '🧑‍🤝‍🧑'),
       WordCard('restoran', 'ресторан', emoji: '🍽'),
       WordCard('salong', 'салон', emoji: '💇'),
+    ],
+    questions: [
       WordCard('Millal kaup saabub?', 'Коли прибуде товар?', emoji: '📦'),
       WordCard('Kui palju see maksab?', 'Скільки це коштує?', emoji: '💶'),
       WordCard('Millal tuleb maksta?', 'Коли потрібно платити?', emoji: '🕐'),

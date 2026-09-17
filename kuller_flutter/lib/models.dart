@@ -67,13 +67,14 @@ class Dialogue {
   const Dialogue(this.title, this.turns);
 }
 
-/// Урок: слова + тексты + диалоги (+ тест генерируется из слов).
+/// Урок: слова + вопросы + тексты + диалоги (+ тест генерируется из слов).
 class Lesson {
   final String id;
   final String emoji;
   final String title; // название по-русски
   final String subtitle; // краткое описание
   final List<WordCard> words;
+  final List<WordCard> questions; // вопросы по теме урока
   final List<LessonText> texts;
   final List<Dialogue> dialogues;
   const Lesson({
@@ -82,6 +83,7 @@ class Lesson {
     required this.title,
     this.subtitle = '',
     this.words = const [],
+    this.questions = const [],
     this.texts = const [],
     this.dialogues = const [],
   });

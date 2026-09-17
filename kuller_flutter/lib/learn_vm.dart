@@ -38,15 +38,44 @@ class LearnViewModel extends ChangeNotifier {
 
   int bestScore(String lessonId) => state.bestScores[lessonId] ?? 0;
 
+  /// Порог: после стольких повторений слово считается выученным
+  /// и его перевод больше не показывается.
+  static const int learnThreshold = 150;
+
+  String _repKey(String et) => et.trim().toLowerCase();
+
+  /// Сколько раз слово уже повторялось.
+  int repsOf(String et) => state.wordReps[_repKey(et)] ?? 0;
+
+  /// Слово выучено (150+ повторений) — перевод скрываем.
+  bool isWordLearned(String et) => repsOf(et) >= learnThreshold;
+
+  /// Засчитать повторение слова (просмотр карточки, тренировка, тест).
+  void bumpRep(String et, [int by = 1]) {
+    final key = _repKey(et);
+    if (key.isEmpty) return;
+    final reps = Map.of(state.wordReps);
+    reps[key] = (reps[key] ?? 0) + by;
+    state = state.copyWith(wordReps: reps);
+    repo.save(state);
+    notifyListeners();
+  }
+
   /// Сохранить результат теста урока.
   void recordTest(String lessonId, int correct, int total,
       Iterable<String> correctWords) {
     final pct = total == 0 ? 0 : (correct * 100) ~/ total;
     final scores = Map.of(state.bestScores);
     if (pct > (scores[lessonId] ?? 0)) scores[lessonId] = pct;
+    final reps = Map.of(state.wordReps);
+    for (final w in correctWords) {
+      final key = _repKey(w);
+      reps[key] = (reps[key] ?? 0) + 1;
+    }
     state = state.copyWith(
       bestScores: scores,
       learnedWords: {...state.learnedWords, ...correctWords},
+      wordReps: reps,
       testsTaken: state.testsTaken + 1,
     );
     repo.save(state);

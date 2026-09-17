@@ -6,6 +6,7 @@ import '../grammar/analyzer.dart';
 import '../learn_vm.dart';
 import '../models.dart';
 import '../widgets.dart';
+import 'trainer_screen.dart';
 
 class LessonScreen extends StatelessWidget {
   final LearnViewModel vm;
@@ -17,6 +18,7 @@ class LessonScreen extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final tabs = <Tab>[
       const Tab(text: 'Слова'),
+      if (lesson.questions.isNotEmpty) const Tab(text: 'Вопросы'),
       if (lesson.texts.isNotEmpty) const Tab(text: 'Тексты'),
       if (lesson.dialogues.isNotEmpty) const Tab(text: 'Диалоги'),
       const Tab(text: 'Тест'),
@@ -55,6 +57,8 @@ class LessonScreen extends StatelessWidget {
           builder: (context, _) => TabBarView(
             children: [
               _WordsTab(vm: vm, lesson: lesson),
+              if (lesson.questions.isNotEmpty)
+                _QuestionsTab(vm: vm, lesson: lesson),
               if (lesson.texts.isNotEmpty) _TextsTab(vm: vm, lesson: lesson),
               if (lesson.dialogues.isNotEmpty)
                 _DialoguesTab(vm: vm, lesson: lesson),
@@ -85,11 +89,49 @@ class _WordsTabState extends State<_WordsTab> {
     final vm = widget.vm;
     return ListView.builder(
       padding: const EdgeInsets.all(12),
-      itemCount: widget.lesson.words.length,
+      itemCount: widget.lesson.words.length + 1,
       itemBuilder: (context, i) {
-        final w = widget.lesson.words[i];
+        if (i == 0) {
+          final mastered = widget.lesson.words
+              .where((w) => vm.isWordLearned(w.et))
+              .length;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilledButton.icon(
+                  icon: const Text('🏋️', style: TextStyle(fontSize: 18)),
+                  label: const Text('Тренировка слов (формы и фразы)',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          TrainerScreen(vm: vm, lesson: widget.lesson),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    mastered > 0
+                        ? 'Выучено (150+ повторений): $mastered из ${widget.lesson.words.length}'
+                        : 'Слово считается выученным после 150 повторений',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: scheme.onSurface.withOpacity(0.55)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        final w = widget.lesson.words[i - 1];
         final learned = vm.state.learnedWords.contains(w.et);
-        final showTr = !vm.hideTr;
+        final reps = vm.repsOf(w.et);
+        final mastered = reps >= LearnViewModel.learnThreshold;
+        final showTr = !vm.hideTr && !mastered;
         return Card(
           elevation: 1,
           margin: const EdgeInsets.symmetric(vertical: 4),
@@ -121,18 +163,28 @@ class _WordsTabState extends State<_WordsTab> {
                                       fontSize: 16,
                                       color: scheme.onSurface)),
                             ),
-                            if (learned)
+                            if (learned && !mastered)
                               const Padding(
                                 padding: EdgeInsets.only(left: 6),
                                 child: Text('✅', style: TextStyle(fontSize: 12)),
                               ),
                           ],
                         ),
-                        Text(showTr ? w.tr : '••• (нажмите: формы и перевод)',
+                        Text(
+                            mastered
+                                ? '✓ выучено — перевод скрыт'
+                                : showTr
+                                    ? w.tr
+                                    : '••• (нажмите: формы и перевод)',
                             style: TextStyle(
                                 fontSize: 13,
-                                color: scheme.onSurface
-                                    .withOpacity(showTr ? 0.7 : 0.4))),
+                                fontWeight: mastered
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: mastered
+                                    ? scheme.primary
+                                    : scheme.onSurface
+                                        .withOpacity(showTr ? 0.7 : 0.4))),
                         if (w.example.isNotEmpty)
                           Text('„${w.example}“',
                               style: TextStyle(
@@ -140,7 +192,90 @@ class _WordsTabState extends State<_WordsTab> {
                       ],
                     ),
                   ),
-                  SpeakButton(onPressed: () => vm.speakWord(w.et)),
+                  Column(
+                    children: [
+                      SpeakButton(onPressed: () => vm.speakWord(w.et)),
+                      if (reps > 0)
+                        Text(
+                            mastered
+                                ? '🏆'
+                                : '$reps/${LearnViewModel.learnThreshold}',
+                            style: TextStyle(
+                                fontSize: 10.5,
+                                color: scheme.onSurface.withOpacity(0.5))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ============================ ВОПРОСЫ ============================
+
+class _QuestionsTab extends StatelessWidget {
+  final LearnViewModel vm;
+  final Lesson lesson;
+  const _QuestionsTab({required this.vm, required this.lesson});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: lesson.questions.length + 1,
+      itemBuilder: (context, i) {
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8, left: 4, right: 4),
+            child: Text(
+              'Вопросы по теме урока — прочитайте, послушайте и '
+              'попробуйте ответить вслух.',
+              style: TextStyle(
+                  fontSize: 12.5, color: scheme.onSurface.withOpacity(0.6)),
+            ),
+          );
+        }
+        final q = lesson.questions[i - 1];
+        final showTr = !vm.hideTr;
+        return Card(
+          elevation: 1,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          color: scheme.surface,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => showWordCardSheet(context, vm, q),
+            child: Padding(
+              padding: const EdgeInsets.all(12).copyWith(left: 14),
+              child: Row(
+                children: [
+                  Text('${q.emoji.isNotEmpty ? q.emoji : '❓'} ',
+                      style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(q.et,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: scheme.onSurface)),
+                        Text(showTr ? q.tr : '••• (нажмите, чтобы разобрать)',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: scheme.onSurface
+                                    .withOpacity(showTr ? 0.7 : 0.4))),
+                      ],
+                    ),
+                  ),
+                  SpeakButton(onPressed: () => vm.speakWord(q.et)),
                 ],
               ),
             ),
@@ -537,6 +672,8 @@ void showWordInfo(BuildContext context, LearnViewModel vm, String rawToken) {
 /// основные формы и правила их употребления.
 void showWordCardSheet(BuildContext context, LearnViewModel vm, WordCard w) {
   vm.speakWord(w.et);
+  vm.bumpRep(w.et);
+  final mastered = vm.isWordLearned(w.et);
   final tokens = w.et
       .split(RegExp(r'\s+'))
       .map(_stripWord)
@@ -576,11 +713,14 @@ void showWordCardSheet(BuildContext context, LearnViewModel vm, WordCard w) {
               ],
             ),
             const SizedBox(height: 4),
-            Text('Перевод: ${w.tr}',
+            Text(
+                mastered
+                    ? '✓ Слово выучено (150+ повторений) — перевод скрыт'
+                    : 'Перевод: ${w.tr}',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: scheme.onSurface)),
+                    color: mastered ? scheme.primary : scheme.onSurface)),
             if (w.example.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -660,6 +800,8 @@ class WordAnalysisSection extends StatelessWidget {
       );
     }
     final usage = formUsage(a.lex);
+    final masteredWord =
+        vm.isWordLearned(token) || vm.isWordLearned(a.lex.f1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -667,11 +809,14 @@ class WordAnalysisSection extends StatelessWidget {
             style: TextStyle(
                 fontSize: 12, color: scheme.onSurface.withOpacity(0.55))),
         const SizedBox(height: 6),
-        Text('Словарное значение: ${a.lex.tr}',
+        Text(
+            masteredWord
+                ? '✓ Слово выучено — перевод скрыт'
+                : 'Словарное значение: ${a.lex.tr}',
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: scheme.onSurface)),
+                color: masteredWord ? scheme.primary : scheme.onSurface)),
         if (a.lex.kind == 'n' || a.lex.kind == 'a' || a.lex.kind == 'v') ...[
           const SizedBox(height: 10),
           Text('Три основные формы:',
