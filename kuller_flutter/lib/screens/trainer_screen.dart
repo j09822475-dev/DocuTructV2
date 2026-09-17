@@ -90,33 +90,50 @@ class _TrainerScreenState extends State<TrainerScreen> {
 
     final order = List.of(lesson.words)..shuffle(Random());
     for (final w in order) {
-      final single = !_clean(w.et).contains(' ');
-      final a = single ? analyze(_clean(w.et).toLowerCase()) : null;
+      final clean = _clean(w.et);
+      final single = !clean.contains(' ');
+      final a = single ? analyze(clean.toLowerCase()) : null;
       final lx = a?.lex;
+      // Перевод форм — словарный перевод ЛЕММЫ (карточка может быть
+      // производной формой: suhkruta «без цукру» -> лемма suhkur «цукор»).
+      final baseTr = lx?.tr ?? w.tr;
+      final isBaseForm = lx == null ||
+          clean.toLowerCase() == lx.f1 ||
+          clean.toLowerCase() == lx.f2 ||
+          clean.toLowerCase() == lx.f3;
 
       // ---- Этап 1: формы слова ----
       if (lx != null && (lx.kind == 'n' || lx.kind == 'a')) {
-        words.add(_Drill(w, lx.f1, '1-я форма · Nimetav — kes? mis?', w.tr));
+        words.add(
+            _Drill(w, lx.f1, '1-я форма · Nimetav — kes? mis?', baseTr));
         if (lx.f2.isNotEmpty && lx.f2 != lx.f1) {
           words.add(_Drill(
               w, lx.f2, '2-я форма · Omastav — kelle? mille?',
-              ukrGen(w.tr)));
+              ukrGen(baseTr)));
         }
         if (lx.f3.isNotEmpty && lx.f3 != lx.f2) {
           words.add(_Drill(
               w, lx.f3, '3-я форма · Osastav — keda? mida?',
-              ukrAcc(w.tr)));
+              ukrAcc(baseTr)));
+        }
+        if (!isBaseForm) {
+          // сама карточка — производная форма со своим переводом
+          words.add(_Drill(w, clean, a!.formName, w.tr));
         }
       } else if (lx != null && lx.kind == 'v') {
         words.add(_Drill(
-            w, lx.f1, 'ma-инфинитив — после pean, hakkan, lähen', w.tr));
+            w, lx.f1, 'ma-инфинитив — после pean, hakkan, lähen', baseTr));
         if (lx.f2.isNotEmpty && lx.f2 != lx.f1) {
           words.add(_Drill(
-              w, lx.f2, 'da-инфинитив — после tahan, oskan, meeldib', w.tr));
+              w, lx.f2, 'da-инфинитив — после tahan, oskan, meeldib',
+              baseTr));
         }
         if (lx.f3.isNotEmpty) {
           words.add(_Drill(
-              w, '${lx.f3}n', 'настоящее время — ma …n', ukrPres1(w.tr)));
+              w, '${lx.f3}n', 'настоящее время — ma …n', ukrPres1(baseTr)));
+        }
+        if (!isBaseForm) {
+          words.add(_Drill(w, clean, a!.formName, w.tr));
         }
       } else {
         words.add(_Drill(w, w.et, single ? '' : 'выражение', w.tr));
