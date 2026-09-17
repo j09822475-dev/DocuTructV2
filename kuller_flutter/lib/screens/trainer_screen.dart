@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../grammar/analyzer.dart';
+import '../grammar/ukr_forms.dart';
 import '../learn_vm.dart';
 import '../models.dart';
 
@@ -97,11 +98,13 @@ class _TrainerScreenState extends State<TrainerScreen> {
         words.add(_Drill(w, lx.f1, '1-я форма · Nimetav — kes? mis?', w.tr));
         if (lx.f2.isNotEmpty && lx.f2 != lx.f1) {
           words.add(_Drill(
-              w, lx.f2, '2-я форма · Omastav — kelle? mille?', w.tr));
+              w, lx.f2, '2-я форма · Omastav — kelle? mille?',
+              ukrGen(w.tr)));
         }
         if (lx.f3.isNotEmpty && lx.f3 != lx.f2) {
-          words.add(
-              _Drill(w, lx.f3, '3-я форма · Osastav — keda? mida?', w.tr));
+          words.add(_Drill(
+              w, lx.f3, '3-я форма · Osastav — keda? mida?',
+              ukrAcc(w.tr)));
         }
       } else if (lx != null && lx.kind == 'v') {
         words.add(_Drill(
@@ -112,7 +115,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
         }
         if (lx.f3.isNotEmpty) {
           words.add(_Drill(
-              w, '${lx.f3}n', 'настоящее время — ma …n', w.tr));
+              w, '${lx.f3}n', 'настоящее время — ma …n', ukrPres1(w.tr)));
         }
       } else {
         words.add(_Drill(w, w.et, single ? '' : 'выражение', w.tr));
