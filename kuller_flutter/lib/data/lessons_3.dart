@@ -113,7 +113,7 @@ const List<Lesson> lessonsPart3 = [
       WordCard('wifi', 'вайфай', emoji: '📶',
           example: 'Kas sinu korteris on wifi?'),
     ],
-    texts: [
+    grammar: [
       LessonText('Reegel: EI OLE / POLE + osastav', [
         Sent('EI OLE ja POLE tähendavad sama: ei ole on pikem vorm, pole on lühem vorm.',
             '«Ei ole» і «pole» означають те саме: немає. Pole — коротка форма.'),
@@ -371,6 +371,8 @@ const List<Lesson> lessonsPart3 = [
           QA('Mis on toolil akna ees?', 'Toolil on Juku koolikott.'),
         ],
       ),
+    ],
+    grammar: [
       LessonText('Kus? — näited', [
         Sent('Ma elan hotelli juures.', 'Я живу біля готелю.'),
         Sent('Ma olen hambaarsti juures.', 'Я у стоматолога.'),
@@ -513,6 +515,8 @@ const List<Lesson> lessonsPart3 = [
               'Куди ти їдеш на вихідні? — Я їду в село до бабусі.'),
         ],
       ),
+    ],
+    grammar: [
       LessonText('Pean, hakkan, lähen õppima', [
         Sent('Ma pean õppima matemaatikat.', 'Я мушу вчити математику.'),
         Sent('Ma hakkan õppima füüsikat.', 'Я почну вчити фізику.'),
@@ -658,6 +662,8 @@ const List<Lesson> lessonsPart3 = [
               'Seal on kirjutuslaud, arvuti ja raamaturiiul.'),
         ],
       ),
+    ],
+    grammar: [
       LessonText('Kus asjad on?', [
         Sent('Kell on seina peal.', 'Годинник на стіні.'),
         Sent('Kell on maali kõrval.', 'Годинник біля картини.'),

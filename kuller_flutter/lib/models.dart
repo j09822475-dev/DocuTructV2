@@ -75,6 +75,7 @@ class Lesson {
   final String subtitle; // краткое описание
   final List<WordCard> words;
   final List<WordCard> questions; // вопросы по теме урока
+  final List<LessonText> grammar; // грамматика, показанная преподавателем
   final List<LessonText> texts;
   final List<Dialogue> dialogues;
   const Lesson({
@@ -84,6 +85,7 @@ class Lesson {
     this.subtitle = '',
     this.words = const [],
     this.questions = const [],
+    this.grammar = const [],
     this.texts = const [],
     this.dialogues = const [],
   });

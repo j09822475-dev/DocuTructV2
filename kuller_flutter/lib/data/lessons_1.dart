@@ -363,6 +363,8 @@ const List<Lesson> lessonsPart1 = [
               'Nad elavad üheteistkümnendal korrusel.'),
         ],
       ),
+    ],
+    grammar: [
       LessonText('Liitsõnad arvudega', [
         Sent('Minul on üheaastane laps.', 'У мене є однорічна дитина.'),
         Sent('Meil on kodus kahekohaline voodi.',
@@ -553,7 +555,7 @@ const List<Lesson> lessonsPart1 = [
       WordCard('Ema armastab mind', 'Мама любить мене', emoji: '❤️'),
       WordCard('Mind ei ole kodus', 'Мене немає вдома', emoji: '🚪'),
     ],
-    texts: [
+    grammar: [
       LessonText('Käänded — küsimused', [
         Sent('Nimetav — kes? mis?', 'Називний — хто? що?'),
         Sent('Omastav — kelle? mille?', 'Родовий — чий? чого?'),
@@ -793,6 +795,8 @@ const List<Lesson> lessonsPart1 = [
           QA('Mis kasvab rõdul?', 'Rõdul kasvavad lilled ja pott-tomatid.'),
         ],
       ),
+    ],
+    grammar: [
       LessonText('Kus? Kuhu? Kust?', [
         Sent('Ma lähen esimesse klassi.', 'Я йду в перший клас.'),
         Sent('Ma õpin esimeses klassis.', 'Я навчаюся в першому класі.'),

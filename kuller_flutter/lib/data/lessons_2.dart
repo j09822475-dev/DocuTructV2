@@ -602,7 +602,7 @@ const List<Lesson> lessonsPart2 = [
     questions: [
       WordCard('Kui vana sa oled?', 'Скільки тобі років?', emoji: '🎂'),
     ],
-    texts: [
+    grammar: [
       LessonText('Kumb? — küsimused', [
         Sent('Kumb teist elab Tallinnas? — Olena elab Tallinnas, mina elan Narvas.',
             'Хто з вас двох живе в Таллінні? — Олена в Таллінні, я в Нарві.'),
@@ -752,6 +752,18 @@ const List<Lesson> lessonsPart2 = [
       WordCard('kaabel', 'кабель', emoji: '🔌'),
     ],
     texts: [
+      LessonText('Mis on garaažis?', [
+        Sent('Garaažis on töölaud, haamer ja tööriistad.',
+            'У гаражі робочий стіл, молоток та інструменти.'),
+        Sent('Seina ääres seisab jalgratas ja redel.',
+            'Біля стіни стоять велосипед і драбина.'),
+        Sent('Riiulite peal on kanister, kaabel ja taskulamp.',
+            'На полицях каністра, кабель і ліхтарик.'),
+        Sent('Nurgas on suverehvid ja muruniiduk.',
+            'У кутку літні шини й газонокосарка.'),
+      ]),
+    ],
+    grammar: [
       LessonText('Raamatusse — raamatus — raamatust', [
         Sent('Pane raha raamatusse!', 'Поклади гроші в книгу!'),
         Sent('Raha on raamatus.', 'Гроші в книзі.'),
@@ -763,16 +775,6 @@ const List<Lesson> lessonsPart2 = [
             'Поклади гроші на рахунок! Гроші на рахунку. Зніми гроші з рахунку.'),
         Sent('Ma lähen rõdule. Ma olen rõdul. Ma tulen rõdult.',
             'Я йду на балкон. Я на балконі. Я йду з балкона.'),
-      ]),
-      LessonText('Mis on garaažis?', [
-        Sent('Garaažis on töölaud, haamer ja tööriistad.',
-            'У гаражі робочий стіл, молоток та інструменти.'),
-        Sent('Seina ääres seisab jalgratas ja redel.',
-            'Біля стіни стоять велосипед і драбина.'),
-        Sent('Riiulite peal on kanister, kaabel ja taskulamp.',
-            'На полицях каністра, кабель і ліхтарик.'),
-        Sent('Nurgas on suverehvid ja muruniiduk.',
-            'У кутку літні шини й газонокосарка.'),
       ]),
     ],
     dialogues: [],

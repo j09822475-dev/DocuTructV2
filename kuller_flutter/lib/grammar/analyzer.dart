@@ -1,4 +1,5 @@
 import 'lexicon.dart';
+import 'ukr_forms.dart';
 
 /// Результат разбора слова из текста.
 class WordAnalysis {
@@ -393,16 +394,20 @@ WordAnalysis? analyze(String raw) {
 }
 
 /// Основные формы леммы и правила, КОГДА каждая используется (для панели слова).
-List<(String, String, String)> formUsage(Lexeme lx) {
+/// Формы слова с правилами употребления и переводом каждой формы
+/// (перевод — в соответствующем украинском падеже, '' если формы нет
+/// в словаре склонений).
+List<(String, String, String, String)> formUsage(Lexeme lx) {
   switch (lx.kind) {
     case 'n':
     case 'a':
-      final u = <(String, String, String)>[
+      final u = <(String, String, String, String)>[
         (
           lx.f1,
           '1. Nimetav — kes? mis? (хто? що?)',
           'Словарная форма — называет предмет. Подлежащее в предложении: '
-              '«${lx.f1} on siin» — «${lx.tr} тут».'
+              '«${lx.f1} on siin» — «${lx.tr} тут».',
+          lx.tr
         ),
         (
           lx.f2,
@@ -411,14 +416,16 @@ List<(String, String, String)> formUsage(Lexeme lx) {
               'падежей: ${lx.f2}+s «в», ${lx.f2}+st «из», ${lx.f2}+sse «в (куда)», '
               '${lx.f2}+l «на/у», ${lx.f2}+le «на/к», ${lx.f2}+lt «с/от», '
               '${lx.f2}+ga «с», ${lx.f2}+ta «без», ${lx.f2}+na «в роли». '
-              'Мн. число: ${lx.f2}+d.'
+              'Мн. число: ${lx.f2}+d.',
+          ukrGenPlain(lx.tr)
         ),
         (
           lx.f3,
           '3. Osastav — keda? mida? (кого? що?)',
           'Частичный падеж: после чисел (kaks ${lx.f3}, viis ${lx.f3}), '
               'при отрицании (ei ole ${lx.f3} — «нет …») и как частичный '
-              'объект действия.'
+              'объект действия.',
+          ukrAccPlain(lx.tr)
         ),
       ];
       if (lx.kind == 'a') {
@@ -426,7 +433,8 @@ List<(String, String, String)> formUsage(Lexeme lx) {
           '${lx.f2}m',
           'Keskvõrre — сравнительная степень',
           'omastav + -m: ${lx.f2}m — «более ${lx.tr}». '
-              'Например: see on ${lx.f2}m.'
+              'Например: see on ${lx.f2}m.',
+          ''
         ));
       }
       return u;
@@ -436,13 +444,15 @@ List<(String, String, String)> formUsage(Lexeme lx) {
           lx.f1,
           '1. ma-infinitiiv',
           'Употребляется после pean (должен), hakkan (начну), lähen (иду): '
-              '«Ma pean ${lx.f1}», «Ma lähen ${lx.f1}».'
+              '«Ma pean ${lx.f1}», «Ma lähen ${lx.f1}».',
+          lx.tr
         ),
         (
           lx.f2,
           '2. da-infinitiiv',
           'Употребляется после tahan (хочу), oskan (умею), armastan (люблю), '
-              'mulle meeldib (мне нравится): «Ma tahan ${lx.f2}».'
+              'mulle meeldib (мне нравится): «Ma tahan ${lx.f2}».',
+          lx.tr
         ),
         (
           '${lx.f3}n',
@@ -450,7 +460,8 @@ List<(String, String, String)> formUsage(Lexeme lx) {
           'Основа + личные окончания: ma ${lx.f3}n, sa ${lx.f3}d, '
               'ta ${lx.f3}b, me ${lx.f3}me, te ${lx.f3}te, nad ${lx.f3}vad. '
               'Отрицание: ma ei ${lx.f3}. Повеление: ${lx.f3}! '
-              'Прошедшее: ${lx.f3}sin (я), ${lx.f3}s (он).'
+              'Прошедшее: ${lx.f3}sin (я), ${lx.f3}s (он).',
+          ukrPres1Plain(lx.tr)
         ),
       ];
     case 'p':
@@ -459,7 +470,8 @@ List<(String, String, String)> formUsage(Lexeme lx) {
           lx.f1,
           'Послелог места',
           'Ставится ПОСЛЕ слова в omastav: maja ${lx.f1} — «${lx.tr}». '
-              'Например: laua ${lx.f1}, kapi ${lx.f1}.'
+              'Например: laua ${lx.f1}, kapi ${lx.f1}.',
+          ''
         ),
       ];
     default:
@@ -467,7 +479,8 @@ List<(String, String, String)> formUsage(Lexeme lx) {
         (
           lx.f1,
           'Служебное слово',
-          'Не изменяется по падежам. Значение: ${lx.tr}.'
+          'Не изменяется по падежам. Значение: ${lx.tr}.',
+          ''
         ),
       ];
   }

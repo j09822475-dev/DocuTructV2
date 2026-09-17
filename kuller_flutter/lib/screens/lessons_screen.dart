@@ -103,6 +103,8 @@ class _LessonCard extends StatelessWidget {
                     Row(
                       children: [
                         _chip(context, '📇 ${lesson.words.length} слов'),
+                        if (lesson.grammar.isNotEmpty)
+                          _chip(context, '🧩 ${lesson.grammar.length}'),
                         if (lesson.texts.isNotEmpty)
                           _chip(context, '📖 ${lesson.texts.length}'),
                         if (lesson.dialogues.isNotEmpty)

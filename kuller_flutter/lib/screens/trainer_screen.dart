@@ -79,6 +79,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
     // Пул предложений урока (тексты + диалоги) — только материал из курса.
     final pool = <Sent>[
       for (final t in lesson.texts) ...t.paras,
+      for (final t in lesson.grammar) ...t.paras,
       for (final d in lesson.dialogues)
         for (final turn in d.turns) ...[
           if (turn is DSay) Sent(turn.et, turn.tr),

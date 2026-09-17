@@ -19,6 +19,7 @@ class LessonScreen extends StatelessWidget {
     final tabs = <Tab>[
       const Tab(text: 'Слова'),
       if (lesson.questions.isNotEmpty) const Tab(text: 'Вопросы'),
+      if (lesson.grammar.isNotEmpty) const Tab(text: 'Грамматика'),
       if (lesson.texts.isNotEmpty) const Tab(text: 'Тексты'),
       if (lesson.dialogues.isNotEmpty) const Tab(text: 'Диалоги'),
       const Tab(text: 'Тест'),
@@ -59,7 +60,16 @@ class LessonScreen extends StatelessWidget {
               _WordsTab(vm: vm, lesson: lesson),
               if (lesson.questions.isNotEmpty)
                 _QuestionsTab(vm: vm, lesson: lesson),
-              if (lesson.texts.isNotEmpty) _TextsTab(vm: vm, lesson: lesson),
+              if (lesson.grammar.isNotEmpty)
+                _TextsTab(
+                    vm: vm,
+                    items: lesson.grammar,
+                    emoji: '🧩',
+                    hint: 'Грамматика урока — правила и примеры, которые '
+                        'преподаватель показал на этой теме. Нажимайте на '
+                        'слова, чтобы увидеть их формы.'),
+              if (lesson.texts.isNotEmpty)
+                _TextsTab(vm: vm, items: lesson.texts),
               if (lesson.dialogues.isNotEmpty)
                 _DialoguesTab(vm: vm, lesson: lesson),
               TestTab(vm: vm, lesson: lesson),
@@ -286,12 +296,18 @@ class _QuestionsTab extends StatelessWidget {
   }
 }
 
-// ============================ ТЕКСТЫ ============================
+// ======================= ТЕКСТЫ И ГРАММАТИКА =======================
 
 class _TextsTab extends StatelessWidget {
   final LearnViewModel vm;
-  final Lesson lesson;
-  const _TextsTab({required this.vm, required this.lesson});
+  final List<LessonText> items;
+  final String hint;
+  final String emoji;
+  const _TextsTab(
+      {required this.vm,
+      required this.items,
+      this.hint = 'Тексты урока — читайте и слушайте целиком или по абзацам.',
+      this.emoji = '📖'});
 
   @override
   Widget build(BuildContext context) {
@@ -299,11 +315,11 @@ class _TextsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        Text('Тексты урока — читайте и слушайте целиком или по абзацам.',
+        Text(hint,
             style: TextStyle(
                 fontSize: 13, color: scheme.onSurface.withOpacity(0.65))),
         const SizedBox(height: 10),
-        for (final t in lesson.texts)
+        for (final t in items)
           Card(
             elevation: 1,
             margin: const EdgeInsets.symmetric(vertical: 5),
@@ -318,7 +334,7 @@ class _TextsTab extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 child: Row(
                   children: [
-                    const Text('📖', style: TextStyle(fontSize: 22)),
+                    Text(emoji, style: const TextStyle(fontSize: 22)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -900,6 +916,15 @@ class WordAnalysisSection extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                   color: scheme.onSurface.withOpacity(0.8))),
                         ])),
+                        if (u.$4.isNotEmpty && !masteredWord)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text('→ ${u.$4}',
+                                style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.tertiary)),
+                          ),
                         const SizedBox(height: 3),
                         Text(u.$3,
                             style: TextStyle(

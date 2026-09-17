@@ -287,6 +287,15 @@ String ukrGen(String tr) {
   return f == null ? tr : '${f.$1} (кого? чого?)';
 }
 
+/// Родовий без пояснения; '' — если слова нет в словаре форм.
+String ukrGenPlain(String tr) => _nounForms[tr]?.$1 ?? '';
+
+/// Знахідний без пояснения; '' — если слова нет в словаре форм.
+String ukrAccPlain(String tr) => _nounForms[tr]?.$2 ?? '';
+
+/// «я …» без запасного варианта; '' — если глагола нет в словаре.
+String ukrPres1Plain(String tr) => _pres1[tr] ?? '';
+
 /// Знахідний відмінок перевода (для osastav): «кімната» → «кімнату».
 String ukrAcc(String tr) {
   final f = _nounForms[tr];
