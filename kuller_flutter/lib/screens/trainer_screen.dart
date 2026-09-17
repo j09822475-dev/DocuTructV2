@@ -51,6 +51,34 @@ class _TrainerScreenState extends State<TrainerScreen> {
   static final _punct = RegExp(r'''[.,!?:;„“"«»()\[\]…—–]''');
   String _clean(String s) => s.replaceAll(_punct, '').trim();
 
+  /// Есть ли у переводов общий корень (первые 4-5 букв слова)?
+  /// Нужно, чтобы у омонимов выбрать лемму по смыслу карточки:
+  /// maal «у селі» -> лемма maa (село), а не maal (картина).
+  static bool _trOverlap(String a, String b) {
+    final split = RegExp(r'[^а-щьюяіїєґ’]+');
+    final wa = a.toLowerCase().split(split);
+    final wb = b.toLowerCase().split(split);
+    for (final x in wa) {
+      if (x.length < 4) continue;
+      for (final y in wb) {
+        if (y.length < 4) continue;
+        final k = (x.length >= 6 && y.length >= 6) ? 5 : 4;
+        if (x.substring(0, k) == y.substring(0, k)) return true;
+      }
+    }
+    return false;
+  }
+
+  /// Разбор слова карточки с учётом её перевода (выбор среди омонимов).
+  WordAnalysis? _analyzeForCard(String token, String cardTr) {
+    final all = analyzeAll(token);
+    if (all.isEmpty) return null;
+    for (final cand in all) {
+      if (_trOverlap(cand.lex.tr, cardTr)) return cand;
+    }
+    return all.first;
+  }
+
   bool _isLetter(String ch) =>
       RegExp(r'[a-zõäöüšž]', caseSensitive: false).hasMatch(ch);
 
@@ -92,7 +120,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
     for (final w in order) {
       final clean = _clean(w.et);
       final single = !clean.contains(' ');
-      final a = single ? analyze(clean.toLowerCase()) : null;
+      final a = single ? _analyzeForCard(clean.toLowerCase(), w.tr) : null;
       final lx = a?.lex;
       // Перевод форм — словарный перевод ЛЕММЫ (карточка может быть
       // производной формой: suhkruta «без цукру» -> лемма suhkur «цукор»).

@@ -373,6 +373,7 @@ const List<Lexeme> lexicon = [
   Lexeme('a', 'üheksas', 'üheksanda', 'üheksandat', 'дев’ятий'),
   Lexeme('a', 'kümnes', 'kümnenda', 'kümnendat', 'десятий'),
   Lexeme('a', 'üheteistkümnes', 'üheteistkümnenda', 'üheteistkümnendat', 'одинадцятий'),
+  Lexeme('a', 'mõlemad', 'mõlema', 'mõlemat', 'обидва'),
   // ---------------- Прилагательные ----------------
   Lexeme('a', 'suur', 'suure', 'suurt', 'великий'),
   Lexeme('a', 'väike', 'väikese', 'väikest', 'маленький'),
@@ -645,6 +646,12 @@ const List<Lexeme> lexicon = [
   Lexeme('n', 'soolatoos', 'soolatoosi', 'soolatoosi', 'сільничка'),
   Lexeme('n', 'suhkrutoos', 'suhkrutoosi', 'suhkrutoosi', 'цукорниця'),
   Lexeme('n', 'suhkur', 'suhkru', 'suhkrut', 'цукор'),
+  Lexeme('n', 'koristus', 'koristuse', 'koristust', 'прибирання'),
+  Lexeme('n', 'kruvikeeraja', 'kruvikeeraja', 'kruvikeerajat', 'викрутка'),
+  Lexeme('n', 'puiestee', 'puiestee', 'puiesteed', 'алея'),
+  Lexeme('n', 'riidepood', 'riidepoe', 'riidepoodi', 'магазин одягу'),
+  Lexeme('n', 'kõrva-nina-kurguarst', 'kõrva-nina-kurguarsti',
+      'kõrva-nina-kurguarsti', 'ЛОР-лікар'),
   Lexeme('n', 'limonaad', 'limonaadi', 'limonaadi', 'лимонад'),
   // ---------------- Дополнение: существительные ----------------
   Lexeme('n', 'matk', 'matka', 'matka', 'похід'),

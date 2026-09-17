@@ -198,6 +198,36 @@ const _irregular = <String, (String, String, String)>{
   'toad': ('tuba', 'Mitmuse nimetav',
       'множественное число: tuba → toad — «кімнати»'),
   'oma': ('oma', 'Omadussõna', 'oma — «свій», не изменяется перед словом'),
+  // порядковые числительные: без этих записей nelja+s разобралось бы
+  // как падеж количественного neli («в четырёх»)
+  'neljas': ('neljas', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: neli → neljas — «четвертий». '
+          'Склоняется от основы neljanda-: neljandal korrusel.'),
+  'viies': ('viies', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: viis → viies — «п’ятий». '
+          'Основа: viienda- (viiendal korrusel).'),
+  'kuues': ('kuues', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: kuus → kuues — «шостий». '
+          'Основа: kuuenda- (kuuendal korrusel).'),
+  'seitsmes': ('seitsmes', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: seitse → seitsmes — «сьомий». '
+          'Основа: seitsmenda-.'),
+  'kaheksas': ('kaheksas', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: kaheksa → kaheksas — «восьмий». '
+          'Основа: kaheksanda-.'),
+  'üheksas': ('üheksas', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: üheksa → üheksas — «дев’ятий». '
+          'Основа: üheksanda-.'),
+  'kümnes': ('kümnes', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: kümme → kümnes — «десятий». '
+          'Основа: kümnenda-.'),
+  // послелоги-омонимы: без записей их перехватили бы vastama и koht
+  'vastas': ('vastas', 'Послелог места',
+      'voodi vastas — «навпроти ліжка» (kus?). Не путать с глаголом: '
+          'ta vastas — «він відповів».'),
+  'kohal': ('kohal', 'Послелог места',
+      'diivani kohal — «над диваном» (kus?). Ставится после слова '
+          'в omastav.'),
 };
 
 String _norm(String raw) {
@@ -391,6 +421,28 @@ WordAnalysis? analyze(String raw) {
     }
   }
   return best;
+}
+
+/// Все варианты разбора слова — для омонимов (maal = «картина»
+/// или maa + -l «у селі»). Первый элемент совпадает с [analyze].
+List<WordAnalysis> analyzeAll(String raw) {
+  final t = _norm(raw);
+  if (t.isEmpty) return const [];
+  final out = <WordAnalysis>[];
+  final irr = _irregular[t];
+  if (irr != null) {
+    final lx = _byLemma(irr.$1);
+    if (lx != null) out.add(WordAnalysis(lx, irr.$2, irr.$3));
+  }
+  for (final lx in lexicon) {
+    final r = _match(lx, t);
+    if (r != null && !out.any((w) => identical(w.lex, r.lex))) out.add(r);
+  }
+  if (out.isEmpty) {
+    final a = analyze(raw);
+    if (a != null) out.add(a);
+  }
+  return out;
 }
 
 /// Основные формы леммы и правила, КОГДА каждая используется (для панели слова).
