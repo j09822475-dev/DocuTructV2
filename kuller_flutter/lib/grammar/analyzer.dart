@@ -228,6 +228,88 @@ const _irregular = <String, (String, String, String)>{
   'kohal': ('kohal', 'Послелог места',
       'diivani kohal — «над диваном» (kus?). Ставится после слова '
           'в omastav.'),
+  // повелительное наклонение — неправильные формы
+  'mine': ('minema', 'Käskiv kõneviis (sina)',
+      'повелительное: minema → mine! — «іди!» (мн.ч.: minge!)'),
+  'minge': ('minema', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: minema → minge! — «ідіть!»'),
+  'tulge': ('tulema', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: tulema → tulge! — «ідіть/приходьте!»'),
+  'tehke': ('tegema', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: tegema → tehke! — «робіть!»'),
+  'andke': ('andma', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: andma → andke! — «дайте!»'),
+  'sõitke': ('sõitma', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: sõitma → sõitke! — «їдьте!»'),
+  'sööngi': ('sööma', 'Olevik + -gi',
+      'söön + -gi (усиление): Sööngi! — «я таки їм!»'),
+  // прошедшее время — неправильные формы
+  'nägin': ('nägema', 'Lihtminevik, mina-vorm',
+      'неправильная форма: nägema → ma nägin — «я побачив»'),
+  'nägi': ('nägema', 'Lihtminevik, tema-vorm',
+      'неправильная форма: nägema → ta nägi — «він побачив»'),
+  'nägid': ('nägema', 'Lihtminevik, sina/nemad-vorm',
+      'неправильная форма: nägema → nad nägid — «вони бачили»'),
+  'tegid': ('tegema', 'Lihtminevik, sina/nemad-vorm',
+      'неправильная форма: tegema → nad tegid — «вони зробили»'),
+  'panin': ('panema', 'Lihtminevik, mina-vorm',
+      'неправильная форма: panema → ma panin — «я поклав»'),
+  // mas/des/mist-формы
+  'jalutamas': ('jalutama', 'mas-vorm',
+      'käime jalutamas — «ходимо гуляти» (процесс)'),
+  'matkamas': ('matkama', 'mas-vorm',
+      'käin matkamas — «ходжу в походи»'),
+  'jalutades': ('jalutama', 'des-vorm',
+      'jalutades — «гуляючи»: Edasi jalutades nägid nad põõsast.'),
+  'minnes': ('minema', 'des-vorm',
+      'minnes — «йдучи»: edasi minnes — «йдучи далі»'),
+  'söömist': ('sööma', 'mine-vorm (osastav)',
+      'söömine → pärast söömist — «після їжі»'),
+  'tegemist': ('tegema', 'mine-vorm (osastav)',
+      'tegemine → meil on palju tegemist — «у нас багато справ»'),
+  // множественное число — особые формы
+  'lastel': ('laps', 'Alalütlev (мн.ч.)',
+      'laps → lastel: Ta aitab lastel õppida — «допомагає дітям вчитися»'),
+  'lapsi': ('laps', 'Mitmuse osastav',
+      'laps → lapsi: Ta armastab lapsi — «любить дітей»'),
+  'töid': ('töö', 'Mitmuse osastav',
+      'töö → töid: teeme erinevaid töid — «різні роботи»'),
+  'aiatöid': ('töö', 'Mitmuse osastav',
+      'aiatöö → aiatöid — «садові роботи» (mulle meeldib aiatöid teha)'),
+  'maju': ('maja', 'Mitmuse osastav',
+      'maja → maju: Ta ehitab maju — «будує будинки»'),
+  'puid': ('puu', 'Mitmuse osastav', 'puu → puid: palju puid — «багато дерев»'),
+  'teisi': ('teine', 'Mitmuse osastav',
+      'teine → teisi: näeb teisi linde — «бачить інших птахів»'),
+  'sõnu': ('sõna', 'Mitmuse osastav',
+      'sõna → sõnu: kasutada sõnu — «вживати слова»'),
+  'kohtades': ('koht', 'Seesütlev (мн.ч.)',
+      'koht → kohtades: erinevates kohtades — «у різних місцях»'),
+  'dokumentidega': ('dokument', 'Kaasaütlev (мн.ч.)',
+      'dokument → dokumentidega: riiul dokumentidega — «полиця з документами»'),
+  'ühte': ('üks', 'Osastav / lühike sisseütlev',
+      'üks → ühte: veel ühte kohta — «ще одне місце»'),
+  // сравнительная степень — неправильные формы
+  'targem': ('tark', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: tark → targem — «розумніший»'),
+  'kurvem': ('kurb', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: kurb → kurvem — «сумніший»'),
+  'halvem': ('halb', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: halb → halvem — «гірший»'),
+  'külmem': ('külm', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: külm → külmem — «холодніший»'),
+  'väiksem': ('väike', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: väike → väiksem — «менший»'),
+  'lühem': ('lühike', 'Keskvõrre (сравнительная)',
+      'сравнительная степень: lühike → lühem — «коротший»'),
+  'abivalmid': ('abivalmis', 'Mitmuse nimetav',
+      'abivalmis → abivalmid — «готові допомогти» (мн.ч.)'),
+  // rõõmus — прилагательное, а не rõõm + -s
+  'rõõmus': ('rõõmus', 'Nimetav (kes? mis?)',
+      'прилагательное: rõõmus — «веселий, радісний». '
+          'Формы: rõõmus — rõõmsa — rõõmsat. Мн.ч.: rõõmsad.'),
+  'teksad': ('teksased', 'Разговорная форма',
+      'teksad = teksased — «джинси»'),
 };
 
 String _norm(String raw) {
@@ -348,6 +430,18 @@ WordAnalysis? _matchVerb(Lexeme lx, String t) {
   if (t == '${maStem}nud') {
     return WordAnalysis(lx, 'nud-partitsiip (прошедшее причастие)',
         'ma-основа + -nud: ma olen ${maStem}nud — «я (уже) …». Формы: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
+  }
+  // повелительное наклонение мн.ч.: основа + -ge / da-основа + -ke
+  final daStem =
+      lx.f2.length > 2 && (lx.f2.endsWith('da') || lx.f2.endsWith('ta'))
+          ? lx.f2.substring(0, lx.f2.length - 2)
+          : '';
+  if (t == '${lx.f3}ge' ||
+      t == '${lx.f3}ke' ||
+      (daStem.isNotEmpty && (t == '${daStem}ge' || t == '${daStem}ke'))) {
+    return WordAnalysis(lx, 'Käskiv kõneviis (mitmus — вы)',
+        'Повелительное наклонение мн.ч.: основа + -ge/-ke ($t!). '
+            'Ед.ч.: ${lx.f3}! Формы глагола: ${lx.f1} / ${lx.f2} / ${lx.f3}n.');
   }
   return null;
 }
