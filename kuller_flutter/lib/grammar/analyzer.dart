@@ -221,6 +221,9 @@ const _irregular = <String, (String, String, String)>{
   'kümnes': ('kümnes', 'Nimetav (järgarv — порядковое)',
       'порядковое числительное: kümme → kümnes — «десятий». '
           'Основа: kümnenda-.'),
+  'sajas': ('sajas', 'Nimetav (järgarv — порядковое)',
+      'порядковое числительное: sada → sajas — «сотий». '
+          'Основа: sajanda- (sajandal korrusel).'),
   // послелоги-омонимы: без записей их перехватили бы vastama и koht
   'vastas': ('vastas', 'Послелог места',
       'voodi vastas — «навпроти ліжка» (kus?). Не путать с глаголом: '
