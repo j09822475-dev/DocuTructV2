@@ -548,14 +548,22 @@ String _shortTr(String tr) {
   return t.trim();
 }
 
-String _or(String form, String fallback) => form.isEmpty ? fallback : form;
+/// Падежная форма перевода: сначала полный перевод, потом короткий,
+/// в конце — сам короткий перевод как запасной вариант.
+String _ukrForm(String tr, String Function(String) f) {
+  final full = f(tr);
+  if (full.isNotEmpty) return full;
+  final s = _shortTr(tr);
+  final short = f(s);
+  return short.isEmpty ? s : short;
+}
 
 /// Фразы-шаблоны: каждая основная форма слова в предложении + перевод.
 /// Возвращает (форма, эстонская фраза, украинский перевод).
 List<(String, String, String)> formPhrases(Lexeme lx) {
   final tr = _shortTr(lx.tr);
-  final gen = _or(ukrGenPlain(lx.tr), tr);
-  final acc = _or(ukrAccPlain(lx.tr), tr);
+  final gen = _ukrForm(lx.tr, ukrGenPlain);
+  final acc = _ukrForm(lx.tr, ukrAccPlain);
   switch (lx.kind) {
     case 'n':
       return [
@@ -589,35 +597,141 @@ List<(String, String, String)> formPhrases(Lexeme lx) {
   }
 }
 
-/// Фразы со всеми падежами (для существительных): основа omastav +
-/// окончание, украинский перевод фразы. (падеж-вопрос, фраза, перевод).
+/// Слова-переводы, означающие человека или животное (точное слово).
+const _personWords = [
+  'вчитель', 'кухар', 'майстер', 'таксист', 'програміст', 'клієнт',
+  'лікар', 'пацієнт', 'педіатр', 'дерматолог', 'окуліст', 'стоматолог',
+  'фізіотерапевт', 'психолог', 'художник', 'студент', 'пенсіонер',
+  'пенсіонерка', 'мешканець', 'ріелтор', 'рятувальник', 'бібліотекар',
+  'тренер', 'спеціаліст', 'брат', 'сестра', 'дитина', 'мама', 'тато',
+  'син', 'донька', 'дочка', 'бабуся', 'дідусь', 'дядько', 'тітка',
+  'онук', 'онука', 'немовля', 'друг', 'подруга', 'сусід', 'гість',
+  'господиня', 'господар', 'будівельник', 'електрик', 'інженер',
+  'працівник', 'фін', 'медсестра', 'бухгалтер', 'фармацевт', 'водій',
+  'школяр', 'школярка', 'учениця', 'учень', 'кіт', 'собака', 'папуга',
+  'хом’як', 'ведмідь', 'лисиця', 'миша', 'вовк', 'рись', 'заєць',
+  'їжак', 'сова', 'черепаха', 'кобра', 'бджола', 'лев', 'доктор',
+  'чоловік', 'дружина', 'хлопець', 'дівчина', 'велетень', 'спортсмен',
+  'танцюрист', 'фотограф', 'гід', 'логопед', 'людина', 'жінка',
+  'малюк', 'дід', 'санта', 'мороз', 'кішка', 'пес', 'родина',
+  'сім’я', 'птах', 'тварина', 'цуценя',
+];
+
+/// Маркеры переводов: место (фразы «иду в / я в / выхожу из»).
+const _placeMarkers = [
+  'кімнат', 'кухн', 'будинок', 'школ', 'магазин', 'аптек', 'парк',
+  'ліс', 'озеро', 'гора', 'ринок', 'місто', 'село', 'квартир', 'балкон',
+  'передпокій', 'ванн', 'спальн', 'вітальн', 'підвал', 'гараж', 'сауна',
+  'кафе', 'ресторан', 'лікарн', 'поліклінік', 'садок', 'офіс', 'басейн',
+  'терас', 'сад', 'парковка', 'зупинк', 'кіоск', 'салон', 'зал',
+  'коридор', 'поверх', 'вулиц', 'майданчик', 'хутір', 'ферм', 'комор',
+  'душов', 'центр', 'передмістя', 'Фінлянд', 'Естон', 'Україн',
+  'галявин', 'клас', 'море', 'пляж', 'двір', 'реєстратур', 'сцен',
+  'бібліотек', 'дах', 'готел', 'стадіон', 'річка', 'природ', 'фірм',
+  'міста', 'дім', 'домівка', 'будівл',
+];
+
+bool _matchesAny(String tr, List<String> markers) {
+  final low = tr.toLowerCase();
+  for (final m in markers) {
+    if (low.contains(m.toLowerCase())) return true;
+  }
+  return false;
+}
+
+/// Человек/животное: точное совпадение отдельного слова перевода.
+bool _isPerson(String tr) {
+  final words = tr.toLowerCase().split(RegExp(r'[^а-щьюяіїєґ’]+'));
+  for (final w in words) {
+    if (w.isNotEmpty && _personWords.contains(w)) return true;
+  }
+  return false;
+}
+
+/// Фразы со всеми падежами (для существительных). Шаблон подбирается
+/// по смыслу слова: человек / место / предмет — чтобы не выходило
+/// «я иду в сок». (падеж-вопрос, фраза, перевод).
 List<(String, String, String)> casePhrases(Lexeme lx) {
   if (lx.kind != 'n' || lx.f2.isEmpty) return const [];
   final s = lx.f2;
   final tr = _shortTr(lx.tr);
-  final gen = _or(ukrGenPlain(lx.tr), tr);
-  final acc = _or(ukrAccPlain(lx.tr), tr);
-  final loc = _or(ukrLocPlain(lx.tr), tr);
-  final ins = _or(ukrInstrPlain(lx.tr), tr);
+  final gen = _ukrForm(lx.tr, ukrGenPlain);
+  final acc = _ukrForm(lx.tr, ukrAccPlain);
+  final loc = _ukrForm(lx.tr, ukrLocPlain);
+  final ins = _ukrForm(lx.tr, ukrInstrPlain);
+  final person = _isPerson(lx.tr);
+  final place = !person && _matchesAny(lx.tr, _placeMarkers);
+
+  if (person) {
+    return [
+      ('Kuhu? — kelle juurde (до кого?)', 'Ma lähen $s juurde.',
+          'Я йду до $gen.'),
+      ('Kus? — kelle juures (у кого?)', 'Ma olen $s juures.', 'Я у $gen.'),
+      ('Kust? — kelle juurest (від кого?)', 'Ma tulen $s juurest.',
+          'Я йду від $gen.'),
+      ('Alaleütlev — kellele? (кому?)', 'Ma helistan ${s}le.',
+          'Я телефоную до $gen.'),
+      ('Alalütlev — kellel? (у кого є?)', 'Kas ${s}l on aega?',
+          'Чи є у $gen час?'),
+      ('Alaltütlev — kellelt? (від кого?)', 'Ma sain kirja ${s}lt.',
+          'Я отримав листа від $gen.'),
+      ('Kaasaütlev — kellega? (з ким?)', 'Ma räägin ${s}ga.',
+          'Я розмовляю з $ins.'),
+      ('Ilmaütlev — ilma kelleta? (без кого?)', 'Me läheme ilma ${s}ta.',
+          'Ми йдемо без $gen.'),
+      ('Saav — kelleks? (ким стає?)', 'Ta õpib ${s}ks.',
+          'Він вчиться на $gen.'),
+      ('Rajav — kelleni? (до кого?)', 'Järjekord jõuab ${s}ni.',
+          'Черга доходить до $gen.'),
+      ('Olev — kellena? (ким працює?)', 'Ta töötab ${s}na.',
+          'Він працює $ins.'),
+    ];
+  }
+
+  if (place) {
+    return [
+      ('Sisseütlev — kuhu? (куди?)', 'Ma lähen ${s}sse.', 'Я йду в $acc.'),
+      ('Seesütlev — kus? (де?)', 'Ma olen ${s}s.', 'Я в $loc.'),
+      ('Seestütlev — kust? (звідки?)', 'Ma tulen ${s}st.',
+          'Я виходжу з $gen.'),
+      ('Alaleütlev — kuhu? (куди? на що?)', 'Ma lähen ${s}le.',
+          'Я йду на $acc.'),
+      ('Alalütlev — kus? (де? на чому?)', 'Ma olen ${s}l.', 'Я на $loc.'),
+      ('Alaltütlev — kust? (з чого?)', 'Ma tulen ${s}lt.', 'Я йду з $gen.'),
+      ('Kaasaütlev — millega? (чим задоволений?)', 'Ma olen ${s}ga rahul.',
+          'Я задоволений $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Korter on ${s}ta.',
+          'Квартира без $gen.'),
+      ('Saav — milleks? (чим стає?)', 'See ruum saab ${s}ks.',
+          'Ця кімната стає $ins.'),
+      ('Rajav — milleni? (до чого?)', 'Ma jalutan ${s}ni.',
+          'Я гуляю до $gen.'),
+      ('Olev — millena? (як що?)', 'Me kasutame seda tuba ${s}na.',
+          'Ми використовуємо цю кімнату як $acc.'),
+    ];
+  }
+
   return [
-    ('Sisseütlev — kuhu? (куди?)', 'Ma lähen ${s}sse.', 'Я йду в $acc.'),
-    ('Seesütlev — kus? (де?)', 'Ma olen ${s}s.', 'Я в $loc.'),
-    ('Seestütlev — kust? (звідки?)', 'Ma tulen ${s}st.', 'Я йду з $gen.'),
+    ('Sisseütlev — kuhu? (куди? у що?)', 'Ma panen selle ${s}sse.',
+        'Я кладу це в $acc.'),
+    ('Seesütlev — kus? (де? у чому?)', 'Mis on ${s}s?', 'Що в $loc?'),
+    ('Seestütlev — kust? (з чого?)', 'Ma võtan selle ${s}st.',
+        'Я беру це з $gen.'),
     ('Alaleütlev — kuhu peale? (на що?)', 'Ma panen selle ${s}le.',
         'Я кладу це на $acc.'),
     ('Alalütlev — kus? (на чому?)', 'See on ${s}l.', 'Це на $loc.'),
     ('Alaltütlev — millelt? (з чого?)', 'Ma võtan selle ${s}lt.',
         'Я беру це з $gen.'),
-    ('Kaasaütlev — kellega? (з ким? з чим?)', 'Ma olen koos ${s}ga.',
-        'Я разом з $ins.'),
-    ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma olen ilma ${s}ta.',
-        'Я без $gen.'),
-    ('Saav — kelleks? (ким? чим стає?)', 'Ta saab ${s}ks.',
-        'Він стає $ins.'),
-    ('Rajav — milleni? (до чого?)', 'Ma jõuan ${s}ni.',
-        'Я доходжу до $gen.'),
-    ('Olev — kellena? (в ролі кого?)', 'Ta töötab ${s}na.',
-        'Він працює як $tr.'),
+    ('Kaasaütlev — millega? (чим задоволений?)', 'Ma olen ${s}ga rahul.',
+        'Я задоволений $ins.'),
+    ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma saan ${s}ta hakkama.',
+        'Я обходжуся без $gen.'),
+    ('Saav — milleks? (на що перетворюється?)', 'See muutub ${s}ks.',
+        'Це перетворюється на $acc.'),
+    ('Rajav — milleni? (до чого?)', 'Ma ulatun ${s}ni.',
+        'Я дотягуюся до $gen.'),
+    ('Olev — millena? (як що?)', 'Me kasutame seda ${s}na.',
+        'Ми використовуємо це як $acc.'),
   ];
 }
 
