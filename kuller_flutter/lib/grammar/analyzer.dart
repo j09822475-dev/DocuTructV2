@@ -614,7 +614,8 @@ const _personWords = [
   'чоловік', 'дружина', 'хлопець', 'дівчина', 'велетень', 'спортсмен',
   'танцюрист', 'фотограф', 'гід', 'логопед', 'людина', 'жінка',
   'малюк', 'дід', 'санта', 'мороз', 'кішка', 'пес', 'родина',
-  'сім’я', 'птах', 'тварина', 'цуценя',
+  'сім’я', 'птах', 'тварина', 'цуценя', 'соловей', 'команда',
+  'група', 'хор', 'улюбленець', 'близнюки',
 ];
 
 /// Маркеры переводов: место (фразы «иду в / я в / выхожу из»).
@@ -627,8 +628,79 @@ const _placeMarkers = [
   'коридор', 'поверх', 'вулиц', 'майданчик', 'хутір', 'ферм', 'комор',
   'душов', 'центр', 'передмістя', 'Фінлянд', 'Естон', 'Україн',
   'галявин', 'клас', 'море', 'пляж', 'двір', 'реєстратур', 'сцен',
-  'бібліотек', 'дах', 'готел', 'стадіон', 'річка', 'природ', 'фірм',
-  'міста', 'дім', 'домівка', 'будівл',
+  'бібліотек', 'готел', 'стадіон', 'річка', 'природ', 'фірм',
+  'міста', 'дім', 'домівка', 'будівл', 'приміщенн', 'одеса',
+  'бердянськ', 'київ', 'таллінн', 'нарва', 'маарду', 'пярну',
+  'кейла', 'йихві', 'нимме',
+];
+
+/// Еда и напитки: фразы про вкус и приготовление.
+const _foodMarkers = [
+  'сік', 'чай', 'кава', 'суп', 'каша', 'каші', 'печиво',
+  'салат', 'мед', 'молок', 'вода', 'морозиво', 'їжа', 'страв',
+  'тістечко', 'пиріг', 'фрукт', 'яблук', 'виноград', 'ананас',
+  'апельсин', 'помідор', 'рис', 'макарон', 'круасан', 'ласощі',
+  'цукор', 'бутерброд', 'хліб', 'сніданок', 'обід', 'вечеря',
+  'лимонад', 'сіль', 'банан', 'картопл', 'м’ясо', 'трава',
+  'піца', 'вино', 'риба', 'яйце', 'консерв', 'моркв', 'ягод',
+  'виноградин', 'зелень',
+];
+
+/// Одежда и обувь: фразы про ношение.
+const _clothesMarkers = [
+  'сукня', 'сорочка', 'футболка', 'блуз', 'джинси', 'штани', 'светр',
+  'шарф', 'шапка', 'куртка', 'капц', 'капец', 'туфл', 'шкарпетк',
+  'кофтин', 'пальто', 'кепка', 'плаття',
+];
+
+/// Части здания: стены, окна, двери — фразы про «на стене, из окна».
+const _fixtureMarkers = [
+  'стін', 'вікн', 'двері', 'підлог', 'стел', 'сходи', 'дах',
+  'ворота',
+];
+
+/// Транспорт: фразы «сажусь в, еду на».
+const _vehicleMarkers = [
+  'автомобіл', 'автобус', 'велосипед', 'скейтборд', 'ліфт',
+];
+
+/// Части тела: фразы про крем, боль и царапины.
+const _bodyMarkers = [
+  'рука', 'обличчя', 'око', 'очі', 'зуб', 'волосся', 'нога',
+  'голова', 'шия', 'спина', 'живіт', 'вухо', 'борода', 'крило',
+  'хвіст', 'дзьоб', 'перо', 'вуса', 'палець', 'коліно',
+];
+
+/// Абстрактные понятия, время, погода: «говорим о, думаю о».
+const _abstractMarkers = [
+  'радість', 'допомог', 'консультац', 'оптимізм', 'песимізм', 'щаст',
+  'честь', 'сміливість', 'ввічливість', 'мудрість', 'доброт', 'спокій',
+  'мир', 'краса', 'любов', 'розмов', 'свято', 'мова', 'характер',
+  'час', 'різниц', 'відстан', 'паркуванн', 'прибиранн', 'в’язанн',
+  'біг', 'подорож', 'тренуванн', 'обстеженн', 'прийом', 'майбутн',
+  'початок', 'кінець', 'мить', 'ранок', 'вечір', 'день', 'тиждень',
+  'рік', 'вихідн', 'дощ', 'сніг', 'вітер', 'сонце', 'хмар', 'небо',
+  'погод', 'робота', 'відпочинок', 'спів', 'число', 'урок', 'заняття',
+  'музик', 'фільм', 'новин', 'знижк', 'оренд', 'рахунок', 'ніч',
+  'ночівл', 'життя', 'вік', 'гроші', 'ціна', 'зарплат', 'здоров',
+  'настрій', 'сон', 'весна', 'літо', 'зима', 'осінь', 'січень',
+  'лютий', 'березень', 'квітень', 'травень', 'червень', 'липень',
+  'серпень', 'вересень', 'жовтень', 'листопад', 'грудень',
+  'понеділок', 'вівторок', 'середа', 'четвер', 'п’ятниц', 'субот',
+  'неділ', 'відмінок', 'відсутн', 'запитанн', 'відповідь', 'слово',
+  'речення', 'текст', 'правда', 'думка', 'ідея', 'хобі', 'спорт',
+  'теніс', 'баскетбол', 'футбол', 'гра', 'візит', 'похід', 'зустріч',
+  'загадка', 'тест', 'екзамен', 'весілля', 'Різдво', 'уваг',
+  'порядкове', 'зберіганн', 'рентген', 'узд', 'товар', 'поїздк',
+  'математик', 'фізик', 'історі', 'інформаці', 'мисленн', 'мрі',
+  'завданн', 'сума', 'гривн', 'хвилин', 'пауз', 'раз', 'лист',
+  'доставк', 'розрахунок', 'повідомленн', 'адрес', 'контакт',
+  'зображенн', 'фото', 'голос', 'гороскоп', 'кілограм', 'край',
+  'гроз', 'дзюрчанн', 'ліки', 'план', 'мультик', 'пікнік',
+  'документ', 'власніст', 'метр', 'євро', 'банкнот', 'платеж',
+  'оголошенн', 'нагляд', 'світло', 'дата', 'форма', 'номер',
+  'ім’я', 'прізвищ', 'місц', 'черга', 'запереченн', 'відсутніст',
+  'читанн', 'фотографі', 'вайфай', 'вхід', 'слух',
 ];
 
 bool _matchesAny(String tr, List<String> markers) {
@@ -648,19 +720,212 @@ bool _isPerson(String tr) {
   return false;
 }
 
+/// Совпадение по началу слова (не более двух лишних букв в конце),
+/// чтобы «рис» не находился внутри «туристична».
+bool _wordPrefix(String tr, List<String> markers) {
+  final words = tr.toLowerCase().split(RegExp(r'[^а-щьюяіїєґ’]+'));
+  for (final w in words) {
+    if (w.isEmpty) continue;
+    for (final m in markers) {
+      if (w.startsWith(m) && w.length - m.length <= 2) return true;
+    }
+  }
+  return false;
+}
+
 /// Фразы со всеми падежами (для существительных). Шаблон подбирается
 /// по смыслу слова: человек / место / предмет — чтобы не выходило
 /// «я иду в сок». (падеж-вопрос, фраза, перевод).
+/// Местоимения — падежные фразы-шаблоны для них не строим.
+const _noPhraseLemmas = {'see', 'need', 'kes', 'mis'};
+
 List<(String, String, String)> casePhrases(Lexeme lx) {
   if (lx.kind != 'n' || lx.f2.isEmpty) return const [];
+  if (_noPhraseLemmas.contains(lx.f1)) return const [];
   final s = lx.f2;
   final tr = _shortTr(lx.tr);
   final gen = _ukrForm(lx.tr, ukrGenPlain);
   final acc = _ukrForm(lx.tr, ukrAccPlain);
   final loc = _ukrForm(lx.tr, ukrLocPlain);
   final ins = _ukrForm(lx.tr, ukrInstrPlain);
-  final person = _isPerson(lx.tr);
-  final place = !person && _matchesAny(lx.tr, _placeMarkers);
+  // класс определяем по короткому переводу («колесо; велосипед» → колесо)
+  final st = _shortTr(lx.tr);
+  final zodiac = lx.tr.contains('(знак');
+  final cityNote = lx.tr.contains('(міст') || lx.tr.contains('(район');
+  final person = !zodiac && !cityNote && _isPerson(st);
+  final place =
+      !zodiac && !person && (cityNote || _matchesAny(st, _placeMarkers));
+  final clothes =
+      !zodiac && !person && !place && _wordPrefix(st, _clothesMarkers);
+  final food = !zodiac && !person && !place && !clothes &&
+      _wordPrefix(st, _foodMarkers);
+  final vehicle = !zodiac && !person && !place && !clothes && !food &&
+      _wordPrefix(st, _vehicleMarkers);
+  final body = !zodiac && !person && !place && !clothes && !food &&
+      !vehicle &&
+      _wordPrefix(st, _bodyMarkers);
+  final fixture = !zodiac && !person && !place && !clothes && !food &&
+      !vehicle && !body &&
+      _wordPrefix(st, _fixtureMarkers);
+  final abstract0 = zodiac ||
+      (!person && !place && !clothes && !food && !vehicle && !body &&
+          !fixture &&
+          _wordPrefix(st, _abstractMarkers));
+
+  if (body) {
+    return [
+      ('Sisseütlev — kuhu? (у що?)', 'Kreem imendub ${s}sse.',
+          'Крем вбирається в $acc.'),
+      ('Seesütlev — kus? (у чому?)', '${s}s on valu.', 'У $loc біль.'),
+      ('Seestütlev — millest? (з чого?)', 'Valu läks ${s}st ära.',
+          'Біль пішов з $gen.'),
+      ('Alaleütlev — mille peale? (на що?)', 'Ma panen kreemi ${s}le.',
+          'Я наношу крем на $acc.'),
+      ('Alalütlev — millel? (на чому?)', '${s}l on väike kriips.',
+          'На $loc маленька подряпина.'),
+      ('Alaltütlev — millelt? (з чого?)', 'Ma pühin vee ${s}lt ära.',
+          'Я витираю воду з $gen.'),
+      ('Kaasaütlev — millega? (чим?)', 'Ma katsun seda ${s}ga.',
+          'Я торкаюся цього $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Ilma ${s}ta on raske.',
+          'Без $gen важко.'),
+      ('Rajav — milleni? (до чого?)', 'Vesi ulatub ${s}ni.',
+          'Вода сягає до $gen.'),
+    ];
+  }
+
+  if (clothes) {
+    return [
+      ('Sisseütlev — kuhu? (куди?)', 'Õmbleja õmbleb ${s}sse tasku.',
+          'Кравець пришиває до $gen кишеню.'),
+      ('Seesütlev — kus? milles? (у чому?)', 'Ta on täna ${s}s.',
+          'Він/вона сьогодні в $loc.'),
+      ('Seestütlev — millest? (з чого?)', 'Ma võtan niidi ${s}st.',
+          'Я знімаю нитку з $gen.'),
+      ('Alaleütlev — mille peale? (на що?)', 'Ema õmbleb ${s}le nööbi.',
+          'Мама пришиває до $gen ґудзик.'),
+      ('Alalütlev — millel? (у чого?)', '${s}l on ilus värv.',
+          'У $gen гарний колір.'),
+      ('Alaltütlev — millelt? (з чого?)', 'Ma eemaldan pleki ${s}lt.',
+          'Я виводжу пляму з $gen.'),
+      ('Kaasaütlev — millega? (з чим пасує?)', 'See sobib ${s}ga kokku.',
+          'Це пасує до $gen.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma tulen täna ${s}ta.',
+          'Я прийду сьогодні без $gen.'),
+      ('Saav — milleks? (чим стане?)', 'See kangas saab ${s}ks.',
+          'Ця тканина стане $ins.'),
+      ('Rajav — milleni? (до чого?)', 'Ma ulatun ${s}ni.',
+          'Я дотягуюся до $gen.'),
+      ('Olev — millena? (як що?)', 'Me kasutame seda ${s}na.',
+          'Ми використовуємо це як $acc.'),
+    ];
+  }
+
+  if (food) {
+    return [
+      ('Sisseütlev — kuhu? (куди? у що?)', 'Ma panen suhkrut ${s}sse.',
+          'Я кладу цукор у $acc.'),
+      ('Seesütlev — kus? (у чому?)', 'Mis on ${s}s?', 'Що в $loc?'),
+      ('Seestütlev — millest? (з чого?)', 'Ma alustan ${s}st.',
+          'Я починаю з $gen.'),
+      ('Alaleütlev — millele? (до чого?)', 'Ma lisan ${s}le soola.',
+          'Я додаю до $gen солі.'),
+      ('Alalütlev — millel? (у чого?)', '${s}l on hea maitse.',
+          'У $gen гарний смак.'),
+      ('Alaltütlev — millelt? (від чого?)', 'Aur tõuseb ${s}lt.',
+          'Пара піднімається від $gen.'),
+      ('Kaasaütlev — millega? (чим задоволений?)', 'Ma olen ${s}ga rahul.',
+          'Я задоволений $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma saan ${s}ta hakkama.',
+          'Я обходжуся без $gen.'),
+      ('Saav — milleks? (на що перетворюється?)', 'See muutub ${s}ks.',
+          'Це перетворюється на $acc.'),
+      ('Rajav — milleni? (до чого?)', 'Ma ulatun ${s}ni.',
+          'Я дотягуюся до $gen.'),
+      ('Olev — millena? (як що?)', 'Me pakume seda ${s}na.',
+          'Ми подаємо це як $acc.'),
+    ];
+  }
+
+  if (vehicle) {
+    return [
+      ('Sisseütlev — kuhu? (куди?)', 'Ma istun ${s}sse.',
+          'Я сідаю в $acc.'),
+      ('Seesütlev — kus? (де?)', 'Ma olen ${s}s.', 'Я в $loc.'),
+      ('Seestütlev — kust? (звідки?)', 'Ma tulen ${s}st välja.',
+          'Я виходжу з $gen.'),
+      ('Alaleütlev — mille peale? (на що?)', 'Ma panen koti ${s}le.',
+          'Я кладу сумку на $acc.'),
+      ('Alalütlev — millel? (на чому?)', 'Kott on ${s}l.',
+          'Сумка на $loc.'),
+      ('Alaltütlev — millelt? (з чого?)', 'Ma võtan koti ${s}lt.',
+          'Я беру сумку з $gen.'),
+      ('Kaasaütlev — millega? (чим їду?)', 'Ma sõidan ${s}ga.',
+          'Я їду $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma saan ${s}ta hakkama.',
+          'Я обходжуся без $gen.'),
+      ('Saav — milleks? (чим стає?)', 'See muutub ${s}ks.',
+          'Це перетворюється на $acc.'),
+      ('Rajav — milleni? (до чого?)', 'Ma jalutan ${s}ni.',
+          'Я йду пішки до $gen.'),
+      ('Olev — millena? (як що?)', 'Me kasutame seda ${s}na.',
+          'Ми використовуємо це як $acc.'),
+    ];
+  }
+
+  if (fixture) {
+    return [
+      ('Sisseütlev — kuhu? (куди?)', 'Päike paistab ${s}sse.',
+          'Сонце світить у $acc.'),
+      ('Seesütlev — kus? (у чому?)', '${s}s on väike auk.',
+          'У $loc маленька дірка.'),
+      ('Seestütlev — kust? (звідки?)', 'Tuul tuleb ${s}st.',
+          'Вітер дме з $gen.'),
+      ('Alaleütlev — mille peale? (на що?)', 'Ma riputan pildi ${s}le.',
+          'Я вішаю картину на $acc.'),
+      ('Alalütlev — millel? (на чому?)', '${s}l on kärbes.',
+          'На $loc муха.'),
+      ('Alaltütlev — millelt? (з чого?)', 'Ma võtan pildi ${s}lt maha.',
+          'Я знімаю картину з $gen.'),
+      ('Kaasaütlev — millega? (чим задоволений?)', 'Ma olen ${s}ga rahul.',
+          'Я задоволений $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Tuba on ${s}ta.',
+          'Кімната без $gen.'),
+      ('Saav — milleks? (чим стає?)', 'See muutub ${s}ks.',
+          'Це перетворюється на $acc.'),
+      ('Rajav — milleni? (до чого?)', 'Kapp ulatub ${s}ni.',
+          'Шафа сягає $gen.'),
+      ('Olev — millena? (як що?)', 'Me kasutame seda ${s}na.',
+          'Ми використовуємо це як $acc.'),
+    ];
+  }
+
+  if (abstract0) {
+    return [
+      ('Sisseütlev — millesse? (у що?)', 'Ma usun ${s}sse.',
+          'Я вірю в $acc.'),
+      ('Seesütlev — milles? (у чому?)', 'Ma olen ${s}s kindel.',
+          'Я впевнений у $loc.'),
+      ('Seestütlev — millest? (про що?)', 'Me räägime ${s}st.',
+          'Ми говоримо про $acc.'),
+      ('Alaleütlev — millele? (про що?)', 'Ma mõtlen ${s}le.',
+          'Я думаю про $acc.'),
+      ('Alalütlev — millel? (у чого?)', '${s}l on tähtis roll.',
+          'У $gen важлива роль.'),
+      ('Alaltütlev — millelt? (від чого?)', 'Ma ootan ${s}lt palju.',
+          'Я чекаю від $gen багато.'),
+      ('Kaasaütlev — millega? (чим задоволений?)', 'Ma olen ${s}ga rahul.',
+          'Я задоволений $ins.'),
+      ('Ilmaütlev — ilma milleta? (без чого?)', 'Elu ${s}ta on raske.',
+          'Життя без $gen важке.'),
+      ('Saav — milleks? (на що перетворюється?)', 'See muutub ${s}ks.',
+          'Це перетворюється на $acc.'),
+      ('Rajav — milleni? (до чого?)', 'Me jõuame ${s}ni.',
+          'Ми доходимо до $gen.'),
+      ('Olev — millena? (як що?)', 'See tundub ${s}na.',
+          'Це здається $ins.'),
+    ];
+  }
 
   if (person) {
     return [

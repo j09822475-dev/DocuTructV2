@@ -410,6 +410,9 @@ const Map<String, (String, String)> _nounForms = {
   'тварина': ('тварини', 'тварину'),
   'цуценя': ('цуценяти', 'цуценя'),
   'дім, домівка': ('дому', 'дім'),
+  'дім': ('дому', 'дім'),
+  'одяг': ('одягу', 'одяг'),
+  'піца-піч': ('піца-печі', 'піца-піч'),
   'готель': ('готелю', 'готель'),
   'річка': ('річки', 'річку'),
   'природа': ('природи', 'природу'),
@@ -504,6 +507,76 @@ const Map<String, (String, String)> _nounForms = {
   'жінка': ('жінки', 'жінку'),
   'вихідні': ('вихідних', 'вихідні'),
   'макарони': ('макаронів', 'макарони'),
+  'спокій': ('спокою', 'спокій'),
+  'сік': ('соку', 'сік'),
+  'дощ': ('дощу', 'дощ'),
+  'сніг': ('снігу', 'сніг'),
+  'кафе': ('кафе', 'кафе'),
+  'плоскогубці': ('плоскогубців', 'плоскогубці'),
+  'ім’я': ('імені', 'ім’я'),
+  'піч': ('печі', 'піч'),
+  'дріт': ('дроту', 'дріт'),
+  'урок': ('уроку', 'урок'),
+  'план': ('плану', 'план'),
+  'центр': ('центру', 'центр'),
+  'район': ('району', 'район'),
+  'майстер': ('майстра', 'майстра'),
+  'улюбленець': ('улюбленця', 'улюбленця'),
+  'столик': ('столика', 'столик'),
+  'рюкзак': ('рюкзака', 'рюкзак'),
+  'комбайн': ('комбайна', 'комбайн'),
+  'ключ': ('ключа', 'ключ'),
+  'майданчик': ('майданчика', 'майданчик'),
+  'садок': ('садка', 'садок'),
+  'вогонь': ('вогню', 'вогонь'),
+  'горщик': ('горщика', 'горщик'),
+  'засіб': ('засобу', 'засіб'),
+  'спів': ('співу', 'спів'),
+  'раз': ('разу', 'раз'),
+  'пляж': ('пляжу', 'пляж'),
+  'верес': ('вересу', 'верес'),
+  'оптимізм': ('оптимізму', 'оптимізм'),
+  'честь': ('честі', 'честь'),
+  'відмінок': ('відмінка', 'відмінок'),
+  'розрахунок': ('розрахунку', 'розрахунок'),
+  'доктор': ('доктора', 'доктора'),
+  'фін': ('фіна', 'фіна'),
+  'танцюрист': ('танцюриста', 'танцюриста'),
+  'онук': ('онука', 'онука'),
+  'платежі': ('платежів', 'платежі'),
+  'близнюки': ('близнюків', 'близнюків'),
+  'лев': ('лева', 'лева'),
+  'Телець': ('Тельця', 'Тельця'),
+  'Рак': ('Рака', 'Рака'),
+  'Стрілець': ('Стрільця', 'Стрільця'),
+  'Козоріг': ('Козорога', 'Козорога'),
+  'Скорпіон': ('Скорпіона', 'Скорпіона'),
+  'Водолій': ('Водолія', 'Водолія'),
+  'Терези': ('Терезів', 'Терези'),
+  'Овен': ('Овна', 'Овна'),
+  'Діва': ('Діви', 'Діву'),
+  'Нарва': ('Нарви', 'Нарву'),
+  'Одеса': ('Одеси', 'Одесу'),
+  'Кейла': ('Кейли', 'Кейлу'),
+  'Естонія': ('Естонії', 'Естонію'),
+  'Україна': ('України', 'Україну'),
+  'Фінляндія': ('Фінляндії', 'Фінляндію'),
+  'Таллінн': ('Таллінна', 'Таллінн'),
+  'Київ': ('Києва', 'Київ'),
+  'Бердянськ': ('Бердянська', 'Бердянськ'),
+  'Дід Мороз': ('Діда Мороза', 'Діда Мороза'),
+  'майбутнє': ('майбутнього', 'майбутнє'),
+  'січень': ('січня', 'січень'),
+  'березень': ('березня', 'березень'),
+  'квітень': ('квітня', 'квітень'),
+  'травень': ('травня', 'травень'),
+  'червень': ('червня', 'червень'),
+  'липень': ('липня', 'липень'),
+  'серпень': ('серпня', 'серпень'),
+  'вересень': ('вересня', 'вересень'),
+  'жовтень': ('жовтня', 'жовтень'),
+  'листопад': ('листопада', 'листопад'),
+  'грудень': ('грудня', 'грудень'),
   // -------- числительные --------
   'двадцять': ('двадцяти', 'двадцять'),
   'тридцять': ('тридцяти', 'тридцять'),
@@ -605,6 +678,100 @@ String _adjGen(String tr) {
   return '';
 }
 
+/// Женские прилагательные из переводов (для «прил. + сущ.»).
+const Set<String> _femAdjWords = {
+  'пральна', 'посудомийна', 'ванна', 'робоча', 'дитяча', 'кухонна',
+  'книжкова', 'душова', 'автобусна', 'туристична', 'зубна', 'пряна',
+  'літня', 'різдвяна', 'комп’ютерна', 'грошова', 'рятувальна',
+  'лісова', 'святкова',
+};
+
+/// Склонение украинского прилагательного по падежу.
+String _adjCase(String w, String kase) {
+  if (w.endsWith('ий')) {
+    final st = w.substring(0, w.length - 2);
+    if (kase == 'gen') return '${st}ого';
+    if (kase == 'acc') return w;
+    if (kase == 'loc') return '${st}ому';
+    if (kase == 'ins') return '${st}им';
+  }
+  if (w.endsWith('ій')) {
+    final st = w.substring(0, w.length - 2);
+    if (kase == 'gen') return '${st}ього';
+    if (kase == 'acc') return w;
+    if (kase == 'loc') return '${st}ьому';
+    if (kase == 'ins') return '${st}ім';
+  }
+  if (w.endsWith('я')) {
+    final st = w.substring(0, w.length - 1);
+    if (kase == 'gen') return '${st}ьої';
+    if (kase == 'acc') return '${st}ю';
+    if (kase == 'loc') return '${st}ій';
+    if (kase == 'ins') return '${st}ьою';
+  }
+  if (w.endsWith('а')) {
+    final st = w.substring(0, w.length - 1);
+    if (kase == 'gen') return '${st}ої';
+    if (kase == 'acc') return '${st}у';
+    if (kase == 'loc') return '${st}ій';
+    if (kase == 'ins') return '${st}ою';
+  }
+  if (w.endsWith('е')) {
+    final st = w.substring(0, w.length - 1);
+    if (kase == 'gen') return '${st}ого';
+    if (kase == 'acc') return w;
+    if (kase == 'loc') return '${st}ому';
+    if (kase == 'ins') return '${st}им';
+  }
+  if (w.endsWith('є')) {
+    final st = w.substring(0, w.length - 1);
+    if (kase == 'gen') return '${st}ього';
+    if (kase == 'acc') return w;
+    if (kase == 'loc') return '${st}ьому';
+    if (kase == 'ins') return '${st}ім';
+  }
+  if (w.endsWith('і')) {
+    final st = w.substring(0, w.length - 1);
+    if (kase == 'gen') return '${st}их';
+    if (kase == 'acc') return w;
+    if (kase == 'loc') return '${st}их';
+    if (kase == 'ins') return '${st}ими';
+  }
+  return '';
+}
+
+String _nounCase(String w, String kase) {
+  if (kase == 'gen') return ukrGenPlain(w);
+  if (kase == 'acc') return ukrAccPlain(w);
+  if (kase == 'loc') return ukrLocPlain(w);
+  return ukrInstrPlain(w);
+}
+
+/// Склонение словосочетания: «пральна машина» → «пральною машиною»,
+/// «чашка кави» → «чашкою кави», «тренер з плавання» → «тренером з
+/// плавання» (склоняется первое слово, хвост не меняется).
+String _phraseCase(String tr, String kase) {
+  if (tr.contains(',') || tr.contains(';') || tr.contains('(')) return '';
+  final parts = tr.split(' ');
+  if (parts.length < 2 || parts.length > 4) return '';
+  final w1 = parts[0];
+  final isAdj = w1.endsWith('ий') ||
+      w1.endsWith('ій') ||
+      w1.endsWith('е') ||
+      w1.endsWith('є') ||
+      w1.endsWith('і') ||
+      _femAdjWords.contains(w1);
+  if (isAdj && parts.length == 2) {
+    final a = _adjCase(w1, kase);
+    final n = _nounCase(parts[1], kase);
+    if (a.isEmpty || n.isEmpty) return '';
+    return '$a $n';
+  }
+  final n1 = _nounCase(w1, kase);
+  if (n1.isEmpty) return '';
+  return '$n1 ${parts.sublist(1).join(' ')}';
+}
+
 /// Родовий відмінок перевода (для omastav): «кімната» → «кімнати».
 String ukrGen(String tr) {
   final f = _nounForms[tr];
@@ -616,8 +783,15 @@ String ukrGen(String tr) {
 /// Правило род. падежа для простых слов (жен. -а/-я, ср. -о/-е):
 /// мама → мами, кухня → кухні, вікно → вікна, море → моря.
 String _nounGenRule(String tr) {
-  if (tr.length < 4 || tr.contains(' ') || tr.contains(',')) return '';
+  if (tr.length < 3 || tr.contains(' ') || tr.contains(',')) return '';
   if (tr[0] != tr[0].toLowerCase()) return '';
+  if (tr.endsWith('ість')) {
+    return '${tr.substring(0, tr.length - 4)}ості'; // сміливість → сміливості
+  }
+  if (tr.endsWith('ння') || tr.endsWith('ття') || tr.endsWith('сся') ||
+      tr.endsWith('лля') || tr.endsWith('стя') || tr.endsWith('ччя')) {
+    return tr; // середній рід: оголошення → (без) оголошення
+  }
   final stem = tr.substring(0, tr.length - 1);
   if (tr.endsWith('а')) {
     final last = stem[stem.length - 1];
@@ -632,8 +806,12 @@ String _nounGenRule(String tr) {
 
 /// Правило знах. падежа: жен. -а → -у, -я → -ю; ср. род — без изменений.
 String _nounAccRule(String tr) {
-  if (tr.length < 4 || tr.contains(' ') || tr.contains(',')) return '';
+  if (tr.length < 3 || tr.contains(' ') || tr.contains(',')) return '';
   if (tr[0] != tr[0].toLowerCase()) return '';
+  if (tr.endsWith('ння') || tr.endsWith('ття') || tr.endsWith('сся') ||
+      tr.endsWith('лля') || tr.endsWith('стя') || tr.endsWith('ччя')) {
+    return tr;
+  }
   final stem = tr.substring(0, tr.length - 1);
   if (tr.endsWith('а')) return '${stem}у';
   if (tr.endsWith('я') && !tr.endsWith('’я')) return '${stem}ю';
@@ -647,7 +825,9 @@ String ukrGenPlain(String tr) {
   if (f != null) return f.$1;
   final a = _adjGen(tr);
   if (a.isNotEmpty) return a;
-  return _nounGenRule(tr);
+  final r = _nounGenRule(tr);
+  if (r.isNotEmpty) return r;
+  return _phraseCase(tr, 'gen');
 }
 
 /// Знахідний без пояснения; '' — если слова нет в словаре форм.
@@ -655,7 +835,9 @@ String ukrAccPlain(String tr) {
   final f = _nounForms[tr];
   if (f != null) return f.$2;
   if (_adjGen(tr).isNotEmpty) return tr;
-  return _nounAccRule(tr);
+  final r = _nounAccRule(tr);
+  if (r.isNotEmpty) return r;
+  return _phraseCase(tr, 'acc');
 }
 
 /// «я …» без запасного варианта; '' — если глагола нет в словаре.
@@ -665,14 +847,30 @@ String ukrPres1Plain(String tr) => _pres1[tr] ?? '';
 const Map<String, String> _locFix = {
   'сад': 'саду',
   'дах': 'даху',
+  'сніг': 'снігу',
+  'сік': 'соку',
   'апельсиновий сік': 'апельсиновому соку',
   'чашка кави': 'чашці кави',
+  'піца-піч': 'піца-печі',
+  'Таллінн': 'Таллінні',
+  'Київ': 'Києві',
+  'Бердянськ': 'Бердянську',
+  'майбутнє': 'майбутньому',
+  'День матері': 'Дні матері',
+  'ім’я': 'імені',
 };
 
 /// Отдельные исключения орудного падежа.
 const Map<String, String> _instrFix = {
   'апельсиновий сік': 'апельсиновим соком',
   'чашка кави': 'чашкою кави',
+  'двері': 'дверима',
+  'гроші': 'грошима',
+  'піца-піч': 'піца-піччю',
+  'Київ': 'Києвом',
+  'майбутнє': 'майбутнім',
+  'Дід Мороз': 'Дідом Морозом',
+  'День матері': 'Днем матері',
 };
 
 /// Місцевий відмінок (у/на чому?) — из родительного:
@@ -680,6 +878,10 @@ const Map<String, String> _instrFix = {
 String ukrLocPlain(String tr) {
   final fix = _locFix[tr];
   if (fix != null) return fix;
+  if (tr.contains(' ')) return _phraseCase(tr, 'loc');
+  if (_nounForms[tr] == null && _adjGen(tr).isNotEmpty) {
+    return _adjCase(tr, 'loc');
+  }
   if (tr.endsWith('ко')) return '${tr.substring(0, tr.length - 1)}у'; // ліжку
   final g = ukrGenPlain(tr);
   if (g.isEmpty || g.contains(' ') || g.contains(',') || g.contains(';')) {
@@ -699,16 +901,34 @@ String ukrLocPlain(String tr) {
   }
   if (g.endsWith('а')) return '${g.substring(0, g.length - 1)}і';
   if (g.endsWith('у') || g.endsWith('ю')) {
-    // будинку, парку — на -к остаётся -у; иначе от именительного:
-    // поверх → поверсі, ліс → лісі, офіс → офісі, чай → чаї
+    // будинку, парку — на -к остаётся -у; иначе основа родительного
+    // с чередованием: поверху → поверсі, входу → вході, лісу → лісі
     if (tr.endsWith('к')) return g;
     if (tr.contains(' ')) return g;
     if (tr.endsWith('й')) return '${tr.substring(0, tr.length - 1)}ї';
-    if (tr.endsWith('х')) return '${tr.substring(0, tr.length - 1)}сі';
-    if (tr.endsWith('г')) return '${tr.substring(0, tr.length - 1)}зі';
-    return '${tr}і';
+    final stem = g.substring(0, g.length - 1);
+    if (stem.endsWith('х')) {
+      return '${stem.substring(0, stem.length - 1)}сі';
+    }
+    if (stem.endsWith('г')) {
+      return '${stem.substring(0, stem.length - 1)}зі';
+    }
+    return '${stem}і';
   }
   if (g.endsWith('і') || g.endsWith('ї')) return g;
+  // множественные: меблі → меблях, сходи → сходах, гроші → грошах
+  if (g.endsWith('их') && (tr.endsWith('і') || tr.endsWith('и'))) {
+    return g; // вихідні → на вихідних
+  }
+  if ((g.endsWith('ів') || g.endsWith('ей') || g.endsWith('ок')) &&
+      (tr.endsWith('і') || tr.endsWith('и'))) {
+    final stem = tr.substring(0, tr.length - 1);
+    if (tr.endsWith('і')) {
+      final last = stem.isEmpty ? '' : stem[stem.length - 1];
+      return 'жчшщ'.contains(last) ? '${stem}ах' : '${stem}ях';
+    }
+    return '${stem}ах';
+  }
   return '';
 }
 
@@ -717,8 +937,11 @@ String ukrLocPlain(String tr) {
 String ukrInstrPlain(String tr) {
   final fix = _instrFix[tr];
   if (fix != null) return fix;
-  if (tr.contains(' ') || tr.contains(',') || tr.contains(';') ||
-      tr.contains('(')) {
+  if (tr.contains(' ')) return _phraseCase(tr, 'ins');
+  if (_nounForms[tr] == null && _adjGen(tr).isNotEmpty) {
+    return _adjCase(tr, 'ins');
+  }
+  if (tr.contains(',') || tr.contains(';') || tr.contains('(')) {
     return '';
   }
   if (tr.endsWith('й')) return '${tr.substring(0, tr.length - 1)}єм'; // чаєм
@@ -730,8 +953,9 @@ String ukrInstrPlain(String tr) {
         ? '${tr.substring(0, tr.length - 1)}єю'
         : '${tr}м';
   }
-  if (tr.endsWith('ння') || tr.endsWith('ття') || tr.endsWith('лля')) {
-    return '${tr}м'; // прибиранням, життям (ср. род)
+  if (tr.endsWith('ння') || tr.endsWith('ття') || tr.endsWith('лля') ||
+      tr.endsWith('ччя') || tr.endsWith('сся') || tr.endsWith('стя')) {
+    return '${tr}м'; // прибиранням, обличчям, волоссям (ср. род)
   }
   if (tr.endsWith('я')) return '${tr.substring(0, tr.length - 1)}ею'; // кухнею
   if (tr.endsWith('а')) return '${tr.substring(0, tr.length - 1)}ою';
@@ -754,8 +978,25 @@ String ukrInstrPlain(String tr) {
         ? '${g.substring(0, g.length - 1)}ем'
         : '${g.substring(0, g.length - 1)}ом';
   }
-  if (g.endsWith('у') || g.endsWith('ю')) {
-    return '${g.substring(0, g.length - 1)}ом';
+  if (g.endsWith('ю')) return '${g.substring(0, g.length - 1)}ем';
+  if (g.endsWith('у')) {
+    final last = tr.isEmpty ? '' : tr[tr.length - 1];
+    return 'жчшщ'.contains(last)
+        ? '${tr}ем'
+        : '${g.substring(0, g.length - 1)}ом';
+  }
+  // множественные: меблі → меблями, штани → штанами
+  if (g.endsWith('их') && (tr.endsWith('і') || tr.endsWith('и'))) {
+    return '${tr.substring(0, tr.length - 1)}ими'; // вихідними
+  }
+  if ((g.endsWith('ів') || g.endsWith('ей') || g.endsWith('ок')) &&
+      (tr.endsWith('і') || tr.endsWith('и'))) {
+    final stem = tr.substring(0, tr.length - 1);
+    if (tr.endsWith('і')) {
+      final last = stem.isEmpty ? '' : stem[stem.length - 1];
+      return 'жчшщ'.contains(last) ? '${stem}ами' : '${stem}ями';
+    }
+    return '${stem}ами';
   }
   return '';
 }
