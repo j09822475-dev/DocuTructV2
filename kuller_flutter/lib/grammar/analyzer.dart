@@ -313,6 +313,22 @@ const _irregular = <String, (String, String, String)>{
           'Формы: rõõmus — rõõmsa — rõõmsat. Мн.ч.: rõõmsad.'),
   'teksad': ('teksased', 'Разговорная форма',
       'teksad = teksased — «джинси»'),
+  'olge': ('olema', 'Käskiv kõneviis (mitmus)',
+      'повелительное мн.ч.: olema → olge! — «будьте!» (Olge viisakad!)'),
+  'tõi': ('tooma', 'Lihtminevik, tema-vorm',
+      'неправильная форма: tooma → ta tõi — «він приніс»'),
+  'tegime': ('tegema', 'Lihtminevik, meie-vorm',
+      'неправильная форма: tegema → me tegime — «ми зробили»'),
+  'parim': ('hea', 'Ülivõrre (превосходная)',
+      'превосходная степень: hea → parem → parim — «найкращий»'),
+  'tulemast': ('tulema', 'mast-vorm',
+      'Tere tulemast! — «Ласкаво просимо!» (дословно: с приходом)'),
+  'tehtud': ('tegema', 'tud-partitsiip (пассивное причастие)',
+      'tegema → tehtud: Pilt on tehtud köögis — «фото зроблено на кухні»'),
+  'siniseid': ('sinine', 'Mitmuse osastav',
+      'sinine → siniseid: kannab siniseid teksapükse — «носить сині джинси»'),
+  'lastele': ('laps', 'Alaleütlev (мн.ч.)',
+      'laps → lastele: Isa naeratab lastele — «тато усміхається дітям»'),
 };
 
 String _norm(String raw) {
