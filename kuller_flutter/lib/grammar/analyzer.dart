@@ -520,6 +520,91 @@ WordAnalysis? analyze(String raw) {
   return best;
 }
 
+/// Короткий перевод для подстановки во фразы: «лев; Лев (знак)» → «лев».
+String _shortTr(String tr) {
+  var t = tr;
+  for (final sep in [';', '(', ' / ', ' —']) {
+    final i = t.indexOf(sep);
+    if (i > 0) t = t.substring(0, i);
+  }
+  final c = t.indexOf(',');
+  if (c > 0) t = t.substring(0, c);
+  return t.trim();
+}
+
+String _or(String form, String fallback) => form.isEmpty ? fallback : form;
+
+/// Фразы-шаблоны: каждая основная форма слова в предложении + перевод.
+/// Возвращает (форма, эстонская фраза, украинский перевод).
+List<(String, String, String)> formPhrases(Lexeme lx) {
+  final tr = _shortTr(lx.tr);
+  final gen = _or(ukrGenPlain(lx.tr), tr);
+  final acc = _or(ukrAccPlain(lx.tr), tr);
+  switch (lx.kind) {
+    case 'n':
+      return [
+        (lx.f1, 'See on ${lx.f1}.', 'Це $tr.'),
+        (lx.f2, 'Ma olen ${lx.f2} juures.', 'Я біля $gen.'),
+        (lx.f3, 'Ma näen ${lx.f3}.', 'Я бачу $acc.'),
+      ];
+    case 'a':
+      return [
+        (lx.f1, 'See maja on ${lx.f1}.', 'Цей будинок $tr.'),
+        (lx.f2, 'See on ${lx.f2} maja uks.', 'Це двері $gen будинку.'),
+        (lx.f3, 'Ma näen ${lx.f3} maja.', 'Я бачу $acc будинок.'),
+      ];
+    case 'v':
+      final pres = ukrPres1Plain(lx.tr);
+      return [
+        (lx.f1, 'Ma pean ${lx.f1}.', 'Я мушу $tr.'),
+        (lx.f2, 'Ma tahan ${lx.f2}.', 'Я хочу $tr.'),
+        (
+          '${lx.f3}n',
+          'Ma ${lx.f3}n iga päev.',
+          pres.isEmpty ? 'Я щодня це роблю ($tr).' : '${pres[0].toUpperCase()}${pres.substring(1)} щодня.'
+        ),
+      ];
+    case 'p':
+      return [
+        (lx.f1, 'Kass on laua ${lx.f1}.', 'Кіт — $tr стола.'),
+      ];
+    default:
+      return const [];
+  }
+}
+
+/// Фразы со всеми падежами (для существительных): основа omastav +
+/// окончание, украинский перевод фразы. (падеж-вопрос, фраза, перевод).
+List<(String, String, String)> casePhrases(Lexeme lx) {
+  if (lx.kind != 'n' || lx.f2.isEmpty) return const [];
+  final s = lx.f2;
+  final tr = _shortTr(lx.tr);
+  final gen = _or(ukrGenPlain(lx.tr), tr);
+  final acc = _or(ukrAccPlain(lx.tr), tr);
+  final loc = _or(ukrLocPlain(lx.tr), tr);
+  final ins = _or(ukrInstrPlain(lx.tr), tr);
+  return [
+    ('Sisseütlev — kuhu? (куди?)', 'Ma lähen ${s}sse.', 'Я йду в $acc.'),
+    ('Seesütlev — kus? (де?)', 'Ma olen ${s}s.', 'Я в $loc.'),
+    ('Seestütlev — kust? (звідки?)', 'Ma tulen ${s}st.', 'Я йду з $gen.'),
+    ('Alaleütlev — kuhu peale? (на що?)', 'Ma panen selle ${s}le.',
+        'Я кладу це на $acc.'),
+    ('Alalütlev — kus? (на чому?)', 'See on ${s}l.', 'Це на $loc.'),
+    ('Alaltütlev — millelt? (з чого?)', 'Ma võtan selle ${s}lt.',
+        'Я беру це з $gen.'),
+    ('Kaasaütlev — kellega? (з ким? з чим?)', 'Ma olen koos ${s}ga.',
+        'Я разом з $ins.'),
+    ('Ilmaütlev — ilma milleta? (без чого?)', 'Ma olen ilma ${s}ta.',
+        'Я без $gen.'),
+    ('Saav — kelleks? (ким? чим стає?)', 'Ta saab ${s}ks.',
+        'Він стає $ins.'),
+    ('Rajav — milleni? (до чого?)', 'Ma jõuan ${s}ni.',
+        'Я доходжу до $gen.'),
+    ('Olev — kellena? (в ролі кого?)', 'Ta töötab ${s}na.',
+        'Він працює як $tr.'),
+  ];
+}
+
 /// Все варианты разбора слова — для омонимов (maal = «картина»
 /// или maa + -l «у селі»). Первый элемент совпадает с [analyze].
 List<WordAnalysis> analyzeAll(String raw) {

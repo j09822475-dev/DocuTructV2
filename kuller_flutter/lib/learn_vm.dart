@@ -36,6 +36,11 @@ class LearnViewModel extends ChangeNotifier {
 
   void speakWord(String text) => tts.speak(text, pitch: 1.0);
 
+  /// Озвучить перевод украинским голосом.
+  void speakTr(String text) {
+    tts.speakAwait(text, lang: 'uk-UA');
+  }
+
   int bestScore(String lessonId) => state.bestScores[lessonId] ?? 0;
 
   /// Порог: после стольких повторений слово считается выученным

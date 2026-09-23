@@ -507,6 +507,81 @@ String ukrAccPlain(String tr) =>
 /// «я …» без запасного варианта; '' — если глагола нет в словаре.
 String ukrPres1Plain(String tr) => _pres1[tr] ?? '';
 
+/// Отдельные исключения местного падежа.
+const Map<String, String> _locFix = {
+  'сад': 'саду',
+  'дах': 'даху',
+};
+
+/// Місцевий відмінок (у/на чому?) — из родительного:
+/// кімнати → кімнаті, сорочки → сорочці, стола → столі, будинку → будинку.
+String ukrLocPlain(String tr) {
+  final fix = _locFix[tr];
+  if (fix != null) return fix;
+  if (tr.endsWith('ко')) return '${tr.substring(0, tr.length - 1)}у'; // ліжку
+  final g = ukrGenPlain(tr);
+  if (g.isEmpty || g.contains(' ') || g.contains(',') || g.contains(';')) {
+    return '';
+  }
+  if (g.endsWith('ки')) return '${g.substring(0, g.length - 2)}ці';
+  if (g.endsWith('ги')) return '${g.substring(0, g.length - 2)}зі';
+  if (g.endsWith('хи')) return '${g.substring(0, g.length - 2)}сі';
+  if (g.endsWith('и')) return '${g.substring(0, g.length - 1)}і';
+  if (g.endsWith('’я')) return '${g.substring(0, g.length - 1)}ї';
+  if (g.endsWith('я')) return '${g.substring(0, g.length - 1)}і';
+  if (g.endsWith('а')) return '${g.substring(0, g.length - 1)}і';
+  if (g.endsWith('у') || g.endsWith('ю')) {
+    // будинку, парку — на -к остаётся -у; иначе от именительного:
+    // поверх → поверсі, ліс → лісі, офіс → офісі
+    if (tr.endsWith('к')) return g;
+    if (tr.contains(' ')) return g;
+    if (tr.endsWith('х')) return '${tr.substring(0, tr.length - 1)}сі';
+    if (tr.endsWith('г')) return '${tr.substring(0, tr.length - 1)}зі';
+    return '${tr}і';
+  }
+  if (g.endsWith('і') || g.endsWith('ї')) return g;
+  return '';
+}
+
+/// Орудний відмінок (ким? чим?): кімната → кімнатою, стіл → столом,
+/// ніж → ножем, будинок → будинком.
+String ukrInstrPlain(String tr) {
+  if (tr.contains(' ') || tr.contains(',') || tr.contains(';') ||
+      tr.contains('(')) {
+    return '';
+  }
+  if (tr.endsWith('ія')) return '${tr.substring(0, tr.length - 1)}єю';
+  if (tr.endsWith('’я')) return '${tr}м'; // пір’ям
+  if (tr.endsWith('ння') || tr.endsWith('ття') || tr.endsWith('лля')) {
+    return '${tr}м'; // прибиранням, життям (ср. род)
+  }
+  if (tr.endsWith('я')) return '${tr.substring(0, tr.length - 1)}ею'; // кухнею
+  if (tr.endsWith('а')) return '${tr.substring(0, tr.length - 1)}ою';
+  final g = ukrGenPlain(tr);
+  if (g.isEmpty || g.contains(' ')) return '';
+  // жен. род 3-го склонения (род. -і): ніч → ніччю, рись → риссю,
+  // відповідь → відповіддю, власність → власністю
+  if (g.endsWith('і') && !tr.endsWith('і')) {
+    final stem =
+        tr.endsWith('ь') ? tr.substring(0, tr.length - 1) : tr;
+    if (stem.length < 2) return '';
+    const vowels = 'аеиоуіїєюя';
+    final prevIsVowel = vowels.contains(stem[stem.length - 2]);
+    return prevIsVowel ? '$stem${stem[stem.length - 1]}ю' : '${stem}ю';
+  }
+  if (g.endsWith('я')) return '${g.substring(0, g.length - 1)}ем';
+  if (g.endsWith('а')) {
+    final pre = g.length > 1 ? g[g.length - 2] : '';
+    return 'жчшщц'.contains(pre)
+        ? '${g.substring(0, g.length - 1)}ем'
+        : '${g.substring(0, g.length - 1)}ом';
+  }
+  if (g.endsWith('у') || g.endsWith('ю')) {
+    return '${g.substring(0, g.length - 1)}ом';
+  }
+  return '';
+}
+
 /// Знахідний відмінок перевода (для osastav): «кімната» → «кімнату».
 String ukrAcc(String tr) {
   final f = _nounForms[tr];

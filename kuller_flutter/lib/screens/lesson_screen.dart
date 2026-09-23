@@ -940,7 +940,99 @@ class WordAnalysisSection extends StatelessWidget {
               ),
             ),
           ),
+        const SizedBox(height: 12),
+        Text('Фразы с формами слова:',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: scheme.onSurface)),
+        const SizedBox(height: 4),
+        for (final p in formPhrases(a.lex))
+          _PhraseCard(vm: vm, label: p.$1, et: p.$2, tr: p.$3),
+        if (casePhrases(a.lex).isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text('Все падежи с примерами:',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: scheme.onSurface)),
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 4),
+            child: Text(
+                'Нажмите 🔊 — эстонская фраза, нажмите перевод — озвучка '
+                'по-украински.',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    color: scheme.onSurface.withOpacity(0.55))),
+          ),
+          for (final p in casePhrases(a.lex))
+            _PhraseCard(vm: vm, label: p.$1, et: p.$2, tr: p.$3),
+        ],
       ],
+    );
+  }
+}
+
+/// Карточка фразы-примера: подпись формы/падежа, эстонская фраза с
+/// озвучкой и украинский перевод (нажатие — озвучка перевода).
+class _PhraseCard extends StatelessWidget {
+  final LearnViewModel vm;
+  final String label;
+  final String et;
+  final String tr;
+  const _PhraseCard(
+      {required this.vm,
+      required this.label,
+      required this.et,
+      required this.tr});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: scheme.surfaceContainerHighest.withOpacity(0.4),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface.withOpacity(0.55))),
+                  const SizedBox(height: 2),
+                  InkWell(
+                    onTap: () => vm.speakWord(et),
+                    child: Text(et,
+                        style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: scheme.primary)),
+                  ),
+                  const SizedBox(height: 2),
+                  InkWell(
+                    onTap: () => vm.speakTr(tr),
+                    child: Text('🔈 $tr',
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.3,
+                            color: scheme.onSurface.withOpacity(0.75))),
+                  ),
+                ],
+              ),
+            ),
+            SpeakButton(onPressed: () => vm.speakWord(et)),
+          ],
+        ),
+      ),
     );
   }
 }
