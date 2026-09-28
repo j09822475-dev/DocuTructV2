@@ -508,6 +508,15 @@ const Map<String, (String, String)> _nounForms = {
   'вихідні': ('вихідних', 'вихідні'),
   'макарони': ('макаронів', 'макарони'),
   'спокій': ('спокою', 'спокій'),
+  'термос': ('термоса', 'термос'),
+  'одинадцять; також: один одного': ('одинадцяти', 'одинадцять'),
+  'Іванів день': ('Іванового дня', 'Іванів день'),
+  'Мардіпяев': ('Мардіпяева', 'Мардіпяев'),
+  'Кадріпяев': ('Кадріпяева', 'Кадріпяев'),
+  'СПА-пакет': ('СПА-пакета', 'СПА-пакет'),
+  'пакет': ('пакета', 'пакет'),
+  'набір': ('набору', 'набір'),
+  'зроблений власноруч': ('зробленого власноруч', 'зроблений власноруч'),
   'кружка': ('кружки', 'кружку'),
   'букет': ('букета', 'букет'),
   'парфуми': ('парфумів', 'парфуми'),
@@ -691,6 +700,11 @@ const Map<String, String> _pres1 = {
   'думати': 'я думаю',
   'допомагати': 'я допомагаю',
   'усміхатися': 'я усміхаюся',
+  'приходити': 'я приходжу',
+  'пити': 'я п’ю',
+  'говорити': 'я говорю',
+  'вітати': 'я вітаю',
+  'починатися': 'воно починається',
   'пекти': 'я печу',
   'бажати': 'я бажаю',
   'спати': 'я сплю',
@@ -824,10 +838,21 @@ String _phraseCase(String tr, String kase) {
 
 /// Родовий відмінок перевода (для omastav): «кімната» → «кімнати».
 String ukrGen(String tr) {
-  final f = _nounForms[tr];
-  if (f != null) return '${f.$1} (кого? чого?)';
-  final a = _adjGen(tr);
-  return a.isEmpty ? tr : '$a (кого? чого?)';
+  var g = ukrGenPlain(tr);
+  if (g.isEmpty) g = ukrGenPlain(_shortUkr(tr));
+  return g.isEmpty ? _shortUkr(tr) : '$g (кого? чого?)';
+}
+
+/// Короткий перевод: «лев; Лев (знак)» → «лев».
+String _shortUkr(String tr) {
+  var t = tr;
+  for (final sep in [';', '(', ' / ', ' —']) {
+    final i = t.indexOf(sep);
+    if (i > 0) t = t.substring(0, i);
+  }
+  final c = t.indexOf(',');
+  if (c > 0) t = t.substring(0, c);
+  return t.trim();
 }
 
 /// Правило род. падежа для простых слов (жен. -а/-я, ср. -о/-е):
@@ -1053,10 +1078,11 @@ String ukrInstrPlain(String tr) {
 
 /// Знахідний відмінок перевода (для osastav): «кімната» → «кімнату».
 String ukrAcc(String tr) {
-  final f = _nounForms[tr];
-  if (f != null) return '${f.$2} (кого? що?)';
-  return _adjGen(tr).isEmpty ? tr : '$tr (кого? що?)';
+  var a = ukrAccPlain(tr);
+  if (a.isEmpty) a = ukrAccPlain(_shortUkr(tr));
+  return a.isEmpty ? _shortUkr(tr) : '$a (кого? що?)';
 }
 
 /// «я …» для формы настоящего времени глагола (ma …n).
-String ukrPres1(String tr) => _pres1[tr] ?? tr;
+String ukrPres1(String tr) =>
+    _pres1[tr] ?? _pres1[_shortUkr(tr)] ?? tr;
