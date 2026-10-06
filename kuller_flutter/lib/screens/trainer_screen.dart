@@ -133,16 +133,40 @@ class _TrainerScreenState extends State<TrainerScreen> {
           clean.toLowerCase() == lx.f2 ||
           clean.toLowerCase() == lx.f3;
 
-      // Пример употребления формы: сначала настоящее предложение урока,
-      // иначе — сгенерированная фраза с переводом (formPhrases).
-      (String, String) exampleFor(String form) {
-        for (final s in pool) {
-          if (_findToken(s.et, form).isNotEmpty) return (s.et, s.tr);
+      // ---- Этап 2 (выбор заранее): предложения урока с этим словом.
+      // Выбираем их до примеров этапа 1, чтобы пример на карточке слова
+      // не повторял карточку-фразу этапа 2.
+      final forms = <String>{};
+      if (lx != null) {
+        forms.addAll([lx.f1, lx.f2, lx.f3, lx.pl]
+            .where((f) => f.isNotEmpty && f.length >= 3));
+      }
+      forms.add(clean.toLowerCase());
+      final stage2 = <(Sent, String)>[]; // предложение + найденный токен
+      for (final s in pool) {
+        if (stage2.length >= 2) break;
+        for (final f in forms) {
+          final hit = _findToken(s.et, f);
+          if (hit.isNotEmpty) {
+            stage2.add((s, hit));
+            break;
+          }
         }
+      }
+      // пример карточки уйдёт в этап 2, если предложений не нашлось
+      final cardExampleInStage2 = stage2.isEmpty && w.example.isNotEmpty;
+
+      // Пример употребления формы: шаблонная фраза с переводом
+      // (formPhrases); если её нет — предложение урока, не занятое этапом 2.
+      (String, String) exampleFor(String form) {
         if (lx != null) {
           for (final p in formPhrases(lx)) {
             if (p.$1 == form) return (p.$2, p.$3);
           }
+        }
+        for (final s in pool) {
+          if (stage2.any((e) => identical(e.$1, s))) continue;
+          if (_findToken(s.et, form).isNotEmpty) return (s.et, s.tr);
         }
         return ('', '');
       }
@@ -167,7 +191,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
         if (!isBaseForm) {
           // сама карточка — производная форма со своим переводом
           var (eD, tD) = exampleFor(clean);
-          if (eD.isEmpty && w.example.isNotEmpty) {
+          if (eD.isEmpty && w.example.isNotEmpty && !cardExampleInStage2) {
             eD = w.example;
             tD = '';
           }
@@ -192,7 +216,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
         }
         if (!isBaseForm) {
           var (eD, tD) = exampleFor(clean);
-          if (eD.isEmpty && w.example.isNotEmpty) {
+          if (eD.isEmpty && w.example.isNotEmpty && !cardExampleInStage2) {
             eD = w.example;
             tD = '';
           }
@@ -205,6 +229,7 @@ class _TrainerScreenState extends State<TrainerScreen> {
         } else {
           final lowEt = clean.toLowerCase();
           for (final s in pool) {
+            if (stage2.any((e) => identical(e.$1, s))) continue;
             if (s.et.toLowerCase().contains(lowEt)) {
               eX = s.et;
               tX = s.tr;
@@ -212,34 +237,21 @@ class _TrainerScreenState extends State<TrainerScreen> {
             }
           }
         }
-        if (eX.isEmpty && w.example.isNotEmpty) eX = w.example;
+        if (eX.isEmpty && w.example.isNotEmpty && !cardExampleInStage2) {
+          eX = w.example;
+        }
         // пример, совпадающий с самой карточкой, не показываем
         if (_clean(eX).toLowerCase() == clean.toLowerCase()) eX = '';
         words.add(_Drill(w, w.et, single ? '' : 'выражение', w.tr,
             exEt: eX, exTr: eX.isEmpty ? '' : tX));
       }
 
-      // ---- Этап 2: слово в контексте ----
-      final forms = <String>{};
-      if (lx != null) {
-        forms.addAll([lx.f1, lx.f2, lx.f3, lx.pl]
-            .where((f) => f.isNotEmpty && f.length >= 3));
+      // ---- Этап 2: слово в контексте (предложения выбраны выше) ----
+      for (final (s, hit) in stage2) {
+        phrases.add(
+            _Drill(w, s.et, '', s.tr, highlight: hit, isPhrase: true));
       }
-      forms.add(_clean(w.et).toLowerCase());
-      var added = 0;
-      for (final s in pool) {
-        if (added >= 2) break;
-        for (final f in forms) {
-          final hit = _findToken(s.et, f);
-          if (hit.isNotEmpty) {
-            phrases.add(_Drill(w, s.et, '', s.tr,
-                highlight: hit, isPhrase: true));
-            added++;
-            break;
-          }
-        }
-      }
-      if (added == 0 && w.example.isNotEmpty) {
+      if (cardExampleInStage2) {
         phrases.add(_Drill(w, w.example, '', '',
             highlight:
                 lx == null ? '' : _findToken(w.example, lx.f1), isPhrase: true));
