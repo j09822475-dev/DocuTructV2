@@ -15,8 +15,11 @@ class _Drill {
   final String tr; // перевод, показывается после «Показать»
   final String highlight; // токен, выделяемый в фразе ('' — не выделять)
   final bool isPhrase;
+  final String exEt; // пример употребления формы (эстонский)
+  final String exTr; // перевод примера
   const _Drill(this.word, this.et, this.formLabel, this.tr,
-      {this.highlight = '', this.isPhrase = false});
+      {this.highlight = '', this.isPhrase = false,
+      this.exEt = '', this.exTr = ''});
 }
 
 /// Тренажёр слов урока: этап 1 — три основные формы, этап 2 — те же
@@ -130,41 +133,90 @@ class _TrainerScreenState extends State<TrainerScreen> {
           clean.toLowerCase() == lx.f2 ||
           clean.toLowerCase() == lx.f3;
 
+      // Пример употребления формы: сначала настоящее предложение урока,
+      // иначе — сгенерированная фраза с переводом (formPhrases).
+      (String, String) exampleFor(String form) {
+        for (final s in pool) {
+          if (_findToken(s.et, form).isNotEmpty) return (s.et, s.tr);
+        }
+        if (lx != null) {
+          for (final p in formPhrases(lx)) {
+            if (p.$1 == form) return (p.$2, p.$3);
+          }
+        }
+        return ('', '');
+      }
+
       // ---- Этап 1: формы слова ----
       if (lx != null && (lx.kind == 'n' || lx.kind == 'a')) {
-        words.add(
-            _Drill(w, lx.f1, '1-я форма · Nimetav — kes? mis?', baseTr));
+        final (e1, t1) = exampleFor(lx.f1);
+        words.add(_Drill(w, lx.f1, '1-я форма · Nimetav — kes? mis?', baseTr,
+            exEt: e1, exTr: t1));
         if (lx.f2.isNotEmpty && lx.f2 != lx.f1) {
+          final (e2, t2) = exampleFor(lx.f2);
           words.add(_Drill(
               w, lx.f2, '2-я форма · Omastav — kelle? mille?',
-              ukrGen(baseTr)));
+              ukrGen(baseTr), exEt: e2, exTr: t2));
         }
         if (lx.f3.isNotEmpty && lx.f3 != lx.f2) {
+          final (e3, t3) = exampleFor(lx.f3);
           words.add(_Drill(
               w, lx.f3, '3-я форма · Osastav — keda? mida?',
-              ukrAcc(baseTr)));
+              ukrAcc(baseTr), exEt: e3, exTr: t3));
         }
         if (!isBaseForm) {
           // сама карточка — производная форма со своим переводом
-          words.add(_Drill(w, clean, a!.formName, w.tr));
+          var (eD, tD) = exampleFor(clean);
+          if (eD.isEmpty && w.example.isNotEmpty) {
+            eD = w.example;
+            tD = '';
+          }
+          words.add(_Drill(w, clean, a!.formName, w.tr, exEt: eD, exTr: tD));
         }
       } else if (lx != null && lx.kind == 'v') {
+        final (e1, t1) = exampleFor(lx.f1);
         words.add(_Drill(
-            w, lx.f1, 'ma-инфинитив — после pean, hakkan, lähen', baseTr));
+            w, lx.f1, 'ma-инфинитив — после pean, hakkan, lähen', baseTr,
+            exEt: e1, exTr: t1));
         if (lx.f2.isNotEmpty && lx.f2 != lx.f1) {
+          final (e2, t2) = exampleFor(lx.f2);
           words.add(_Drill(
               w, lx.f2, 'da-инфинитив — после tahan, oskan, meeldib',
-              baseTr));
+              baseTr, exEt: e2, exTr: t2));
         }
         if (lx.f3.isNotEmpty) {
+          final (e3, t3) = exampleFor('${lx.f3}n');
           words.add(_Drill(
-              w, '${lx.f3}n', 'настоящее время — ma …n', ukrPres1(baseTr)));
+              w, '${lx.f3}n', 'настоящее время — ma …n', ukrPres1(baseTr),
+              exEt: e3, exTr: t3));
         }
         if (!isBaseForm) {
-          words.add(_Drill(w, clean, a!.formName, w.tr));
+          var (eD, tD) = exampleFor(clean);
+          if (eD.isEmpty && w.example.isNotEmpty) {
+            eD = w.example;
+            tD = '';
+          }
+          words.add(_Drill(w, clean, a!.formName, w.tr, exEt: eD, exTr: tD));
         }
       } else {
-        words.add(_Drill(w, w.et, single ? '' : 'выражение', w.tr));
+        var eX = '', tX = '';
+        if (single) {
+          (eX, tX) = exampleFor(clean);
+        } else {
+          final lowEt = clean.toLowerCase();
+          for (final s in pool) {
+            if (s.et.toLowerCase().contains(lowEt)) {
+              eX = s.et;
+              tX = s.tr;
+              break;
+            }
+          }
+        }
+        if (eX.isEmpty && w.example.isNotEmpty) eX = w.example;
+        // пример, совпадающий с самой карточкой, не показываем
+        if (_clean(eX).toLowerCase() == clean.toLowerCase()) eX = '';
+        words.add(_Drill(w, w.et, single ? '' : 'выражение', w.tr,
+            exEt: eX, exTr: eX.isEmpty ? '' : tX));
       }
 
       // ---- Этап 2: слово в контексте ----
@@ -336,6 +388,10 @@ class _TrainerScreenState extends State<TrainerScreen> {
                                   fontSize: 13, color: scheme.primary)),
                         ),
                     ],
+                    if (!d.isPhrase && d.exEt.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      _exampleBlock(d, scheme, vm, mastered),
+                    ],
                     const SizedBox(height: 6),
                     Text(
                         mastered
@@ -380,6 +436,75 @@ class _TrainerScreenState extends State<TrainerScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Пример употребления формы: фраза с озвучкой и переводом.
+  /// Нажатие на фразу — эстонская озвучка, на перевод — украинская.
+  Widget _exampleBlock(
+      _Drill d, ColorScheme scheme, LearnViewModel vm, bool mastered) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Пример:',
+              style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface.withOpacity(0.45))),
+          const SizedBox(height: 3),
+          InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => vm.speakWord(d.exEt),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _exampleText(d, scheme)),
+                const SizedBox(width: 6),
+                Icon(Icons.volume_up, size: 18, color: scheme.primary),
+              ],
+            ),
+          ),
+          if (d.exTr.isNotEmpty && !mastered)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => vm.speakTr(d.exTr),
+                child: Text(d.exTr,
+                    style: TextStyle(
+                        fontSize: 12.5,
+                        color: scheme.onSurface.withOpacity(0.65))),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Текст примера: тренируемая форма выделяется цветом.
+  Widget _exampleText(_Drill d, ColorScheme scheme) {
+    final style = TextStyle(
+        fontSize: 14, height: 1.3, color: scheme.onSurface.withOpacity(0.85));
+    final hit = _findToken(d.exEt, _clean(d.et));
+    if (hit.isEmpty) return Text(d.exEt, style: style);
+    final i = d.exEt.indexOf(hit);
+    return Text.rich(
+      TextSpan(children: [
+        TextSpan(text: d.exEt.substring(0, i)),
+        TextSpan(
+            text: hit,
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: scheme.primary)),
+        TextSpan(text: d.exEt.substring(i + hit.length)),
+      ]),
+      style: style,
     );
   }
 
