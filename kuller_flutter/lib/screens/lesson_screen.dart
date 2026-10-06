@@ -64,12 +64,13 @@ class LessonScreen extends StatelessWidget {
                 _TextsTab(
                     vm: vm,
                     items: lesson.grammar,
+                    words: lesson.words,
                     emoji: '🧩',
                     hint: 'Грамматика урока — правила и примеры, которые '
                         'преподаватель показал на этой теме. Нажимайте на '
                         'слова, чтобы увидеть их формы.'),
               if (lesson.texts.isNotEmpty)
-                _TextsTab(vm: vm, items: lesson.texts),
+                _TextsTab(vm: vm, items: lesson.texts, words: lesson.words),
               if (lesson.dialogues.isNotEmpty)
                 _DialoguesTab(vm: vm, lesson: lesson),
               TestTab(vm: vm, lesson: lesson),
@@ -301,11 +302,13 @@ class _QuestionsTab extends StatelessWidget {
 class _TextsTab extends StatelessWidget {
   final LearnViewModel vm;
   final List<LessonText> items;
+  final List<WordCard> words; // слова урока — для картинок-сцен в читалке
   final String hint;
   final String emoji;
   const _TextsTab(
       {required this.vm,
       required this.items,
+      this.words = const [],
       this.hint = 'Тексты урока — читайте и слушайте целиком или по абзацам.',
       this.emoji = '📖'});
 
@@ -329,7 +332,8 @@ class _TextsTab extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => TextReaderScreen(vm: vm, text: t))),
+                  builder: (_) =>
+                      TextReaderScreen(vm: vm, text: t, cards: words))),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Row(
@@ -370,7 +374,9 @@ class _TextsTab extends StatelessWidget {
 class TextReaderScreen extends StatefulWidget {
   final LearnViewModel vm;
   final LessonText text;
-  const TextReaderScreen({super.key, required this.vm, required this.text});
+  final List<WordCard> cards; // слова урока — источник эмодзи для сцены
+  const TextReaderScreen(
+      {super.key, required this.vm, required this.text, this.cards = const []});
 
   @override
   State<TextReaderScreen> createState() => _TextReaderScreenState();
@@ -384,8 +390,127 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
   final Set<int> openAnswers = {};
   late final List<GlobalKey> _paraKeys =
       List.generate(widget.text.paras.length, (_) => GlobalKey());
+  // Картинка-сцена: эмодзи слов урока, найденных в каждом абзаце,
+  // и общая сцена всего текста (для состояния «не играет»).
+  late final List<List<String>> _paraScenes;
+  late final List<String> _allScene;
 
   LearnViewModel get vm => widget.vm;
+
+  @override
+  void initState() {
+    super.initState();
+    _paraScenes =
+        [for (final p in widget.text.paras) _sceneEmojis(p.et)];
+    final all = <String>[];
+    for (final s in _paraScenes) {
+      for (final e in s) {
+        if (!all.contains(e)) all.add(e);
+      }
+    }
+    _allScene = all;
+  }
+
+  String _normSceneToken(String w) => w
+      .toLowerCase()
+      .replaceAll(RegExp(r'''[.,!?:;„“"«»()\[\]…—–%0-9]'''), '')
+      .trim();
+
+  static int _commonPrefix(String a, String b) {
+    final n = a.length < b.length ? a.length : b.length;
+    var i = 0;
+    while (i < n && a[i] == b[i]) {
+      i++;
+    }
+    return i;
+  }
+
+  /// Пиктографические эмодзи (отсекаем «°» и прочие текстовые символы).
+  bool _isPictographic(String e) =>
+      e.isNotEmpty && e.runes.first >= 0x2190;
+
+  /// Эмодзи слов урока, встречающихся в предложении (учитываем
+  /// словоформы через совпадение начала слова).
+  List<String> _sceneEmojis(String sentence) {
+    final tokens = sentence
+        .split(' ')
+        .map(_normSceneToken)
+        .where((t) => t.length >= 3)
+        .toList();
+    final out = <String>[];
+    for (final c in widget.cards) {
+      if (!_isPictographic(c.emoji)) continue;
+      var hit = false;
+      for (final cw in c.et.split(' ')) {
+        final w = _normSceneToken(cw);
+        if (w.length < 3) continue;
+        for (final t in tokens) {
+          if (t == w) {
+            hit = true;
+            break;
+          }
+          if (w.length >= 5 && t.length >= 4) {
+            final p = _commonPrefix(t, w);
+            if (p >= 4 && p >= w.length - 3) {
+              hit = true;
+              break;
+            }
+          }
+        }
+        if (hit) break;
+      }
+      if (hit && !out.contains(c.emoji)) out.add(c.emoji);
+    }
+    return out;
+  }
+
+  /// Панель-иллюстрация: при прослушивании показывает картинки слов
+  /// текущего абзаца, иначе — общую сцену текста.
+  Widget _sceneBanner(ColorScheme scheme) {
+    var emojis = _allScene;
+    var paraMode = false;
+    if (playing &&
+        currentPara >= 0 &&
+        currentPara < _paraScenes.length &&
+        _paraScenes[currentPara].isNotEmpty) {
+      emojis = _paraScenes[currentPara];
+      paraMode = true;
+    }
+    if (emojis.isEmpty) return const SizedBox.shrink();
+    final shown = emojis.take(paraMode ? 4 : 5).toList();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scheme.primaryContainer,
+            scheme.secondaryContainer.withOpacity(0.7),
+          ],
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+              scale: Tween(begin: 0.85, end: 1.0).animate(anim),
+              child: child),
+        ),
+        child: Row(
+          key: ValueKey(shown.join()),
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            for (final e in shown)
+              Text(e, style: TextStyle(fontSize: paraMode ? 46 : 38)),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -523,7 +648,11 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
       ),
       body: ListenableBuilder(
         listenable: vm,
-        builder: (context, _) => ListView(
+        builder: (context, _) => Column(
+          children: [
+            _sceneBanner(scheme),
+            Expanded(
+              child: ListView(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
           children: [
             Text('Нажмите на любое слово, чтобы увидеть его формы и правило.',
@@ -633,6 +762,9 @@ class _TextReaderScreenState extends State<TextReaderScreen> {
                   );
                 }),
             ],
+          ],
+              ),
+            ),
           ],
         ),
       ),
