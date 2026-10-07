@@ -29,6 +29,20 @@ class Speaker {
     }
   }
 
+  /// Подготовка текста к озвучке: типографский минус/плюс перед числом
+  /// («−40 kraadini», «+14 kraadi») движок не проговаривает или читает
+  /// неверно — заменяем словами. Дефис внутри «22-ni» или «12-5»
+  /// не трогаем.
+  String _speakable(String text, String lang) {
+    final uk = lang.startsWith('uk');
+    final minus = uk ? 'мінус ' : 'miinus ';
+    final plus = uk ? 'плюс ' : 'pluss ';
+    return text
+        .replaceAll(RegExp(r'[−–]\s?(?=\d)'), minus)
+        .replaceAll(RegExp(r'(?<=^|[\s(])-(?=\d)'), minus)
+        .replaceAll(RegExp(r'\+\s?(?=\d)'), plus);
+  }
+
   /// Озвучить, не дожидаясь конца (кнопки 🔊, карточки).
   void speak(String text, {double pitch = 1.0, String lang = 'et-EE'}) {
     speakAwait(text, pitch: pitch, lang: lang);
@@ -39,13 +53,14 @@ class Speaker {
       {double pitch = 1.0, String lang = 'et-EE'}) async {
     await _init();
     await _setLang(lang);
+    final phrase = _speakable(text, lang);
     try {
       await _tts.setPitch(pitch);
       // Таймаут-страховка: если TTS-движок не отчитался о завершении,
       // не подвешиваем экран навсегда.
       await _tts
-          .speak(text)
-          .timeout(Duration(milliseconds: 1500 + text.length * 120));
+          .speak(phrase)
+          .timeout(Duration(milliseconds: 1500 + phrase.length * 120));
     } catch (_) {}
   }
 
